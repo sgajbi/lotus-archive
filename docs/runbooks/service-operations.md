@@ -3,15 +3,17 @@
 ## Current Support Posture
 
 `lotus-archive` currently exposes scaffold, service-health, safe error-envelope,
-caller-context-parsing, correlation/trace propagation, metrics, and structured request-log behavior
-only. Do not use this service for document archival, binary retrieval, legal hold, purge, retention,
-report handoff, gateway retrieval, or Workbench retrieval until those capabilities are implemented
-and listed in `docs/supported-features.md`.
+caller-context-parsing, correlation/trace propagation, metrics, structured request-log behavior,
+metadata model, migration contract, storage adapter, checksum validation, and archive-write domain
+service behavior only. Do not use this service for archive create/retrieval APIs, binary retrieval,
+legal hold, purge, retention, report handoff, gateway retrieval, or Workbench retrieval until those
+capabilities are implemented and listed in `docs/supported-features.md`.
 
 ## Standard Commands
 
 - make lint
 - make typecheck
+- make migration-gate
 - make ci
 - docker compose up --build
 

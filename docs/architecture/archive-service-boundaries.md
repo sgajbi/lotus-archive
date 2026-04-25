@@ -46,6 +46,19 @@ The RFC target architecture is PostgreSQL metadata plus S3-compatible object sto
 adapter. Development adapters are allowed only behind the same abstraction. Local filesystem storage
 must not become product architecture and must not be exposed as a direct path in APIs or logs.
 
+RFC-0103 Slice 3 adds the first internal implementation of this posture:
+
+1. `migrations/001_create_archive_documents.sql` defines the PostgreSQL archive-document metadata
+   contract.
+2. `src/app/archive/models.py` defines the source-backed metadata model used by the service core.
+3. `src/app/archive/storage.py` defines the object-storage protocol and filesystem development
+   adapter.
+4. `src/app/archive/archive_writer.py` combines metadata validation, checksum enforcement,
+   idempotency, repository persistence, and storage writes.
+
+These are internal service capabilities. They do not create public archive APIs or product-facing
+retrieval support.
+
 ## Documentation Ownership
 
 1. `README.md` is the quick-start and current support posture entrypoint.
@@ -53,4 +66,3 @@ must not become product architecture and must not be exposed as a direct path in
 3. `docs/supported-features.md` owns implementation-backed feature posture.
 4. `docs/runbooks/` owns operator procedures.
 5. `wiki/` owns published operator and support-facing summary material.
-

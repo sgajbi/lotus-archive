@@ -13,10 +13,12 @@
 `lotus-archive` is scaffolded from platform automation and starts with the governed backend baseline:
 FastAPI service shell, CI workflows, repo-native quality commands, Docker baseline, AGENTS
 contract, repository engineering context, safe service-level error envelope, caller-context parsing
-helper, structured request logging, and archive-specific module-family/documentation structure.
+helper, structured request logging, archive metadata model, migration contract, storage adapter,
+checksum validation, idempotent archive-write domain service, and archive-specific
+module-family/documentation structure.
 
-No archive create, retrieval, retention, purge, legal-hold, lifecycle, report-handoff, gateway, or
-Workbench retrieval capability is supported yet.
+No archive create/retrieval API, retention, purge, legal-hold, lifecycle, report-handoff, gateway,
+or Workbench retrieval capability is supported yet.
 
 ## Architecture And Module Map
 
@@ -25,12 +27,18 @@ Workbench retrieval capability is supported yet.
    unsupported product-capability baseline.
 3. `src/app/contracts/errors.py`: support-safe error envelope contract.
 4. `src/app/security/caller_context.py`: caller-context parser for future protected archive APIs.
-5. `src/app/contracts/`: API and contract models.
-6. `src/app/middleware/`: shared request middleware.
-7. `tests/unit`, `tests/integration`, `tests/e2e`: test pyramid baseline.
-8. `docs/architecture/`: archive service boundaries and structure.
-9. `docs/supported-features.md`: implementation-backed support posture.
-10. `docs/standards/`: repository standards placeholders to be replaced with service truth.
+5. `src/app/archive/models.py`: archive document metadata contract.
+6. `src/app/archive/storage.py`: object-storage protocol and filesystem development adapter.
+7. `src/app/archive/repository.py`: archive document repository protocol and in-memory test
+   implementation.
+8. `src/app/archive/archive_writer.py`: checksum-backed idempotent archive-write domain service.
+9. `migrations/`: PostgreSQL metadata contract migrations.
+10. `src/app/contracts/`: API and contract models.
+11. `src/app/middleware/`: shared request middleware.
+12. `tests/unit`, `tests/integration`, `tests/e2e`: test pyramid baseline.
+13. `docs/architecture/`: archive service boundaries and structure.
+14. `docs/supported-features.md`: implementation-backed support posture.
+15. `docs/standards/`: repository standards placeholders to be replaced with service truth.
 
 ## Runtime And Integration Boundaries
 
@@ -50,7 +58,8 @@ Workbench retrieval capability is supported yet.
 3. typecheck: `make typecheck`
 4. unit tests: `make test-unit`
 5. integration or browser tests where applicable: `make test-integration`, `make test-e2e`
-6. repo-native CI parity: `make check`, `make ci`
+6. migration contract gate: `make migration-gate`
+7. repo-native CI parity: `make check`, `make ci`
 
 ## Validation And CI Expectations
 
@@ -67,8 +76,8 @@ build validation.
 
 ## Known Constraints And Implementation Notes
 
-1. this is the platform scaffold baseline plus RFC-0103 Slice 1 structure, not business-logic
-   completeness,
+1. this is the platform scaffold baseline plus RFC-0103 Slice 1 through Slice 3 internal archive
+   structure, not API completeness,
 2. standards placeholders in `docs/standards/` must be replaced with service truth as the service
    matures,
 3. keep business role, naming, docs, and tests aligned with actual implemented scope,

@@ -1,4 +1,4 @@
-.PHONY: install lint monetary-float-guard typecheck openapi-gate test test-unit test-integration test-e2e test-coverage coverage-gate security-audit check ci docker-build clean
+.PHONY: install lint monetary-float-guard typecheck openapi-gate migration-gate test test-unit test-integration test-e2e test-coverage coverage-gate security-audit check ci docker-build clean
 
 VENV_DIR ?= .venv
 
@@ -27,6 +27,9 @@ typecheck:
 openapi-gate:
 	$(VENV_PYTHON) scripts/openapi_quality_gate.py
 
+migration-gate:
+	$(VENV_PYTHON) scripts/migration_gate.py
+
 test:
 	$(MAKE) test-unit
 
@@ -51,14 +54,13 @@ coverage-gate:
 security-audit:
 	$(VENV_PYTHON) -m pip_audit -r requirements/shared-runtime.lock.txt -r requirements/ci-tooling.lock.txt
 
-check: lint typecheck openapi-gate test
+check: lint typecheck openapi-gate migration-gate test
 
-ci: lint typecheck openapi-gate test-integration test-e2e test-coverage security-audit
+ci: lint typecheck openapi-gate migration-gate test-integration test-e2e test-coverage security-audit
 
 docker-build:
 	docker build -t backend-service:ci-test .
 
 clean:
 	python -c "import shutil, pathlib; [shutil.rmtree(p, ignore_errors=True) for p in ['.pytest_cache', '.ruff_cache', '.mypy_cache']]; [pathlib.Path(p).unlink(missing_ok=True) for p in ['.coverage', '.coverage.unit', '.coverage.integration', '.coverage.e2e']]"
-
 

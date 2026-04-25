@@ -1,0 +1,25 @@
+from __future__ import annotations
+
+
+class ArchiveError(Exception):
+    """Base archive-domain exception."""
+
+
+class MetadataValidationError(ArchiveError):
+    pass
+
+
+class DuplicateArchiveRequestConflict(ArchiveError):
+    pass
+
+
+class DocumentChecksumMismatchError(ArchiveError):
+    pass
+
+
+class StorageWriteFailedError(ArchiveError):
+    pass
+
+
+class StorageReadFailedError(ArchiveError):
+    pass

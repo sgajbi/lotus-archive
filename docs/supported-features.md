@@ -13,6 +13,10 @@ This document records implementation-backed support posture for `lotus-archive`.
 5. Safe error envelope for service-level errors.
 6. Caller-context parsing helper for future protected archive APIs.
 7. Structured support-safe request logging.
+8. Archive metadata model and PostgreSQL migration contract.
+9. Filesystem-backed development storage adapter behind the object-storage abstraction.
+10. SHA-256 checksum calculation and storage-time validation.
+11. Idempotent archive-write domain service for duplicate archive requests.
 
 No client-facing archive product feature is supported yet.
 
