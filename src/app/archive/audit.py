@@ -15,6 +15,11 @@ class AccessEventType(StrEnum):
     METADATA_READ = "metadata_read"
     BINARY_DOWNLOAD = "binary_download"
     ACCESS_EVENTS_READ = "access_events_read"
+    RETENTION_READ = "retention_read"
+    PURGE_EVALUATION = "purge_evaluation"
+    PURGE_EXECUTION = "purge_execution"
+    LEGAL_HOLD_SET = "legal_hold_set"
+    LEGAL_HOLD_RELEASE = "legal_hold_release"
     AUTHORIZATION_DENIED = "authorization_denied"
 
 

@@ -17,6 +17,10 @@ class ArchivePermission(StrEnum):
     READ_METADATA = "read_metadata"
     DOWNLOAD_BINARY = "download_binary"
     READ_ACCESS_EVENTS = "read_access_events"
+    READ_RETENTION = "read_retention"
+    EVALUATE_PURGE = "evaluate_purge"
+    EXECUTE_PURGE = "execute_purge"
+    MANAGE_LEGAL_HOLD = "manage_legal_hold"
 
 
 class AuthorizationFailedError(PermissionError):
@@ -30,6 +34,9 @@ class ArchiveAuthorizationPolicy:
     create_callers: frozenset[str] = frozenset({"lotus-report"})
     read_callers: frozenset[str] = frozenset({"lotus-report", "lotus-gateway"})
     audit_callers: frozenset[str] = frozenset({"lotus-report"})
+    retention_callers: frozenset[str] = frozenset({"lotus-report"})
+    purge_callers: frozenset[str] = frozenset({"lotus-report"})
+    legal_hold_callers: frozenset[str] = frozenset({"lotus-report"})
 
     def authorize(
         self,
@@ -61,4 +68,10 @@ class ArchiveAuthorizationPolicy:
             return self.create_callers
         if permission in {ArchivePermission.READ_METADATA, ArchivePermission.DOWNLOAD_BINARY}:
             return self.read_callers
+        if permission is ArchivePermission.READ_RETENTION:
+            return self.retention_callers
+        if permission in {ArchivePermission.EVALUATE_PURGE, ArchivePermission.EXECUTE_PURGE}:
+            return self.purge_callers
+        if permission is ArchivePermission.MANAGE_LEGAL_HOLD:
+            return self.legal_hold_callers
         return self.audit_callers

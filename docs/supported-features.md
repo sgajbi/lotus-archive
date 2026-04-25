@@ -23,6 +23,9 @@ archive API surface:
 14. Controlled document binary download with retrieval-time checksum verification.
 15. Access-audit recording for archive create, metadata read, binary download, access-event read,
     and authorization denial.
+16. Retention posture lookup for archived generated documents.
+17. Purge eligibility evaluation and governed purge execution after retention expiry.
+18. Legal-hold set/release with purge blocking and audit events.
 
 No gateway-backed or Workbench-facing archive product feature is supported yet.
 
@@ -34,13 +37,14 @@ No gateway-backed or Workbench-facing archive product feature is supported yet.
 | Controlled document metadata lookup | `ready` | `GET /documents/{document_id}` with caller-context enforcement, authorization, audit, and support-safe response model. |
 | Controlled document binary download | `ready` | `GET /documents/{document_id}/download` with caller-context enforcement, authorization, storage retrieval, checksum verification, and audit. |
 | Access audit for archive API actions | `ready` | In-memory first-wave access-audit repository and `GET /documents/{document_id}/access-events` for support investigation. |
+| Retention policy posture | `ready` | `GET /documents/{document_id}/retention` returns source-backed retention fields, purge posture, legal-hold posture, authorization, and audit. |
+| Purge eligibility and execution | `ready` | `POST /documents/{document_id}/purge-evaluation` and `POST /documents/{document_id}/purge` enforce retention expiry, support-safe reason codes, binary deletion through storage abstraction, idempotency after purge, and audit. |
+| Legal hold set/release with purge blocking | `ready` | `POST /documents/{document_id}/legal-holds`, `DELETE /documents/{document_id}/legal-holds/{legal_hold_id}`, legal-hold repository model, migration contract, metadata summary refresh, purge blocking, and audit. |
 
 ## Not Yet Supported
 
 | Capability | Support state | Reason |
 | --- | --- | --- |
-| Retention policy assignment and purge eligibility | `not_supported` | Retention model is not implemented yet. |
-| Legal hold set/release with purge blocking | `not_supported` | Legal-hold model and APIs are not implemented yet. |
 | Supersession, correction, and reissue relationships | `not_supported` | Lifecycle relationship model is not implemented yet. |
 | Report-to-archive handoff | `not_supported` | `lotus-report` integration is not implemented yet. |
 | Gateway-backed document retrieval | `not_supported` | Gateway facade is not implemented yet. |

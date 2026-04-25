@@ -33,6 +33,8 @@ class ObjectStorage(Protocol):
 
     def get(self, *, key: str) -> bytes: ...
 
+    def delete(self, *, key: str) -> None: ...
+
 
 class FilesystemObjectStorage:
     provider = "filesystem"
@@ -74,6 +76,11 @@ class FilesystemObjectStorage:
         if not object_path.exists():
             raise StorageReadFailedError("stored document object was not found")
         return object_path.read_bytes()
+
+    def delete(self, *, key: str) -> None:
+        object_path = self._path_for_key(key)
+        if object_path.exists():
+            object_path.unlink()
 
     def _path_for_key(self, key: str) -> Path:
         parts = Path(key).parts

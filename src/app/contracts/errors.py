@@ -30,6 +30,9 @@ SAFE_ERROR_MESSAGES: dict[str, str] = {
     "duplicate_archive_request": "The archive request conflicts with an existing document.",
     "metadata_validation_failed": "The archive metadata could not be validated.",
     "storage_read_failed": "The archived document could not be read.",
+    "legal_hold_active": "A legal hold blocks this archive action.",
+    "legal_hold_not_found": "The requested legal hold was not found.",
+    "purge_not_eligible": "The archived document is not eligible for purge.",
 }
 
 

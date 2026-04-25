@@ -102,3 +102,18 @@ class ArchiveDocumentMetadata(ArchiveDocumentInput):
         if normalized != SUPPORTED_CHECKSUM_ALGORITHM:
             raise ValueError("checksum_algorithm must be sha256")
         return normalized
+
+
+class LegalHoldRecord(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True)
+
+    legal_hold_id: str = Field(min_length=1)
+    document_id: str = Field(min_length=1)
+    hold_status: LegalHoldStatus = LegalHoldStatus.ACTIVE
+    hold_reason: str = Field(min_length=1)
+    authority_reference: str = Field(min_length=1)
+    requested_by: str = Field(min_length=1)
+    requested_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    released_by: str | None = Field(default=None, min_length=1)
+    released_at: datetime | None = None
+    release_reason: str | None = Field(default=None, min_length=1)

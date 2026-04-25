@@ -8,10 +8,11 @@ Lotus generated-document archive, retrieval, retention, legal hold, and access a
 - Health, readiness, metadata, metrics, correlation/trace headers, safe error envelopes, structured
   request logging, metadata model, migration contract, filesystem-backed development storage,
   checksum validation, idempotent archive-write domain behavior, internal archive create API,
-  controlled metadata lookup, checksum-verified binary download, and access-audit recording are
-  available.
-- Retention, purge, legal hold, lifecycle relationships, report handoff, gateway retrieval, and
-  Workbench retrieval are not supported yet.
+  controlled metadata lookup, checksum-verified binary download, access-audit recording, retention
+  posture lookup, purge eligibility and execution, and legal-hold set/release with purge blocking
+  are available.
+- Lifecycle relationships, report handoff, gateway retrieval, and Workbench retrieval are not
+  supported yet.
 - This service is limited to Lotus-generated document archive scope. It is not a generic file store
   or manual upload service.
 - Wiki source lives in-repo and must be published through lotus-platform automation.

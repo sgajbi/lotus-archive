@@ -19,4 +19,7 @@ def test_metadata_endpoint() -> None:
         "controlled_document_metadata_lookup",
         "controlled_document_binary_download",
         "access_audit_for_archive_api",
+        "retention_policy_posture",
+        "purge_eligibility_and_execution",
+        "legal_hold_set_release_with_purge_blocking",
     ]

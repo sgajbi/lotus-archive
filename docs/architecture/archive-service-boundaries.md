@@ -6,10 +6,11 @@ customer document delivery.
 
 ## Current Implementation Posture
 
-RFC-0103 Slice 4 establishes the first internal archive API surface for authorized Lotus callers:
-generated-document archival, support-safe metadata lookup, checksum-verified binary download, and
-access-audit lookup. Retention, purge, legal-hold, lifecycle, gateway, and Workbench product
-features are not supported yet.
+RFC-0103 Slice 5 establishes the internal archive API surface for authorized Lotus callers:
+generated-document archival, support-safe metadata lookup, checksum-verified binary download,
+access-audit lookup, retention posture lookup, purge eligibility and execution, and legal-hold
+set/release with purge blocking. Lifecycle relationships, report handoff, gateway retrieval, and
+Workbench product features are not supported yet.
 
 ## Authoritative Boundaries
 
@@ -20,9 +21,9 @@ features are not supported yet.
 | Render attempt and artifact metadata | `lotus-render` through `lotus-report` | Upstream source for future archive records |
 | Archived document identity | `lotus-archive` | Implemented through metadata model and archive API |
 | Binary storage | `lotus-archive` | Implemented through storage adapter and controlled download API |
-| Access audit | `lotus-archive` | Implemented for archive create, metadata read, binary download, access-event read, and authorization denial |
-| Retention and purge | `lotus-archive` | Planned through retention slice |
-| Legal hold | `lotus-archive` | Planned through legal-hold slice |
+| Access audit | `lotus-archive` | Implemented for archive create, metadata read, binary download, access-event read, retention read, purge evaluation, purge execution, legal-hold set/release, and authorization denial |
+| Retention and purge | `lotus-archive` | Implemented for retention posture, purge eligibility, governed purge execution, and post-purge support-safe metadata |
+| Legal hold | `lotus-archive` | Implemented for legal-hold set/release, authority reference, active-hold summary, and purge blocking |
 | Product-facing retrieval | `lotus-gateway` | Deferred until gateway facade is implemented |
 | Workbench retrieval surface | `lotus-workbench` | Not supported unless gateway-backed retrieval is implemented |
 
@@ -74,6 +75,19 @@ RFC-0103 Slice 4 adds:
 All archive API routes require caller context. Workbench is intentionally not an authorized direct
 archive caller. Gateway-backed product retrieval remains future work and must be implemented in
 `lotus-gateway` before any Workbench retrieval surface is claimed.
+
+RFC-0103 Slice 5 adds:
+
+1. `GET /documents/{document_id}/retention` for authorized retention, purge, and legal-hold
+   posture lookup.
+2. `POST /documents/{document_id}/purge-evaluation` for support-safe purge eligibility evaluation.
+3. `POST /documents/{document_id}/purge` for governed purge execution after retention expiry.
+4. `POST /documents/{document_id}/legal-holds` for setting a legal hold with authority reference.
+5. `DELETE /documents/{document_id}/legal-holds/{legal_hold_id}` for releasing a legal hold and
+   refreshing purge-blocking posture.
+
+These APIs remain internal Lotus service APIs. They do not establish report-to-archive handoff,
+gateway retrieval, Workbench retrieval, or customer-facing document delivery.
 
 ## Documentation Ownership
 

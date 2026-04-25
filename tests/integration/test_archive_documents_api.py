@@ -41,6 +41,16 @@ def _payload(content: bytes = b"portfolio review pdf bytes") -> dict[str, object
     }
 
 
+def _purge_eligible_payload() -> dict[str, object]:
+    payload = _payload()
+    metadata = valid_metadata_input(
+        retention_start_date="2019-01-01",
+        retain_until_date="2020-01-01",
+    ).model_dump(mode="json")
+    payload["metadata"] = metadata
+    return payload
+
+
 def test_document_create_lookup_download_and_access_events_api(tmp_path: Path) -> None:
     service = _service(tmp_path)
     app.dependency_overrides[archive_service] = lambda: service
@@ -120,7 +130,9 @@ def test_document_download_reports_checksum_mismatch(tmp_path: Path) -> None:
     app.dependency_overrides[archive_service] = lambda: service
     client = TestClient(app)
     try:
-        create_response = client.post("/documents", json=_payload(), headers=_headers())
+        create_response = client.post(
+            "/documents", json=_purge_eligible_payload(), headers=_headers()
+        )
         document_id = create_response.json()["document_id"]
         metadata = service.repository.get_by_document_id(document_id)
         assert metadata is not None
@@ -142,7 +154,9 @@ def test_document_download_reports_missing_binary(tmp_path: Path) -> None:
     app.dependency_overrides[archive_service] = lambda: service
     client = TestClient(app)
     try:
-        create_response = client.post("/documents", json=_payload(), headers=_headers())
+        create_response = client.post(
+            "/documents", json=_purge_eligible_payload(), headers=_headers()
+        )
         document_id = create_response.json()["document_id"]
         metadata = service.repository.get_by_document_id(document_id)
         assert metadata is not None
@@ -204,3 +218,104 @@ def test_document_create_reports_duplicate_request_conflict(tmp_path: Path) -> N
 
     assert second.status_code == 409
     assert second.json()["error"]["code"] == "duplicate_archive_request"
+
+
+def test_retention_legal_hold_and_purge_api_flow(tmp_path: Path) -> None:
+    service = _service(tmp_path)
+    app.dependency_overrides[archive_service] = lambda: service
+    client = TestClient(app)
+    try:
+        create_response = client.post(
+            "/documents", json=_purge_eligible_payload(), headers=_headers()
+        )
+        document_id = create_response.json()["document_id"]
+
+        retention_response = client.get(
+            f"/documents/{document_id}/retention",
+            headers=_headers(),
+        )
+        assert retention_response.status_code == 200
+        assert retention_response.json()["legal_hold_count"] == 0
+
+        hold_response = client.post(
+            f"/documents/{document_id}/legal-holds",
+            json={
+                "hold_reason": "Regulatory review",
+                "authority_reference": "CASE-001",
+            },
+            headers=_headers(),
+        )
+        assert hold_response.status_code == 201
+        legal_hold_id = hold_response.json()["legal_hold_id"]
+
+        blocked_purge = client.post(f"/documents/{document_id}/purge", headers=_headers())
+        assert blocked_purge.status_code == 409
+        assert blocked_purge.json()["error"]["code"] == "legal_hold_active"
+
+        release_response = client.request(
+            "DELETE",
+            f"/documents/{document_id}/legal-holds/{legal_hold_id}",
+            json={"release_reason": "Review complete"},
+            headers=_headers(),
+        )
+        assert release_response.status_code == 200
+        assert release_response.json()["hold_status"] == "clear"
+
+        purge_response = client.post(f"/documents/{document_id}/purge", headers=_headers())
+        assert purge_response.status_code == 200
+        assert purge_response.json()["purged"] is True
+        assert purge_response.json()["purge_status"] == "purged"
+
+        events_response = client.get(
+            f"/documents/{document_id}/access-events",
+            headers=_headers(),
+        )
+        assert events_response.status_code == 200
+        event_types = [event["event_type"] for event in events_response.json()["events"]]
+        assert "legal_hold_set" in event_types
+        assert "legal_hold_release" in event_types
+        assert "purge_execution" in event_types
+    finally:
+        app.dependency_overrides.clear()
+
+
+def test_purge_evaluation_reports_retention_elapsed_for_eligible_document(tmp_path: Path) -> None:
+    service = _service(tmp_path)
+    app.dependency_overrides[archive_service] = lambda: service
+    client = TestClient(app)
+    try:
+        create_response = client.post(
+            "/documents", json=_purge_eligible_payload(), headers=_headers()
+        )
+        document_id = create_response.json()["document_id"]
+
+        response = client.post(
+            f"/documents/{document_id}/purge-evaluation",
+            headers=_headers(),
+        )
+    finally:
+        app.dependency_overrides.clear()
+
+    assert response.status_code == 200
+    assert response.json()["purge_eligible"] is True
+    assert response.json()["reason_code"] == "retention_elapsed"
+
+
+def test_legal_hold_release_reports_not_found(tmp_path: Path) -> None:
+    service = _service(tmp_path)
+    app.dependency_overrides[archive_service] = lambda: service
+    client = TestClient(app)
+    try:
+        create_response = client.post("/documents", json=_payload(), headers=_headers())
+        document_id = create_response.json()["document_id"]
+        response = client.request(
+            "DELETE",
+            f"/documents/{document_id}/legal-holds/hold_missing",
+            json={"release_reason": "No longer needed"},
+            headers=_headers(),
+        )
+    finally:
+        app.dependency_overrides.clear()
+
+    assert response.status_code == 404
+    assert response.json()["error"]["code"] == "legal_hold_not_found"

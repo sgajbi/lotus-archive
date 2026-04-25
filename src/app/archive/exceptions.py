@@ -21,6 +21,18 @@ class DocumentChecksumMismatchError(ArchiveError):
     pass
 
 
+class LegalHoldActiveError(ArchiveError):
+    pass
+
+
+class LegalHoldNotFoundError(ArchiveError):
+    pass
+
+
+class PurgeNotEligibleError(ArchiveError):
+    pass
+
+
 class StorageWriteFailedError(ArchiveError):
     pass
 
