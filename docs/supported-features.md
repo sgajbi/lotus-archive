@@ -7,9 +7,12 @@ This document records implementation-backed support posture for `lotus-archive`.
 `lotus-archive` currently supports only the governed service boundary scaffold:
 
 1. FastAPI application shell.
-2. Health, liveness, readiness, metadata, metrics, and correlation headers.
+2. Health, liveness, readiness, metadata, metrics, correlation headers, and trace headers.
 3. Repository-native quality gates and CI baseline.
 4. Archive-specific module-family and documentation structure.
+5. Safe error envelope for service-level errors.
+6. Caller-context parsing helper for future protected archive APIs.
+7. Structured support-safe request logging.
 
 No client-facing archive product feature is supported yet.
 
@@ -34,4 +37,3 @@ No client-facing archive product feature is supported yet.
 
 Add a capability here only after the backing code, tests, documentation, and PR evidence exist. Do
 not describe infrastructure as a client-supported retrieval feature.
-

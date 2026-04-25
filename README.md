@@ -8,9 +8,10 @@ Lotus generated-document archive, retrieval, retention, legal hold, and access a
 a generic file store, manual upload service, customer delivery channel, or report-rendering service.
 
 The current implementation supports the service scaffold, health/readiness, metadata, metrics,
-correlation headers, quality gates, and archive-specific structure. Archive create, retrieval,
-retention, purge, legal hold, lifecycle relationships, report handoff, gateway retrieval, and
-Workbench retrieval are not supported yet.
+correlation and trace headers, structured request logging, safe error envelopes, caller-context
+parsing, quality gates, and archive-specific structure. Archive create, retrieval, retention, purge,
+legal hold, lifecycle relationships, report handoff, gateway retrieval, and Workbench retrieval are
+not supported yet.
 
 ## Quick Start
 
