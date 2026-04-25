@@ -2,10 +2,11 @@
 
 ## Current Support Posture
 
-`lotus-archive` currently exposes scaffold and service-health behavior only. Do not use this service
-for document archival, binary retrieval, legal hold, purge, retention, report handoff, gateway
-retrieval, or Workbench retrieval until those capabilities are implemented and listed in
-`docs/supported-features.md`.
+`lotus-archive` currently exposes scaffold, service-health, safe error-envelope,
+caller-context-parsing, correlation/trace propagation, metrics, and structured request-log behavior
+only. Do not use this service for document archival, binary retrieval, legal hold, purge, retention,
+report handoff, gateway retrieval, or Workbench retrieval until those capabilities are implemented
+and listed in `docs/supported-features.md`.
 
 ## Standard Commands
 
@@ -18,13 +19,16 @@ retrieval, or Workbench retrieval until those capabilities are implemented and l
 
 - Liveness: /health/live
 - Readiness: /health/ready
-- General health: /health
-- Metadata: /metadata
+- General health: `/health`
+- Metadata: `/metadata`
+- Metrics: `/metrics`
+- Correlation header: `X-Correlation-Id`
+- Trace header: `X-Trace-Id`
 
 ## Incident First Checks
 
-1. Check container logs for request failures and stack traces.
-2. Verify /health/ready and metrics endpoint.
+1. Check structured request logs for correlation ID, trace ID, method, path, status, and duration.
+2. Verify `/health/ready` and metrics endpoint.
 3. Run local parity check (make ci) before hotfix PR.
 
 ## Archive-Specific First Checks

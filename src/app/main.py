@@ -1,15 +1,60 @@
-from fastapi import FastAPI, Response, status
+from fastapi import FastAPI, Request, Response, status
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
 from prometheus_fastapi_instrumentator import Instrumentator
 from app.archive.service_profile import service_posture
+from app.contracts.errors import error_response
 from app.middleware.correlation import CorrelationIdMiddleware
+from starlette.exceptions import HTTPException as StarletteHTTPException
 
 SERVICE_NAME = "lotus-archive"
 SERVICE_VERSION = "0.1.0"
 ROUNDING_POLICY_VERSION = "v1"
+HTTP_422_UNPROCESSABLE_CONTENT = 422
 
 app = FastAPI(title=SERVICE_NAME, version=SERVICE_VERSION)
 app.add_middleware(CorrelationIdMiddleware, service_name=SERVICE_NAME)
 Instrumentator().instrument(app).expose(app)
+
+
+def _correlation_id(request: Request) -> str:
+    return str(
+        getattr(request.state, "correlation_id", request.headers.get("X-Correlation-Id", ""))
+    )
+
+
+@app.exception_handler(StarletteHTTPException)
+async def http_exception_handler(request: Request, exc: StarletteHTTPException) -> JSONResponse:
+    code = "not_found" if exc.status_code == status.HTTP_404_NOT_FOUND else "internal_error"
+    return error_response(
+        code=code,
+        http_status=exc.status_code,
+        correlation_id=_correlation_id(request),
+        service=SERVICE_NAME,
+    )
+
+
+@app.exception_handler(RequestValidationError)
+async def request_validation_exception_handler(
+    request: Request,
+    _exc: RequestValidationError,
+) -> JSONResponse:
+    return error_response(
+        code="validation_failed",
+        http_status=HTTP_422_UNPROCESSABLE_CONTENT,
+        correlation_id=_correlation_id(request),
+        service=SERVICE_NAME,
+    )
+
+
+@app.exception_handler(Exception)
+async def unhandled_exception_handler(request: Request, _exc: Exception) -> JSONResponse:
+    return error_response(
+        code="internal_error",
+        http_status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        correlation_id=_correlation_id(request),
+        service=SERVICE_NAME,
+    )
 
 
 @app.get("/health")

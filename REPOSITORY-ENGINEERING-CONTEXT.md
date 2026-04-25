@@ -12,8 +12,8 @@
 
 `lotus-archive` is scaffolded from platform automation and starts with the governed backend baseline:
 FastAPI service shell, CI workflows, repo-native quality commands, Docker baseline, AGENTS
-contract, repository engineering context, and archive-specific module-family/documentation
-structure.
+contract, repository engineering context, safe service-level error envelope, caller-context parsing
+helper, structured request logging, and archive-specific module-family/documentation structure.
 
 No archive create, retrieval, retention, purge, legal-hold, lifecycle, report-handoff, gateway, or
 Workbench retrieval capability is supported yet.
@@ -23,12 +23,14 @@ Workbench retrieval capability is supported yet.
 1. `src/app/main.py`: application entrypoint, health/readiness, metadata.
 2. `src/app/archive/service_profile.py`: implementation posture, module families, and
    unsupported product-capability baseline.
-3. `src/app/contracts/`: API and contract models.
-4. `src/app/middleware/`: shared request middleware.
-5. `tests/unit`, `tests/integration`, `tests/e2e`: test pyramid baseline.
-6. `docs/architecture/`: archive service boundaries and structure.
-7. `docs/supported-features.md`: implementation-backed support posture.
-8. `docs/standards/`: repository standards placeholders to be replaced with service truth.
+3. `src/app/contracts/errors.py`: support-safe error envelope contract.
+4. `src/app/security/caller_context.py`: caller-context parser for future protected archive APIs.
+5. `src/app/contracts/`: API and contract models.
+6. `src/app/middleware/`: shared request middleware.
+7. `tests/unit`, `tests/integration`, `tests/e2e`: test pyramid baseline.
+8. `docs/architecture/`: archive service boundaries and structure.
+9. `docs/supported-features.md`: implementation-backed support posture.
+10. `docs/standards/`: repository standards placeholders to be replaced with service truth.
 
 ## Runtime And Integration Boundaries
 
