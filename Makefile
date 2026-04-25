@@ -49,7 +49,7 @@ coverage-gate:
 	$(VENV_PYTHON) scripts/coverage_gate.py
 
 security-audit:
-	$(VENV_PYTHON) -m pip_audit
+	$(VENV_PYTHON) -m pip_audit -r requirements/shared-runtime.lock.txt -r requirements/ci-tooling.lock.txt
 
 check: lint typecheck openapi-gate test
 
