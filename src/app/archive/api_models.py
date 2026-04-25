@@ -11,6 +11,8 @@ from app.archive.models import (
     DocumentClassification,
     LegalHoldStatus,
     LegalHoldRecord,
+    LifecycleRelationshipRecord,
+    LifecycleTransitionType,
     PurgeStatus,
 )
 
@@ -199,3 +201,41 @@ class LegalHoldResponse(BaseModel):
     @classmethod
     def from_record(cls, record: LegalHoldRecord) -> LegalHoldResponse:
         return cls.model_validate(record.model_dump())
+
+
+class LifecycleTransitionRequest(BaseModel):
+    target_document_id: str = Field(
+        min_length=1,
+        description="Archived document that becomes the current document for this transition.",
+    )
+    transition_reason: str = Field(
+        min_length=1,
+        description="Business reason for the lifecycle transition.",
+    )
+
+
+class LifecycleRelationshipResponse(BaseModel):
+    lifecycle_relationship_id: str = Field(description="Stable lifecycle relationship identifier.")
+    source_document_id: str = Field(description="Historical archived document identifier.")
+    target_document_id: str = Field(description="Current archived document identifier.")
+    transition_type: LifecycleTransitionType = Field(description="Lifecycle transition type.")
+    transition_reason: str = Field(description="Business reason for the lifecycle transition.")
+    requested_by: str = Field(description="Actor that requested the lifecycle transition.")
+    requested_at: datetime = Field(
+        description="UTC timestamp when the lifecycle transition was requested."
+    )
+    current_document_id: str = Field(
+        description="Current archived document identifier after resolving lifecycle history."
+    )
+
+    @classmethod
+    def from_record(
+        cls,
+        record: LifecycleRelationshipRecord,
+        *,
+        current_document_id: str,
+    ) -> LifecycleRelationshipResponse:
+        return cls(
+            **record.model_dump(),
+            current_document_id=current_document_id,
+        )

@@ -5,7 +5,11 @@ from binascii import Error as Base64DecodeError
 from datetime import date, datetime, timezone
 from uuid import uuid4
 
-from app.archive.api_models import ArchiveDocumentCreateRequest, LegalHoldCreateRequest
+from app.archive.api_models import (
+    ArchiveDocumentCreateRequest,
+    LegalHoldCreateRequest,
+    LifecycleTransitionRequest,
+)
 from app.archive.archive_writer import ArchiveWriter
 from app.archive.audit import (
     AccessAuditEvent,
@@ -23,11 +27,15 @@ from app.archive.exceptions import (
     LegalHoldNotFoundError,
     MetadataValidationError,
     PurgeNotEligibleError,
+    SupersessionConflictError,
+    UnsupportedLifecycleTransitionError,
 )
 from app.archive.models import (
     ArchiveDocumentMetadata,
     LegalHoldRecord,
     LegalHoldStatus,
+    LifecycleRelationshipRecord,
+    LifecycleTransitionType,
     PurgeStatus,
 )
 from app.archive.repository import ArchiveDocumentRepository
@@ -314,11 +322,190 @@ class ArchiveDocumentService:
         )
         return legal_hold
 
+    def get_current_document_metadata(
+        self,
+        *,
+        document_id: str,
+        caller_context: CallerContext,
+        trace_id: str,
+    ) -> ArchiveDocumentMetadata:
+        self.authorization_policy.authorize(
+            permission=ArchivePermission.READ_METADATA,
+            caller_context=caller_context,
+            audit_repository=self.audit_repository,
+            trace_id=trace_id,
+            document_id=document_id,
+        )
+        current = self._resolve_current_document(self._get_existing_metadata(document_id))
+        self._record_allowed(
+            event_type=AccessEventType.CURRENT_DOCUMENT_READ,
+            caller_context=caller_context,
+            trace_id=trace_id,
+            document_id=document_id,
+        )
+        return current
+
+    def supersede_document(
+        self,
+        *,
+        document_id: str,
+        request: LifecycleTransitionRequest,
+        caller_context: CallerContext,
+        trace_id: str,
+    ) -> tuple[LifecycleRelationshipRecord, ArchiveDocumentMetadata]:
+        return self._apply_lifecycle_transition(
+            source_document_id=document_id,
+            request=request,
+            transition_type=LifecycleTransitionType.SUPERSEDE,
+            event_type=AccessEventType.LIFECYCLE_SUPERSEDE,
+            caller_context=caller_context,
+            trace_id=trace_id,
+        )
+
+    def correct_document(
+        self,
+        *,
+        document_id: str,
+        request: LifecycleTransitionRequest,
+        caller_context: CallerContext,
+        trace_id: str,
+    ) -> tuple[LifecycleRelationshipRecord, ArchiveDocumentMetadata]:
+        return self._apply_lifecycle_transition(
+            source_document_id=document_id,
+            request=request,
+            transition_type=LifecycleTransitionType.CORRECT,
+            event_type=AccessEventType.LIFECYCLE_CORRECT,
+            caller_context=caller_context,
+            trace_id=trace_id,
+        )
+
+    def reissue_document(
+        self,
+        *,
+        document_id: str,
+        request: LifecycleTransitionRequest,
+        caller_context: CallerContext,
+        trace_id: str,
+    ) -> tuple[LifecycleRelationshipRecord, ArchiveDocumentMetadata]:
+        return self._apply_lifecycle_transition(
+            source_document_id=document_id,
+            request=request,
+            transition_type=LifecycleTransitionType.REISSUE,
+            event_type=AccessEventType.LIFECYCLE_REISSUE,
+            caller_context=caller_context,
+            trace_id=trace_id,
+        )
+
     def _get_existing_metadata(self, document_id: str) -> ArchiveDocumentMetadata:
         metadata = self.repository.get_by_document_id(document_id)
         if metadata is None:
             raise DocumentNotFoundError("archive document was not found")
         return metadata
+
+    def _apply_lifecycle_transition(
+        self,
+        *,
+        source_document_id: str,
+        request: LifecycleTransitionRequest,
+        transition_type: LifecycleTransitionType,
+        event_type: AccessEventType,
+        caller_context: CallerContext,
+        trace_id: str,
+    ) -> tuple[LifecycleRelationshipRecord, ArchiveDocumentMetadata]:
+        self.authorization_policy.authorize(
+            permission=ArchivePermission.MANAGE_LIFECYCLE,
+            caller_context=caller_context,
+            audit_repository=self.audit_repository,
+            trace_id=trace_id,
+            document_id=source_document_id,
+        )
+        source = self._get_existing_metadata(source_document_id)
+        target = self._get_existing_metadata(request.target_document_id)
+        self._validate_lifecycle_transition(
+            source=source,
+            target=target,
+            transition_type=transition_type,
+        )
+
+        now = datetime.now(timezone.utc)
+        source = source.model_copy(
+            update={
+                "superseded_by_document_id": target.document_id,
+                "updated_at": now,
+            }
+        )
+        target_updates: dict[str, object] = {"updated_at": now}
+        if transition_type is LifecycleTransitionType.SUPERSEDE:
+            target_updates["supersedes_document_id"] = source.document_id
+        elif transition_type is LifecycleTransitionType.CORRECT:
+            target_updates["correction_of_document_id"] = source.document_id
+        elif transition_type is LifecycleTransitionType.REISSUE:
+            target_updates["reissue_of_document_id"] = source.document_id
+        else:
+            raise UnsupportedLifecycleTransitionError("unsupported lifecycle transition")
+
+        target = target.model_copy(update=target_updates)
+        relationship = LifecycleRelationshipRecord(
+            lifecycle_relationship_id=f"life_{uuid4().hex}",
+            source_document_id=source.document_id,
+            target_document_id=target.document_id,
+            transition_type=transition_type,
+            transition_reason=request.transition_reason,
+            requested_by=caller_context.actor_id,
+        )
+
+        self.repository.save(source)
+        target = self.repository.save(target)
+        relationship = self.repository.save_lifecycle_relationship(relationship)
+        self._record_allowed(
+            event_type=event_type,
+            caller_context=caller_context,
+            trace_id=trace_id,
+            document_id=source.document_id,
+        )
+        return relationship, self._resolve_current_document(target)
+
+    def _validate_lifecycle_transition(
+        self,
+        *,
+        source: ArchiveDocumentMetadata,
+        target: ArchiveDocumentMetadata,
+        transition_type: LifecycleTransitionType,
+    ) -> None:
+        if source.document_id == target.document_id:
+            raise UnsupportedLifecycleTransitionError("document cannot transition to itself")
+        if source.purge_status is PurgeStatus.PURGED or target.purge_status is PurgeStatus.PURGED:
+            raise UnsupportedLifecycleTransitionError("purged documents cannot transition")
+        if source.superseded_by_document_id is not None:
+            raise SupersessionConflictError("source document is already historical")
+        if target.superseded_by_document_id is not None:
+            raise SupersessionConflictError("target document is already historical")
+        existing_origin = (
+            target.supersedes_document_id
+            or target.correction_of_document_id
+            or target.reissue_of_document_id
+        )
+        if existing_origin is not None:
+            raise SupersessionConflictError("target document already has a lifecycle origin")
+        if transition_type not in {
+            LifecycleTransitionType.SUPERSEDE,
+            LifecycleTransitionType.CORRECT,
+            LifecycleTransitionType.REISSUE,
+        }:
+            raise UnsupportedLifecycleTransitionError("unsupported lifecycle transition")
+
+    def _resolve_current_document(
+        self,
+        metadata: ArchiveDocumentMetadata,
+    ) -> ArchiveDocumentMetadata:
+        visited_document_ids = {metadata.document_id}
+        current = metadata
+        while current.superseded_by_document_id is not None:
+            if current.superseded_by_document_id in visited_document_ids:
+                raise SupersessionConflictError("document lifecycle relationship cycle detected")
+            visited_document_ids.add(current.superseded_by_document_id)
+            current = self._get_existing_metadata(current.superseded_by_document_id)
+        return current
 
     def _evaluate_purge(
         self,

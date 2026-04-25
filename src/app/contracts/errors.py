@@ -33,6 +33,8 @@ SAFE_ERROR_MESSAGES: dict[str, str] = {
     "legal_hold_active": "A legal hold blocks this archive action.",
     "legal_hold_not_found": "The requested legal hold was not found.",
     "purge_not_eligible": "The archived document is not eligible for purge.",
+    "supersession_conflict": "The requested lifecycle relationship conflicts with document history.",
+    "unsupported_lifecycle_transition": "The requested lifecycle transition is not supported.",
 }
 
 

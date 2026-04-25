@@ -15,6 +15,8 @@ from app.archive.exceptions import (
     MetadataValidationError,
     PurgeNotEligibleError,
     StorageReadFailedError,
+    SupersessionConflictError,
+    UnsupportedLifecycleTransitionError,
 )
 from app.contracts.errors import error_response
 from app.security.caller_context import CallerContextMissingError
@@ -141,6 +143,30 @@ def register_archive_exception_handlers(
     ) -> JSONResponse:
         return error_response(
             code="purge_not_eligible",
+            http_status=status.HTTP_409_CONFLICT,
+            correlation_id=correlation_id(request),
+            service=service_name,
+        )
+
+    @app.exception_handler(SupersessionConflictError)
+    async def supersession_conflict_exception_handler(
+        request: Request,
+        _exc: SupersessionConflictError,
+    ) -> JSONResponse:
+        return error_response(
+            code="supersession_conflict",
+            http_status=status.HTTP_409_CONFLICT,
+            correlation_id=correlation_id(request),
+            service=service_name,
+        )
+
+    @app.exception_handler(UnsupportedLifecycleTransitionError)
+    async def unsupported_lifecycle_transition_exception_handler(
+        request: Request,
+        _exc: UnsupportedLifecycleTransitionError,
+    ) -> JSONResponse:
+        return error_response(
+            code="unsupported_lifecycle_transition",
             http_status=status.HTTP_409_CONFLICT,
             correlation_id=correlation_id(request),
             service=service_name,

@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Protocol
 
 from app.archive.exceptions import DuplicateArchiveRequestConflict
-from app.archive.models import ArchiveDocumentMetadata, LegalHoldRecord
+from app.archive.models import ArchiveDocumentMetadata, LegalHoldRecord, LifecycleRelationshipRecord
 
 
 class ArchiveDocumentRepository(Protocol):
@@ -22,12 +22,23 @@ class ArchiveDocumentRepository(Protocol):
 
     def list_legal_holds(self, document_id: str) -> list[LegalHoldRecord]: ...
 
+    def save_lifecycle_relationship(
+        self,
+        relationship: LifecycleRelationshipRecord,
+    ) -> LifecycleRelationshipRecord: ...
+
+    def list_lifecycle_relationships(
+        self,
+        document_id: str,
+    ) -> list[LifecycleRelationshipRecord]: ...
+
 
 class InMemoryArchiveDocumentRepository:
     def __init__(self) -> None:
         self._by_document_id: dict[str, ArchiveDocumentMetadata] = {}
         self._by_archive_request_id: dict[str, str] = {}
         self._legal_holds: dict[str, LegalHoldRecord] = {}
+        self._lifecycle_relationships: dict[str, LifecycleRelationshipRecord] = {}
 
     def get_by_document_id(self, document_id: str) -> ArchiveDocumentMetadata | None:
         return self._by_document_id.get(document_id)
@@ -63,4 +74,22 @@ class InMemoryArchiveDocumentRepository:
             legal_hold
             for legal_hold in self._legal_holds.values()
             if legal_hold.document_id == document_id
+        ]
+
+    def save_lifecycle_relationship(
+        self,
+        relationship: LifecycleRelationshipRecord,
+    ) -> LifecycleRelationshipRecord:
+        self._lifecycle_relationships[relationship.lifecycle_relationship_id] = relationship
+        return relationship
+
+    def list_lifecycle_relationships(
+        self,
+        document_id: str,
+    ) -> list[LifecycleRelationshipRecord]:
+        return [
+            relationship
+            for relationship in self._lifecycle_relationships.values()
+            if relationship.source_document_id == document_id
+            or relationship.target_document_id == document_id
         ]

@@ -26,6 +26,7 @@ archive API surface:
 16. Retention posture lookup for archived generated documents.
 17. Purge eligibility evaluation and governed purge execution after retention expiry.
 18. Legal-hold set/release with purge blocking and audit events.
+19. Supersession, correction, and reissue relationships with current-document resolution.
 
 No gateway-backed or Workbench-facing archive product feature is supported yet.
 
@@ -40,12 +41,13 @@ No gateway-backed or Workbench-facing archive product feature is supported yet.
 | Retention policy posture | `ready` | `GET /documents/{document_id}/retention` returns source-backed retention fields, purge posture, legal-hold posture, authorization, and audit. |
 | Purge eligibility and execution | `ready` | `POST /documents/{document_id}/purge-evaluation` and `POST /documents/{document_id}/purge` enforce retention expiry, support-safe reason codes, binary deletion through storage abstraction, idempotency after purge, and audit. |
 | Legal hold set/release with purge blocking | `ready` | `POST /documents/{document_id}/legal-holds`, `DELETE /documents/{document_id}/legal-holds/{legal_hold_id}`, legal-hold repository model, migration contract, metadata summary refresh, purge blocking, and audit. |
+| Supersession, correction, and reissue relationships | `ready` | `POST /documents/{document_id}/supersede`, `POST /documents/{document_id}/correct`, `POST /documents/{document_id}/reissue`, append-only lifecycle relationship records, current-document resolution, conflict checks, and audit. |
+| Current document resolution | `ready` | `GET /documents/{document_id}/current` resolves supersession, correction, and reissue chains while preserving historical metadata lookup through `GET /documents/{document_id}`. |
 
 ## Not Yet Supported
 
 | Capability | Support state | Reason |
 | --- | --- | --- |
-| Supersession, correction, and reissue relationships | `not_supported` | Lifecycle relationship model is not implemented yet. |
 | Report-to-archive handoff | `not_supported` | `lotus-report` integration is not implemented yet. |
 | Gateway-backed document retrieval | `not_supported` | Gateway facade is not implemented yet. |
 | Workbench document retrieval surface | `not_supported` | Product surface is not implemented and must remain gateway-backed if added. |

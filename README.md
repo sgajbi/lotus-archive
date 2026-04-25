@@ -13,8 +13,9 @@ parsing, archive metadata model, migration contract, filesystem-backed developme
 checksum validation, idempotent archive-write domain service, archive create API, controlled
 metadata lookup, controlled binary download, access-audit recording for archive API actions,
 retention posture lookup, purge eligibility and execution, legal-hold set/release with purge
-blocking, quality gates, and archive-specific structure. Lifecycle relationships, report handoff,
-gateway retrieval, and Workbench retrieval are not supported yet.
+blocking, lifecycle relationship APIs for supersession/correction/reissue, current-document
+resolution, quality gates, and archive-specific structure. Report handoff, gateway retrieval, and
+Workbench retrieval are not supported yet.
 
 ## Quick Start
 

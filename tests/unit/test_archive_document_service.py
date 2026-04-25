@@ -7,7 +7,11 @@ from fastapi import Request
 import pytest
 
 from app.archive.api import archive_service, build_default_archive_service
-from app.archive.api_models import ArchiveDocumentCreateRequest, LegalHoldCreateRequest
+from app.archive.api_models import (
+    ArchiveDocumentCreateRequest,
+    LegalHoldCreateRequest,
+    LifecycleTransitionRequest,
+)
 from app.archive.archive_writer import ArchiveWriter
 from app.archive.audit import AccessEventType, AuthorizationDecision, InMemoryAccessAuditRepository
 from app.archive.authorization import AuthorizationFailedError
@@ -19,8 +23,10 @@ from app.archive.exceptions import (
     MetadataValidationError,
     PurgeNotEligibleError,
     StorageReadFailedError,
+    SupersessionConflictError,
+    UnsupportedLifecycleTransitionError,
 )
-from app.archive.models import LegalHoldStatus, PurgeStatus
+from app.archive.models import LegalHoldStatus, LifecycleTransitionType, PurgeStatus
 from app.archive.repository import InMemoryArchiveDocumentRepository
 from app.archive.service import ArchiveDocumentService
 from app.archive.storage import FilesystemObjectStorage
@@ -42,6 +48,22 @@ def _service(tmp_path: Path) -> ArchiveDocumentService:
 def _create_request(content: bytes = b"portfolio review pdf bytes") -> ArchiveDocumentCreateRequest:
     return ArchiveDocumentCreateRequest(
         metadata=valid_metadata_input(),
+        content_base64=b64encode(content).decode("ascii"),
+    )
+
+
+def _create_request_with_id(
+    archive_request_id: str,
+    *,
+    content: bytes = b"portfolio review pdf bytes",
+) -> ArchiveDocumentCreateRequest:
+    return ArchiveDocumentCreateRequest(
+        metadata=valid_metadata_input(
+            archive_request_id=archive_request_id,
+            report_job_id=f"report-job-{archive_request_id}",
+            render_job_id=f"render-job-{archive_request_id}",
+            render_attempt_id=f"render-attempt-{archive_request_id}",
+        ),
         content_base64=b64encode(content).decode("ascii"),
     )
 
@@ -327,3 +349,336 @@ def test_release_unknown_legal_hold_reports_not_found(tmp_path: Path) -> None:
             caller_context=_caller(),
             trace_id="trace-release",
         )
+
+
+def test_supersession_preserves_history_and_resolves_current_document(tmp_path: Path) -> None:
+    service = _service(tmp_path)
+    historical = service.create_document(
+        request=_create_request_with_id("archive-request-historical"),
+        caller_context=_caller(),
+        trace_id="trace-create-old",
+    )
+    current = service.create_document(
+        request=_create_request_with_id("archive-request-current"),
+        caller_context=_caller(),
+        trace_id="trace-create-new",
+    )
+
+    relationship, resolved = service.supersede_document(
+        document_id=historical.document_id,
+        request=LifecycleTransitionRequest(
+            target_document_id=current.document_id,
+            transition_reason="Quarterly report replaced by approved version",
+        ),
+        caller_context=_caller(),
+        trace_id="trace-supersede",
+    )
+
+    historical_after = service.get_document_metadata(
+        document_id=historical.document_id,
+        caller_context=_caller(caller_service="lotus-gateway"),
+        trace_id="trace-read-old",
+    )
+    current_after = service.get_current_document_metadata(
+        document_id=historical.document_id,
+        caller_context=_caller(caller_service="lotus-gateway"),
+        trace_id="trace-current",
+    )
+
+    assert relationship.transition_type == LifecycleTransitionType.SUPERSEDE
+    assert relationship.source_document_id == historical.document_id
+    assert relationship.target_document_id == current.document_id
+    assert resolved.document_id == current.document_id
+    assert historical_after.document_id == historical.document_id
+    assert historical_after.superseded_by_document_id == current.document_id
+    assert current_after.document_id == current.document_id
+    assert current_after.supersedes_document_id == historical.document_id
+    relationships = service.repository.list_lifecycle_relationships(historical.document_id)
+    assert [item.lifecycle_relationship_id for item in relationships] == [
+        relationship.lifecycle_relationship_id
+    ]
+    event_types = [
+        event.event_type
+        for event in service.audit_repository.list_by_document_id(historical.document_id)
+    ]
+    assert AccessEventType.LIFECYCLE_SUPERSEDE in event_types
+    assert AccessEventType.CURRENT_DOCUMENT_READ in event_types
+
+
+def test_correction_and_reissue_set_explicit_lifecycle_semantics(tmp_path: Path) -> None:
+    service = _service(tmp_path)
+    source = service.create_document(
+        request=_create_request_with_id("archive-request-source"),
+        caller_context=_caller(),
+        trace_id="trace-source",
+    )
+    correction = service.create_document(
+        request=_create_request_with_id("archive-request-correction"),
+        caller_context=_caller(),
+        trace_id="trace-correction",
+    )
+    reissue_source = service.create_document(
+        request=_create_request_with_id("archive-request-reissue-source"),
+        caller_context=_caller(),
+        trace_id="trace-reissue-source",
+    )
+    reissue = service.create_document(
+        request=_create_request_with_id("archive-request-reissue"),
+        caller_context=_caller(),
+        trace_id="trace-reissue",
+    )
+
+    correction_relationship, _ = service.correct_document(
+        document_id=source.document_id,
+        request=LifecycleTransitionRequest(
+            target_document_id=correction.document_id,
+            transition_reason="Corrected valuation date",
+        ),
+        caller_context=_caller(),
+        trace_id="trace-correct",
+    )
+    reissue_relationship, _ = service.reissue_document(
+        document_id=reissue_source.document_id,
+        request=LifecycleTransitionRequest(
+            target_document_id=reissue.document_id,
+            transition_reason="Client delivery reissue",
+        ),
+        caller_context=_caller(),
+        trace_id="trace-reissue-link",
+    )
+
+    corrected = service.get_current_document_metadata(
+        document_id=source.document_id,
+        caller_context=_caller(caller_service="lotus-gateway"),
+        trace_id="trace-current-correction",
+    )
+    reissued = service.get_current_document_metadata(
+        document_id=reissue_source.document_id,
+        caller_context=_caller(caller_service="lotus-gateway"),
+        trace_id="trace-current-reissue",
+    )
+
+    assert correction_relationship.transition_type == LifecycleTransitionType.CORRECT
+    assert reissue_relationship.transition_type == LifecycleTransitionType.REISSUE
+    assert corrected.correction_of_document_id == source.document_id
+    assert reissued.reissue_of_document_id == reissue_source.document_id
+
+
+def test_lifecycle_transition_rejects_non_current_source(tmp_path: Path) -> None:
+    service = _service(tmp_path)
+    first = service.create_document(
+        request=_create_request_with_id("archive-request-first"),
+        caller_context=_caller(),
+        trace_id="trace-first",
+    )
+    second = service.create_document(
+        request=_create_request_with_id("archive-request-second"),
+        caller_context=_caller(),
+        trace_id="trace-second",
+    )
+    third = service.create_document(
+        request=_create_request_with_id("archive-request-third"),
+        caller_context=_caller(),
+        trace_id="trace-third",
+    )
+    service.supersede_document(
+        document_id=first.document_id,
+        request=LifecycleTransitionRequest(
+            target_document_id=second.document_id,
+            transition_reason="First replacement",
+        ),
+        caller_context=_caller(),
+        trace_id="trace-supersede",
+    )
+
+    with pytest.raises(SupersessionConflictError):
+        service.supersede_document(
+            document_id=first.document_id,
+            request=LifecycleTransitionRequest(
+                target_document_id=third.document_id,
+                transition_reason="Invalid replacement",
+            ),
+            caller_context=_caller(),
+            trace_id="trace-conflict",
+        )
+
+
+def test_lifecycle_transition_rejects_self_reference(tmp_path: Path) -> None:
+    service = _service(tmp_path)
+    metadata = service.create_document(
+        request=_create_request_with_id("archive-request-self"),
+        caller_context=_caller(),
+        trace_id="trace-create",
+    )
+
+    with pytest.raises(UnsupportedLifecycleTransitionError):
+        service.reissue_document(
+            document_id=metadata.document_id,
+            request=LifecycleTransitionRequest(
+                target_document_id=metadata.document_id,
+                transition_reason="Invalid self reissue",
+            ),
+            caller_context=_caller(),
+            trace_id="trace-self",
+        )
+
+
+def test_lifecycle_transition_rejects_purged_documents(tmp_path: Path) -> None:
+    service = _service(tmp_path)
+    purged = service.create_document(
+        request=_create_request_with_id("archive-request-purged"),
+        caller_context=_caller(),
+        trace_id="trace-purged",
+    )
+    target = service.create_document(
+        request=_create_request_with_id("archive-request-target"),
+        caller_context=_caller(),
+        trace_id="trace-target",
+    )
+    service.purge_document(
+        document_id=purged.document_id,
+        caller_context=_caller(),
+        trace_id="trace-purge",
+        evaluation_date=purged.retain_until_date,
+    )
+
+    with pytest.raises(UnsupportedLifecycleTransitionError):
+        service.supersede_document(
+            document_id=purged.document_id,
+            request=LifecycleTransitionRequest(
+                target_document_id=target.document_id,
+                transition_reason="Invalid purged source",
+            ),
+            caller_context=_caller(),
+            trace_id="trace-lifecycle",
+        )
+
+
+def test_lifecycle_transition_rejects_historical_target(tmp_path: Path) -> None:
+    service = _service(tmp_path)
+    first = service.create_document(
+        request=_create_request_with_id("archive-request-target-first"),
+        caller_context=_caller(),
+        trace_id="trace-first",
+    )
+    second = service.create_document(
+        request=_create_request_with_id("archive-request-target-second"),
+        caller_context=_caller(),
+        trace_id="trace-second",
+    )
+    third = service.create_document(
+        request=_create_request_with_id("archive-request-target-third"),
+        caller_context=_caller(),
+        trace_id="trace-third",
+    )
+    service.supersede_document(
+        document_id=first.document_id,
+        request=LifecycleTransitionRequest(
+            target_document_id=second.document_id,
+            transition_reason="First transition",
+        ),
+        caller_context=_caller(),
+        trace_id="trace-supersede",
+    )
+
+    with pytest.raises(SupersessionConflictError):
+        service.correct_document(
+            document_id=third.document_id,
+            request=LifecycleTransitionRequest(
+                target_document_id=first.document_id,
+                transition_reason="Historical target is invalid",
+            ),
+            caller_context=_caller(),
+            trace_id="trace-conflict",
+        )
+
+
+def test_lifecycle_transition_rejects_target_with_existing_origin(tmp_path: Path) -> None:
+    service = _service(tmp_path)
+    first = service.create_document(
+        request=_create_request_with_id("archive-request-origin-first"),
+        caller_context=_caller(),
+        trace_id="trace-first",
+    )
+    second = service.create_document(
+        request=_create_request_with_id("archive-request-origin-second"),
+        caller_context=_caller(),
+        trace_id="trace-second",
+    )
+    third = service.create_document(
+        request=_create_request_with_id("archive-request-origin-third"),
+        caller_context=_caller(),
+        trace_id="trace-third",
+    )
+    service.reissue_document(
+        document_id=first.document_id,
+        request=LifecycleTransitionRequest(
+            target_document_id=second.document_id,
+            transition_reason="First reissue",
+        ),
+        caller_context=_caller(),
+        trace_id="trace-reissue",
+    )
+
+    with pytest.raises(SupersessionConflictError):
+        service.supersede_document(
+            document_id=third.document_id,
+            request=LifecycleTransitionRequest(
+                target_document_id=second.document_id,
+                transition_reason="Target already has an origin",
+            ),
+            caller_context=_caller(),
+            trace_id="trace-conflict",
+        )
+
+
+def test_current_document_resolution_detects_cycle(tmp_path: Path) -> None:
+    service = _service(tmp_path)
+    first = service.create_document(
+        request=_create_request_with_id("archive-request-cycle-first"),
+        caller_context=_caller(),
+        trace_id="trace-first",
+    )
+    second = service.create_document(
+        request=_create_request_with_id("archive-request-cycle-second"),
+        caller_context=_caller(),
+        trace_id="trace-second",
+    )
+    service.repository.save(
+        first.model_copy(update={"superseded_by_document_id": second.document_id})
+    )
+    service.repository.save(
+        second.model_copy(update={"superseded_by_document_id": first.document_id})
+    )
+
+    with pytest.raises(SupersessionConflictError):
+        service.get_current_document_metadata(
+            document_id=first.document_id,
+            caller_context=_caller(caller_service="lotus-gateway"),
+            trace_id="trace-current",
+        )
+
+
+def test_purge_evaluation_reports_missing_retention_date(tmp_path: Path) -> None:
+    service = _service(tmp_path)
+    metadata = service.create_document(
+        request=ArchiveDocumentCreateRequest(
+            metadata=valid_metadata_input(
+                archive_request_id="archive-request-no-retention",
+                retain_until_date=None,
+            ),
+            content_base64=b64encode(b"no retention").decode("ascii"),
+        ),
+        caller_context=_caller(),
+        trace_id="trace-create",
+    )
+
+    metadata, purge_eligible, reason_code = service.evaluate_purge(
+        document_id=metadata.document_id,
+        caller_context=_caller(),
+        trace_id="trace-eval",
+    )
+
+    assert purge_eligible is False
+    assert reason_code == "retain_until_date_missing"
+    assert metadata.purge_status == PurgeStatus.NOT_ELIGIBLE

@@ -53,10 +53,6 @@ ARCHIVE_MODULE_FAMILIES: tuple[ArchiveModuleFamily, ...] = (
 
 UNSUPPORTED_PRODUCT_CAPABILITIES: tuple[UnsupportedProductCapability, ...] = (
     UnsupportedProductCapability(
-        capability="document_lifecycle_relationships",
-        reason="supersession, correction, and reissue APIs are not implemented yet",
-    ),
-    UnsupportedProductCapability(
         capability="gateway_backed_product_retrieval",
         reason="gateway facade is not implemented yet",
     ),
@@ -73,7 +69,7 @@ UNSUPPORTED_PRODUCT_CAPABILITIES: tuple[UnsupportedProductCapability, ...] = (
 
 def service_posture() -> dict[str, object]:
     return {
-        "implementedScope": "retention_purge_legal_hold_api",
+        "implementedScope": "retention_purge_legal_hold_lifecycle_api",
         "supportedArchiveFeatures": [
             "generated_document_archival",
             "controlled_document_metadata_lookup",
@@ -82,6 +78,8 @@ def service_posture() -> dict[str, object]:
             "retention_policy_posture",
             "purge_eligibility_and_execution",
             "legal_hold_set_release_with_purge_blocking",
+            "document_lifecycle_relationships",
+            "current_document_resolution",
         ],
         "moduleFamilies": [
             {

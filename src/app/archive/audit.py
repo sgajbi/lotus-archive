@@ -20,6 +20,10 @@ class AccessEventType(StrEnum):
     PURGE_EXECUTION = "purge_execution"
     LEGAL_HOLD_SET = "legal_hold_set"
     LEGAL_HOLD_RELEASE = "legal_hold_release"
+    LIFECYCLE_SUPERSEDE = "lifecycle_supersede"
+    LIFECYCLE_CORRECT = "lifecycle_correct"
+    LIFECYCLE_REISSUE = "lifecycle_reissue"
+    CURRENT_DOCUMENT_READ = "current_document_read"
     AUTHORIZATION_DENIED = "authorization_denied"
 
 

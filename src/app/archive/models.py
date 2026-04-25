@@ -20,6 +20,12 @@ class LegalHoldStatus(StrEnum):
     ACTIVE = "active"
 
 
+class LifecycleTransitionType(StrEnum):
+    SUPERSEDE = "supersede"
+    CORRECT = "correct"
+    REISSUE = "reissue"
+
+
 class DocumentClassification(StrEnum):
     INTERNAL = "internal"
     CONFIDENTIAL = "confidential"
@@ -117,3 +123,15 @@ class LegalHoldRecord(BaseModel):
     released_by: str | None = Field(default=None, min_length=1)
     released_at: datetime | None = None
     release_reason: str | None = Field(default=None, min_length=1)
+
+
+class LifecycleRelationshipRecord(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True)
+
+    lifecycle_relationship_id: str = Field(min_length=1)
+    source_document_id: str = Field(min_length=1)
+    target_document_id: str = Field(min_length=1)
+    transition_type: LifecycleTransitionType
+    transition_reason: str = Field(min_length=1)
+    requested_by: str = Field(min_length=1)
+    requested_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))

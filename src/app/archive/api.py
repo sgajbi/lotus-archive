@@ -12,6 +12,8 @@ from app.archive.api_models import (
     LegalHoldCreateRequest,
     LegalHoldReleaseRequest,
     LegalHoldResponse,
+    LifecycleRelationshipResponse,
+    LifecycleTransitionRequest,
     PurgeEvaluationResponse,
     PurgeExecutionResponse,
     RetentionResponse,
@@ -118,6 +120,37 @@ async def get_document(
     request_trace_id: str = Depends(trace_id),
 ) -> ArchiveDocumentResponse:
     metadata = service.get_document_metadata(
+        document_id=document_id,
+        caller_context=context,
+        trace_id=request_trace_id,
+    )
+    return ArchiveDocumentResponse.from_metadata(metadata)
+
+
+@router.get(
+    "/{document_id}/current",
+    response_model=ArchiveDocumentResponse,
+    summary="Get current document in lifecycle",
+    description=(
+        "Returns the current archived document after following supersession, correction, and "
+        "reissue relationships. Historical document metadata remains available through the "
+        "standard metadata endpoint."
+    ),
+    responses={
+        200: {"description": "Current archived document metadata."},
+        401: {"description": "Required caller context is missing."},
+        403: {"description": "The caller is not authorized to read document metadata."},
+        404: {"description": "The document does not exist."},
+        409: {"description": "The lifecycle relationship chain is inconsistent."},
+    },
+)
+async def get_current_document(
+    document_id: str,
+    service: ArchiveDocumentService = Depends(archive_service),
+    context: CallerContext = Depends(caller_context),
+    request_trace_id: str = Depends(trace_id),
+) -> ArchiveDocumentResponse:
+    metadata = service.get_current_document_metadata(
         document_id=document_id,
         caller_context=context,
         trace_id=request_trace_id,
@@ -351,3 +384,114 @@ async def release_legal_hold(
         trace_id=request_trace_id,
     )
     return LegalHoldResponse.from_record(legal_hold)
+
+
+@router.post(
+    "/{document_id}/supersede",
+    status_code=status.HTTP_201_CREATED,
+    response_model=LifecycleRelationshipResponse,
+    summary="Supersede an archived document",
+    description=(
+        "Records that another archived document supersedes this document. The historical document "
+        "remains retrievable, the target document becomes current, and the lifecycle mutation is "
+        "audited."
+    ),
+    responses={
+        201: {"description": "Supersession relationship was recorded."},
+        401: {"description": "Required caller context is missing."},
+        403: {"description": "The caller is not authorized to manage lifecycle relationships."},
+        404: {"description": "The source or target document does not exist."},
+        409: {"description": "The lifecycle transition conflicts with existing document history."},
+    },
+)
+async def supersede_document(
+    document_id: str,
+    request_body: LifecycleTransitionRequest,
+    service: ArchiveDocumentService = Depends(archive_service),
+    context: CallerContext = Depends(caller_context),
+    request_trace_id: str = Depends(trace_id),
+) -> LifecycleRelationshipResponse:
+    relationship, current = service.supersede_document(
+        document_id=document_id,
+        request=request_body,
+        caller_context=context,
+        trace_id=request_trace_id,
+    )
+    return LifecycleRelationshipResponse.from_record(
+        relationship,
+        current_document_id=current.document_id,
+    )
+
+
+@router.post(
+    "/{document_id}/correct",
+    status_code=status.HTTP_201_CREATED,
+    response_model=LifecycleRelationshipResponse,
+    summary="Correct an archived document",
+    description=(
+        "Records that another archived document corrects this document. The historical document "
+        "is preserved, the correction document becomes current, and the lifecycle mutation is "
+        "audited."
+    ),
+    responses={
+        201: {"description": "Correction relationship was recorded."},
+        401: {"description": "Required caller context is missing."},
+        403: {"description": "The caller is not authorized to manage lifecycle relationships."},
+        404: {"description": "The source or target document does not exist."},
+        409: {"description": "The lifecycle transition conflicts with existing document history."},
+    },
+)
+async def correct_document(
+    document_id: str,
+    request_body: LifecycleTransitionRequest,
+    service: ArchiveDocumentService = Depends(archive_service),
+    context: CallerContext = Depends(caller_context),
+    request_trace_id: str = Depends(trace_id),
+) -> LifecycleRelationshipResponse:
+    relationship, current = service.correct_document(
+        document_id=document_id,
+        request=request_body,
+        caller_context=context,
+        trace_id=request_trace_id,
+    )
+    return LifecycleRelationshipResponse.from_record(
+        relationship,
+        current_document_id=current.document_id,
+    )
+
+
+@router.post(
+    "/{document_id}/reissue",
+    status_code=status.HTTP_201_CREATED,
+    response_model=LifecycleRelationshipResponse,
+    summary="Reissue an archived document",
+    description=(
+        "Records that another archived document reissues this document. The historical document "
+        "is preserved, the reissued document becomes current, and the lifecycle mutation is "
+        "audited."
+    ),
+    responses={
+        201: {"description": "Reissue relationship was recorded."},
+        401: {"description": "Required caller context is missing."},
+        403: {"description": "The caller is not authorized to manage lifecycle relationships."},
+        404: {"description": "The source or target document does not exist."},
+        409: {"description": "The lifecycle transition conflicts with existing document history."},
+    },
+)
+async def reissue_document(
+    document_id: str,
+    request_body: LifecycleTransitionRequest,
+    service: ArchiveDocumentService = Depends(archive_service),
+    context: CallerContext = Depends(caller_context),
+    request_trace_id: str = Depends(trace_id),
+) -> LifecycleRelationshipResponse:
+    relationship, current = service.reissue_document(
+        document_id=document_id,
+        request=request_body,
+        caller_context=context,
+        trace_id=request_trace_id,
+    )
+    return LifecycleRelationshipResponse.from_record(
+        relationship,
+        current_document_id=current.document_id,
+    )
