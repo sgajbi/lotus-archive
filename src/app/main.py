@@ -2,6 +2,8 @@ from fastapi import FastAPI, Request, Response, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from prometheus_fastapi_instrumentator import Instrumentator
+from app.archive.api import router as archive_documents_router
+from app.archive.error_handlers import register_archive_exception_handlers
 from app.archive.service_profile import service_posture
 from app.contracts.errors import error_response
 from app.middleware.correlation import CorrelationIdMiddleware
@@ -15,12 +17,16 @@ HTTP_422_UNPROCESSABLE_CONTENT = 422
 app = FastAPI(title=SERVICE_NAME, version=SERVICE_VERSION)
 app.add_middleware(CorrelationIdMiddleware, service_name=SERVICE_NAME)
 Instrumentator().instrument(app).expose(app)
+app.include_router(archive_documents_router)
 
 
 def _correlation_id(request: Request) -> str:
     return str(
         getattr(request.state, "correlation_id", request.headers.get("X-Correlation-Id", ""))
     )
+
+
+register_archive_exception_handlers(app, service_name=SERVICE_NAME, correlation_id=_correlation_id)
 
 
 @app.exception_handler(StarletteHTTPException)

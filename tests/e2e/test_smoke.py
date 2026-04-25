@@ -14,4 +14,9 @@ def test_metadata_endpoint() -> None:
     response = client.get("/metadata")
     assert response.status_code == 200
     assert response.json()["service"].startswith("lotus-")
-    assert response.json()["archivePosture"]["supportedArchiveFeatures"] == []
+    assert response.json()["archivePosture"]["supportedArchiveFeatures"] == [
+        "generated_document_archival",
+        "controlled_document_metadata_lookup",
+        "controlled_document_binary_download",
+        "access_audit_for_archive_api",
+    ]

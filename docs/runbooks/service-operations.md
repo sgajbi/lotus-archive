@@ -4,10 +4,11 @@
 
 `lotus-archive` currently exposes scaffold, service-health, safe error-envelope,
 caller-context-parsing, correlation/trace propagation, metrics, structured request-log behavior,
-metadata model, migration contract, storage adapter, checksum validation, and archive-write domain
-service behavior only. Do not use this service for archive create/retrieval APIs, binary retrieval,
-legal hold, purge, retention, report handoff, gateway retrieval, or Workbench retrieval until those
-capabilities are implemented and listed in `docs/supported-features.md`.
+metadata model, migration contract, storage adapter, checksum validation, archive-write domain
+service behavior, internal archive create API, controlled metadata lookup, checksum-verified binary
+download, and access-audit recording. Do not use this service for legal hold, purge, retention,
+document lifecycle relationships, report handoff, gateway retrieval, or Workbench retrieval until
+those capabilities are implemented and listed in `docs/supported-features.md`.
 
 ## Standard Commands
 
@@ -42,3 +43,5 @@ When archive domain behavior is added, incident checks must preserve these bound
 2. do not inspect or expose document binary content while diagnosing service health;
 3. use correlation identifiers and support-safe metadata rather than object keys or customer names;
 4. distinguish render completion from archive completion.
+5. verify caller context and authorization before treating archive reads as data loss.
+6. verify checksum mismatch and missing-binary errors through support-safe error codes.

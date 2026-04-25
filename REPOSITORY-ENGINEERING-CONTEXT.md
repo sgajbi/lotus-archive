@@ -14,11 +14,12 @@
 FastAPI service shell, CI workflows, repo-native quality commands, Docker baseline, AGENTS
 contract, repository engineering context, safe service-level error envelope, caller-context parsing
 helper, structured request logging, archive metadata model, migration contract, storage adapter,
-checksum validation, idempotent archive-write domain service, and archive-specific
-module-family/documentation structure.
+checksum validation, idempotent archive-write domain service, internal archive create API,
+controlled metadata lookup, checksum-verified binary download, access-audit recording, and
+archive-specific module-family/documentation structure.
 
-No archive create/retrieval API, retention, purge, legal-hold, lifecycle, report-handoff, gateway,
-or Workbench retrieval capability is supported yet.
+No retention, purge, legal-hold, lifecycle, report-handoff, gateway, or Workbench retrieval
+capability is supported yet.
 
 ## Architecture And Module Map
 
@@ -32,13 +33,20 @@ or Workbench retrieval capability is supported yet.
 7. `src/app/archive/repository.py`: archive document repository protocol and in-memory test
    implementation.
 8. `src/app/archive/archive_writer.py`: checksum-backed idempotent archive-write domain service.
-9. `migrations/`: PostgreSQL metadata contract migrations.
-10. `src/app/contracts/`: API and contract models.
-11. `src/app/middleware/`: shared request middleware.
-12. `tests/unit`, `tests/integration`, `tests/e2e`: test pyramid baseline.
-13. `docs/architecture/`: archive service boundaries and structure.
-14. `docs/supported-features.md`: implementation-backed support posture.
-15. `docs/standards/`: repository standards placeholders to be replaced with service truth.
+9. `src/app/archive/api.py`: archive create, metadata lookup, binary download, and access-event
+   API router.
+10. `src/app/archive/api_models.py`: support-safe archive API request and response models.
+11. `src/app/archive/audit.py`: access-audit event model and repository protocol.
+12. `src/app/archive/authorization.py`: first-wave archive caller authorization policy.
+13. `src/app/archive/service.py`: archive API orchestration and retrieval-time checksum
+   verification.
+14. `migrations/`: PostgreSQL metadata contract migrations.
+15. `src/app/contracts/`: API and contract models.
+16. `src/app/middleware/`: shared request middleware.
+17. `tests/unit`, `tests/integration`, `tests/e2e`: test pyramid baseline.
+18. `docs/architecture/`: archive service boundaries and structure.
+19. `docs/supported-features.md`: implementation-backed support posture.
+20. `docs/standards/`: repository standards placeholders to be replaced with service truth.
 
 ## Runtime And Integration Boundaries
 
@@ -76,8 +84,8 @@ build validation.
 
 ## Known Constraints And Implementation Notes
 
-1. this is the platform scaffold baseline plus RFC-0103 Slice 1 through Slice 3 internal archive
-   structure, not API completeness,
+1. this is the platform scaffold baseline plus RFC-0103 Slice 1 through Slice 4 internal archive
+   structure and API support, not full RFC completeness,
 2. standards placeholders in `docs/standards/` must be replaced with service truth as the service
    matures,
 3. keep business role, naming, docs, and tests aligned with actual implemented scope,

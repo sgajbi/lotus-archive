@@ -23,7 +23,7 @@ def test_error_response_uses_support_safe_envelope() -> None:
 
     assert response.status_code == status.HTTP_503_SERVICE_UNAVAILABLE
     assert b"storage_read_failed" in response.body
-    assert b"The request could not be completed." in response.body
+    assert b"The archived document could not be read." in response.body
     assert b"bucket" not in response.body
     assert b"object" not in response.body
 

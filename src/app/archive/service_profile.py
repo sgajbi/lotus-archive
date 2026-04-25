@@ -53,14 +53,6 @@ ARCHIVE_MODULE_FAMILIES: tuple[ArchiveModuleFamily, ...] = (
 
 UNSUPPORTED_PRODUCT_CAPABILITIES: tuple[UnsupportedProductCapability, ...] = (
     UnsupportedProductCapability(
-        capability="generated_document_archival",
-        reason="metadata and storage APIs are not implemented yet",
-    ),
-    UnsupportedProductCapability(
-        capability="controlled_document_retrieval",
-        reason="archive-mediated metadata and binary retrieval APIs are not implemented yet",
-    ),
-    UnsupportedProductCapability(
         capability="retention_and_purge",
         reason="retention policy, purge eligibility, and purge execution are not implemented yet",
     ),
@@ -89,8 +81,13 @@ UNSUPPORTED_PRODUCT_CAPABILITIES: tuple[UnsupportedProductCapability, ...] = (
 
 def service_posture() -> dict[str, object]:
     return {
-        "implementedScope": "service_boundary_scaffold",
-        "supportedArchiveFeatures": [],
+        "implementedScope": "archive_create_retrieval_api",
+        "supportedArchiveFeatures": [
+            "generated_document_archival",
+            "controlled_document_metadata_lookup",
+            "controlled_document_binary_download",
+            "access_audit_for_archive_api",
+        ],
         "moduleFamilies": [
             {
                 "name": module.name,
