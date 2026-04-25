@@ -69,7 +69,7 @@ UNSUPPORTED_PRODUCT_CAPABILITIES: tuple[UnsupportedProductCapability, ...] = (
 
 def service_posture() -> dict[str, object]:
     return {
-        "implementedScope": "retention_purge_legal_hold_lifecycle_gateway_retrieval_api",
+        "implementedScope": "retention_purge_legal_hold_lifecycle_report_handoff_gateway_retrieval",
         "supportedArchiveFeatures": [
             "generated_document_archival",
             "controlled_document_metadata_lookup",
@@ -80,6 +80,7 @@ def service_posture() -> dict[str, object]:
             "legal_hold_set_release_with_purge_blocking",
             "document_lifecycle_relationships",
             "current_document_resolution",
+            "report_to_archive_handoff",
             "gateway_backed_document_retrieval",
         ],
         "moduleFamilies": [

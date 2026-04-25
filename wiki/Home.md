@@ -13,7 +13,8 @@ Lotus generated-document archive, retrieval, retention, legal hold, and access a
   are available.
 - Lifecycle relationship APIs for supersession, correction, reissue, and current-document
   resolution are available.
-- Report handoff and Workbench retrieval are not supported yet.
+- Report-to-archive handoff after successful PDF render is available through `lotus-report`.
+- Workbench retrieval is not supported yet.
 - Product retrieval is supported only through `lotus-gateway`; Workbench must not call
   `lotus-archive` directly.
 - This service is limited to Lotus-generated document archive scope. It is not a generic file store

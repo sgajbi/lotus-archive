@@ -18,10 +18,11 @@ checksum validation, idempotent archive-write domain service, internal archive c
 controlled metadata lookup, checksum-verified binary download, access-audit recording, and
 retention posture lookup, purge eligibility and execution, legal-hold set/release with purge
 blocking, lifecycle relationship APIs, current-document resolution, gateway-backed document
-retrieval through `lotus-gateway`, and archive-specific module-family/documentation structure.
+retrieval through `lotus-gateway`, report-to-archive handoff through `lotus-report`, and
+archive-specific module-family/documentation structure.
 
-Report-handoff and Workbench retrieval are not supported yet. Product retrieval is supported only
-through `lotus-gateway`; Workbench must not call `lotus-archive` directly.
+Workbench retrieval is not supported yet. Product retrieval is supported only through
+`lotus-gateway`; Workbench must not call `lotus-archive` directly.
 
 ## Architecture And Module Map
 
@@ -87,8 +88,8 @@ build validation.
 
 ## Known Constraints And Implementation Notes
 
-1. this is the platform scaffold baseline plus RFC-0103 Slice 1 through Slice 6 internal archive
-   structure and API support, not full RFC completeness,
+1. this is the platform scaffold baseline plus RFC-0103 internal archive API, report handoff, and
+   gateway retrieval support, not full Workbench retrieval or production certification,
 2. standards placeholders in `docs/standards/` must be replaced with service truth as the service
    matures,
 3. keep business role, naming, docs, and tests aligned with actual implemented scope,

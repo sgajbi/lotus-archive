@@ -9,17 +9,17 @@ customer document delivery.
 RFC-0103 Slice 6 establishes the internal archive API surface for authorized Lotus callers:
 generated-document archival, support-safe metadata lookup, checksum-verified binary download,
 access-audit lookup, retention posture lookup, purge eligibility and execution, and legal-hold
-set/release with purge blocking, lifecycle relationships, and current-document resolution. Report
-handoff and Workbench product features are not supported yet. Gateway-backed retrieval is supported
-through `lotus-gateway` as the product-facing boundary.
+set/release with purge blocking, lifecycle relationships, current-document resolution, and
+report-to-archive handoff after successful PDF render. Workbench product features are not supported
+yet. Gateway-backed retrieval is supported through `lotus-gateway` as the product-facing boundary.
 
 ## Authoritative Boundaries
 
 | Boundary | Owner | Current posture |
 | --- | --- | --- |
-| Report request and job identity | `lotus-report` | Upstream source for future archive records |
-| Snapshot and lineage reference | `lotus-report` | Upstream source for future archive records |
-| Render attempt and artifact metadata | `lotus-render` through `lotus-report` | Upstream source for future archive records |
+| Report request and job identity | `lotus-report` | Implemented as source-backed archive handoff metadata after successful PDF render |
+| Snapshot and lineage reference | `lotus-report` | Implemented as source-backed archive handoff metadata after successful PDF render |
+| Render attempt and artifact metadata | `lotus-render` through `lotus-report` | Implemented as source-backed archive handoff metadata after successful PDF render |
 | Archived document identity | `lotus-archive` | Implemented through metadata model and archive API |
 | Binary storage | `lotus-archive` | Implemented through storage adapter and controlled download API |
 | Access audit | `lotus-archive` | Implemented for archive create, metadata read, binary download, access-event read, retention read, purge evaluation, purge execution, legal-hold set/release, and authorization denial |
@@ -88,9 +88,9 @@ RFC-0103 Slice 5 adds:
 5. `DELETE /documents/{document_id}/legal-holds/{legal_hold_id}` for releasing a legal hold and
    refreshing purge-blocking posture.
 
-These APIs remain internal Lotus service APIs. They do not establish report-to-archive handoff,
-Workbench retrieval or customer-facing document delivery. Gateway-backed document retrieval is
-supported only through the gateway facade.
+These APIs remain internal Lotus service APIs. Workbench retrieval and customer-facing document
+delivery are not supported. Gateway-backed document retrieval is supported only through the gateway
+facade.
 
 RFC-0103 Slice 6 adds:
 
@@ -105,6 +105,16 @@ RFC-0103 Slice 6 adds:
 
 Lifecycle relationships are append-only audit-backed archive history. They do not delete,
 overwrite, or hide historical document metadata.
+
+RFC-0103 Slice 7 adds report-to-archive handoff in `lotus-report`:
+
+1. successful PDF render jobs submit source-backed archive metadata and rendered artifact bytes to
+   `POST /documents`.
+2. report job status records `archiving` separately from `archived`.
+3. archive validation, conflict, storage, and execution failures map to truthful report-job failure
+   categories.
+4. retrieval, retention execution, legal hold, purge, and lifecycle ownership remain in
+   `lotus-archive`.
 
 ## Documentation Ownership
 
