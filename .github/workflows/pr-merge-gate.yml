@@ -1,0 +1,118 @@
+name: Pull Request Merge Gate
+
+on:
+  pull_request:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  PIP_DISABLE_PIP_VERSION_CHECK: "1"
+  PYTHONUNBUFFERED: "1"
+  PYTHON_VERSION: "3.12"
+
+jobs:
+  workflow-lint:
+    name: PR Merge Gate / Workflow Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: reviewdog/action-actionlint@v1
+
+  lint-typecheck-security:
+    name: PR Merge Gate / Lint Typecheck Security
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: "pip"
+      - name: Install
+        run: make install
+      - name: Verify Dependencies
+        run: python -m pip check
+      - name: Lint
+        run: make lint
+      - name: Typecheck
+        run: make typecheck
+      - name: OpenAPI Gate
+        run: make openapi-gate
+      - name: Security Audit
+        run: make security-audit
+
+  test-suites:
+    name: PR Merge Gate / Tests (${{ matrix.suite }})
+    needs: [lint-typecheck-security]
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - suite: unit
+            path: tests/unit
+          - suite: integration
+            path: tests/integration
+          - suite: e2e
+            path: tests/e2e
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: "pip"
+      - name: Install
+        run: make install
+      - name: Run tests with coverage data
+        env:
+          COVERAGE_FILE: .coverage.${{ matrix.suite }}
+        run: python -m pytest ${{ matrix.path }} --cov=src --cov-report=
+      - name: Upload coverage data
+        uses: actions/upload-artifact@v5
+        with:
+          name: coverage-data-${{ matrix.suite }}
+          path: .coverage.${{ matrix.suite }}
+          include-hidden-files: true
+          if-no-files-found: error
+
+  coverage-gate:
+    name: PR Merge Gate / Coverage Gate (Combined)
+    needs: [test-suites]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: "pip"
+      - name: Install
+        run: make install
+      - name: Download coverage artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: coverage-data-*
+          merge-multiple: true
+          path: coverage-data
+      - name: Enforce 99% coverage
+        run: |
+          python -m coverage combine coverage-data
+          python -m coverage report --fail-under=99
+
+  docker-build:
+    name: PR Merge Gate / Validate Docker Build
+    needs: [coverage-gate]
+    runs-on: ubuntu-latest
+    env:
+      DOCKER_BUILDKIT: "1"
+      COMPOSE_DOCKER_CLI_BUILD: "1"
+    steps:
+      - uses: actions/checkout@v6
+      - uses: docker/setup-buildx-action@v3
+      - name: Build Docker image
+        run: make docker-build

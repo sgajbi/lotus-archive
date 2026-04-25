@@ -1,0 +1,79 @@
+# Repository Engineering Context
+
+## Repository Role
+
+`lotus-archive` is a Lotus backend service.
+
+## Business And Domain Responsibility
+
+`lotus-archive` owns: Generated-document archive, retrieval, retention, legal hold, access audit, and document lifecycle service
+
+## Current-State Summary
+
+`lotus-archive` is scaffolded from platform automation and starts with the governed backend baseline:
+FastAPI service shell, CI workflows, repo-native quality commands, Docker baseline, AGENTS
+contract, and repository engineering context.
+
+## Architecture And Module Map
+
+1. `src/app/main.py`: application entrypoint, health/readiness, metadata.
+2. `src/app/contracts/`: API and contract models.
+3. `src/app/middleware/`: shared request middleware.
+4. `tests/unit`, `tests/integration`, `tests/e2e`: test pyramid baseline.
+5. `docs/standards/`: repository standards placeholders to be replaced with service truth.
+
+## Runtime And Integration Boundaries
+
+1. Runtime model: `python-fastapi`
+2. Upstream dependencies:
+   - lotus-report
+   - lotus-render
+3. Downstream consumers:
+   - lotus-gateway
+4. Important boundary rule: this scaffold does not establish domain authority beyond the explicit
+   service contract added later by RFC or implementation work.
+
+## Repo-Native Commands
+
+1. install or bootstrap: `make install`
+2. lint: `make lint`
+3. typecheck: `make typecheck`
+4. unit tests: `make test-unit`
+5. integration or browser tests where applicable: `make test-integration`, `make test-e2e`
+6. repo-native CI parity: `make check`, `make ci`
+
+## Validation And CI Expectations
+
+`lotus-archive` follows the standard Lotus backend lane model. Required baseline checks include lint,
+typecheck, OpenAPI quality, unit/integration/e2e tests, coverage gate, security audit, and Docker
+build validation.
+
+## Standards And RFCs That Govern This Repository
+
+1. `lotus-platform/rfcs/RFC-0072-platform-wide-multi-lane-ci-validation-and-release-governance.md`
+2. `lotus-platform/context/LOTUS-QUICKSTART-CONTEXT.md`
+3. `lotus-platform/context/LOTUS-ENGINEERING-CONTEXT.md`
+4. service-specific RFCs once implementation begins
+
+## Known Constraints And Implementation Notes
+
+1. this is the platform scaffold baseline, not business-logic completeness,
+2. standards placeholders in `docs/standards/` must be replaced with service truth as the service
+   matures,
+3. keep business role, naming, docs, and tests aligned with actual implemented scope.
+
+## Context Maintenance Rule
+
+Update this document when:
+
+1. repository ownership changes,
+2. repo-native commands or CI gates change,
+3. runtime or integration boundaries change,
+4. dominant local implementation patterns change,
+5. current-state rollout or product posture materially changes.
+
+## Cross-Links
+
+1. `lotus-platform/context/LOTUS-QUICKSTART-CONTEXT.md`
+2. `lotus-platform/context/LOTUS-ENGINEERING-CONTEXT.md`
+3. `lotus-platform/context/CONTEXT-REFERENCE-MAP.md`
