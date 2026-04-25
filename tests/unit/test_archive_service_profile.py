@@ -22,7 +22,7 @@ def test_archive_module_families_are_explicit_and_unique() -> None:
 def test_service_posture_does_not_overclaim_archive_features() -> None:
     posture = service_posture()
 
-    assert posture["implementedScope"] == "retention_purge_legal_hold_api"
+    assert posture["implementedScope"] == "retention_purge_legal_hold_lifecycle_api"
     assert posture["supportedArchiveFeatures"] == [
         "generated_document_archival",
         "controlled_document_metadata_lookup",
@@ -31,6 +31,8 @@ def test_service_posture_does_not_overclaim_archive_features() -> None:
         "retention_policy_posture",
         "purge_eligibility_and_execution",
         "legal_hold_set_release_with_purge_blocking",
+        "document_lifecycle_relationships",
+        "current_document_resolution",
     ]
 
     unsupported_capabilities = posture["unsupportedProductCapabilities"]
@@ -38,7 +40,6 @@ def test_service_posture_does_not_overclaim_archive_features() -> None:
 
     unsupported = {item["capability"] for item in unsupported_capabilities}
     assert "gateway_backed_product_retrieval" in unsupported
-    assert "document_lifecycle_relationships" in unsupported
     assert "arbitrary_file_storage" in unsupported
     assert "manual_document_upload" in unsupported
 

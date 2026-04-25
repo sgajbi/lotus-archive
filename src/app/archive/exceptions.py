@@ -33,6 +33,14 @@ class PurgeNotEligibleError(ArchiveError):
     pass
 
 
+class SupersessionConflictError(ArchiveError):
+    pass
+
+
+class UnsupportedLifecycleTransitionError(ArchiveError):
+    pass
+
+
 class StorageWriteFailedError(ArchiveError):
     pass
 

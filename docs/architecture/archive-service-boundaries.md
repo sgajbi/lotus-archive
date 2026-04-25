@@ -6,11 +6,11 @@ customer document delivery.
 
 ## Current Implementation Posture
 
-RFC-0103 Slice 5 establishes the internal archive API surface for authorized Lotus callers:
+RFC-0103 Slice 6 establishes the internal archive API surface for authorized Lotus callers:
 generated-document archival, support-safe metadata lookup, checksum-verified binary download,
 access-audit lookup, retention posture lookup, purge eligibility and execution, and legal-hold
-set/release with purge blocking. Lifecycle relationships, report handoff, gateway retrieval, and
-Workbench product features are not supported yet.
+set/release with purge blocking, lifecycle relationships, and current-document resolution. Report
+handoff, gateway retrieval, and Workbench product features are not supported yet.
 
 ## Authoritative Boundaries
 
@@ -24,6 +24,7 @@ Workbench product features are not supported yet.
 | Access audit | `lotus-archive` | Implemented for archive create, metadata read, binary download, access-event read, retention read, purge evaluation, purge execution, legal-hold set/release, and authorization denial |
 | Retention and purge | `lotus-archive` | Implemented for retention posture, purge eligibility, governed purge execution, and post-purge support-safe metadata |
 | Legal hold | `lotus-archive` | Implemented for legal-hold set/release, authority reference, active-hold summary, and purge blocking |
+| Lifecycle relationships | `lotus-archive` | Implemented for supersession, correction, reissue, append-only relationship records, historical lookup, and current-document resolution |
 | Product-facing retrieval | `lotus-gateway` | Deferred until gateway facade is implemented |
 | Workbench retrieval surface | `lotus-workbench` | Not supported unless gateway-backed retrieval is implemented |
 
@@ -88,6 +89,20 @@ RFC-0103 Slice 5 adds:
 
 These APIs remain internal Lotus service APIs. They do not establish report-to-archive handoff,
 gateway retrieval, Workbench retrieval, or customer-facing document delivery.
+
+RFC-0103 Slice 6 adds:
+
+1. `POST /documents/{document_id}/supersede` for recording that a target archived document
+   supersedes the historical source document.
+2. `POST /documents/{document_id}/correct` for recording that a target archived document corrects
+   the historical source document.
+3. `POST /documents/{document_id}/reissue` for recording that a target archived document reissues
+   the historical source document.
+4. `GET /documents/{document_id}/current` for resolving the current archived document while
+   keeping direct historical metadata lookup available through `GET /documents/{document_id}`.
+
+Lifecycle relationships are append-only audit-backed archive history. They do not delete,
+overwrite, or hide historical document metadata.
 
 ## Documentation Ownership
 

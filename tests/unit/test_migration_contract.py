@@ -48,3 +48,21 @@ def test_legal_hold_migration_contains_required_fields() -> None:
     ]:
         assert field in migration
     assert "REFERENCES archive_documents(document_id)" in migration
+
+
+def test_lifecycle_relationship_migration_contains_required_fields() -> None:
+    migration = (ROOT / "migrations" / "003_create_archive_lifecycle_relationships.sql").read_text(
+        encoding="utf-8"
+    )
+
+    for field in [
+        "lifecycle_relationship_id",
+        "source_document_id",
+        "target_document_id",
+        "transition_type",
+        "transition_reason",
+        "requested_by",
+        "requested_at",
+    ]:
+        assert field in migration
+    assert migration.count("REFERENCES archive_documents(document_id)") == 2

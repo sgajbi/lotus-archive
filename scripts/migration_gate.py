@@ -36,6 +36,16 @@ REQUIRED_LEGAL_HOLD_FIELDS = {
     "release_reason",
 }
 
+REQUIRED_LIFECYCLE_FIELDS = {
+    "lifecycle_relationship_id",
+    "source_document_id",
+    "target_document_id",
+    "transition_type",
+    "transition_reason",
+    "requested_by",
+    "requested_at",
+}
+
 
 def main() -> None:
     migration = MIGRATIONS_DIR / "001_create_archive_documents.sql"
@@ -67,6 +77,23 @@ def main() -> None:
         )
     if "REFERENCES archive_documents(document_id)" not in legal_hold_ddl:
         raise SystemExit("Migration gate failed: legal holds must reference archive documents")
+
+    lifecycle_migration = MIGRATIONS_DIR / "003_create_archive_lifecycle_relationships.sql"
+    if not lifecycle_migration.exists():
+        raise SystemExit("Migration gate failed: archive lifecycle migration is missing")
+    lifecycle_ddl = lifecycle_migration.read_text(encoding="utf-8")
+    missing_lifecycle_fields = sorted(
+        field for field in REQUIRED_LIFECYCLE_FIELDS if field not in lifecycle_ddl
+    )
+    if missing_lifecycle_fields:
+        raise SystemExit(
+            "Migration gate failed: missing archive lifecycle fields "
+            + ", ".join(missing_lifecycle_fields)
+        )
+    if lifecycle_ddl.count("REFERENCES archive_documents(document_id)") < 2:
+        raise SystemExit(
+            "Migration gate failed: lifecycle relationships must reference source and target documents"
+        )
 
     print("Migration gate passed")
 

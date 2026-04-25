@@ -41,6 +41,17 @@ def _payload(content: bytes = b"portfolio review pdf bytes") -> dict[str, object
     }
 
 
+def _payload_with_id(archive_request_id: str, content: bytes) -> dict[str, object]:
+    payload = _payload(content)
+    payload["metadata"] = valid_metadata_input(
+        archive_request_id=archive_request_id,
+        report_job_id=f"report-job-{archive_request_id}",
+        render_job_id=f"render-job-{archive_request_id}",
+        render_attempt_id=f"render-attempt-{archive_request_id}",
+    ).model_dump(mode="json")
+    return payload
+
+
 def _purge_eligible_payload() -> dict[str, object]:
     payload = _payload()
     metadata = valid_metadata_input(
@@ -319,3 +330,165 @@ def test_legal_hold_release_reports_not_found(tmp_path: Path) -> None:
 
     assert response.status_code == 404
     assert response.json()["error"]["code"] == "legal_hold_not_found"
+
+
+def test_document_lifecycle_api_preserves_history_and_resolves_current(
+    tmp_path: Path,
+) -> None:
+    service = _service(tmp_path)
+    app.dependency_overrides[archive_service] = lambda: service
+    client = TestClient(app)
+    try:
+        historical_response = client.post(
+            "/documents",
+            json=_payload_with_id("archive-request-history", b"historical"),
+            headers=_headers(),
+        )
+        current_response = client.post(
+            "/documents",
+            json=_payload_with_id("archive-request-current", b"current"),
+            headers=_headers(),
+        )
+        historical_id = historical_response.json()["document_id"]
+        current_id = current_response.json()["document_id"]
+
+        lifecycle_response = client.post(
+            f"/documents/{historical_id}/supersede",
+            json={
+                "target_document_id": current_id,
+                "transition_reason": "Approved report replaced draft archive record",
+            },
+            headers=_headers(),
+        )
+        historical_lookup = client.get(
+            f"/documents/{historical_id}",
+            headers=_headers(caller_service="lotus-gateway"),
+        )
+        current_lookup = client.get(
+            f"/documents/{historical_id}/current",
+            headers=_headers(caller_service="lotus-gateway"),
+        )
+        events_response = client.get(
+            f"/documents/{historical_id}/access-events",
+            headers=_headers(),
+        )
+    finally:
+        app.dependency_overrides.clear()
+
+    assert lifecycle_response.status_code == 201
+    assert lifecycle_response.json()["transition_type"] == "supersede"
+    assert lifecycle_response.json()["current_document_id"] == current_id
+    assert historical_lookup.status_code == 200
+    assert historical_lookup.json()["document_id"] == historical_id
+    assert historical_lookup.json()["superseded_by_document_id"] == current_id
+    assert current_lookup.status_code == 200
+    assert current_lookup.json()["document_id"] == current_id
+    assert current_lookup.json()["supersedes_document_id"] == historical_id
+    event_types = [event["event_type"] for event in events_response.json()["events"]]
+    assert "lifecycle_supersede" in event_types
+    assert "current_document_read" in event_types
+
+
+def test_document_lifecycle_api_rejects_conflicting_transition(tmp_path: Path) -> None:
+    service = _service(tmp_path)
+    app.dependency_overrides[archive_service] = lambda: service
+    client = TestClient(app)
+    try:
+        first = client.post(
+            "/documents",
+            json=_payload_with_id("archive-request-first", b"first"),
+            headers=_headers(),
+        ).json()["document_id"]
+        second = client.post(
+            "/documents",
+            json=_payload_with_id("archive-request-second", b"second"),
+            headers=_headers(),
+        ).json()["document_id"]
+        third = client.post(
+            "/documents",
+            json=_payload_with_id("archive-request-third", b"third"),
+            headers=_headers(),
+        ).json()["document_id"]
+        assert (
+            client.post(
+                f"/documents/{first}/correct",
+                json={
+                    "target_document_id": second,
+                    "transition_reason": "Corrected report package",
+                },
+                headers=_headers(),
+            ).status_code
+            == 201
+        )
+
+        response = client.post(
+            f"/documents/{first}/reissue",
+            json={
+                "target_document_id": third,
+                "transition_reason": "Invalid second transition",
+            },
+            headers=_headers(),
+        )
+    finally:
+        app.dependency_overrides.clear()
+
+    assert response.status_code == 409
+    assert response.json()["error"]["code"] == "supersession_conflict"
+
+
+def test_document_lifecycle_api_reissue_and_unsupported_transition_errors(
+    tmp_path: Path,
+) -> None:
+    service = _service(tmp_path)
+    app.dependency_overrides[archive_service] = lambda: service
+    client = TestClient(app)
+    try:
+        source = client.post(
+            "/documents",
+            json=_payload_with_id("archive-request-reissue-api-source", b"source"),
+            headers=_headers(),
+        ).json()["document_id"]
+        target = client.post(
+            "/documents",
+            json=_payload_with_id("archive-request-reissue-api-target", b"target"),
+            headers=_headers(),
+        ).json()["document_id"]
+
+        reissue_response = client.post(
+            f"/documents/{source}/reissue",
+            json={
+                "target_document_id": target,
+                "transition_reason": "Client delivery reissue",
+            },
+            headers=_headers(),
+        )
+        unsupported_response = client.post(
+            f"/documents/{target}/reissue",
+            json={
+                "target_document_id": target,
+                "transition_reason": "Invalid self transition",
+            },
+            headers=_headers(),
+        )
+    finally:
+        app.dependency_overrides.clear()
+
+    assert reissue_response.status_code == 201
+    assert reissue_response.json()["transition_type"] == "reissue"
+    assert unsupported_response.status_code == 409
+    assert unsupported_response.json()["error"]["code"] == "unsupported_lifecycle_transition"
+
+
+def test_purge_api_reports_not_eligible_before_retention_elapsed(tmp_path: Path) -> None:
+    service = _service(tmp_path)
+    app.dependency_overrides[archive_service] = lambda: service
+    client = TestClient(app)
+    try:
+        create_response = client.post("/documents", json=_payload(), headers=_headers())
+        document_id = create_response.json()["document_id"]
+        response = client.post(f"/documents/{document_id}/purge", headers=_headers())
+    finally:
+        app.dependency_overrides.clear()
+
+    assert response.status_code == 409
+    assert response.json()["error"]["code"] == "purge_not_eligible"

@@ -17,9 +17,10 @@ helper, structured request logging, archive metadata model, migration contract, 
 checksum validation, idempotent archive-write domain service, internal archive create API,
 controlled metadata lookup, checksum-verified binary download, access-audit recording, and
 retention posture lookup, purge eligibility and execution, legal-hold set/release with purge
-blocking, and archive-specific module-family/documentation structure.
+blocking, lifecycle relationship APIs, current-document resolution, and archive-specific
+module-family/documentation structure.
 
-No lifecycle, report-handoff, gateway, or Workbench retrieval capability is supported yet.
+No report-handoff, gateway, or Workbench retrieval capability is supported yet.
 
 ## Architecture And Module Map
 
@@ -39,7 +40,8 @@ No lifecycle, report-handoff, gateway, or Workbench retrieval capability is supp
 11. `src/app/archive/audit.py`: access-audit event model and repository protocol.
 12. `src/app/archive/authorization.py`: first-wave archive caller authorization policy.
 13. `src/app/archive/service.py`: archive API orchestration, retrieval-time checksum
-   verification, retention posture, purge eligibility/execution, and legal-hold state changes.
+   verification, retention posture, purge eligibility/execution, legal-hold state changes,
+   lifecycle relationship mutation, and current-document resolution.
 14. `migrations/`: PostgreSQL metadata contract migrations.
 15. `src/app/contracts/`: API and contract models.
 16. `src/app/middleware/`: shared request middleware.
@@ -84,7 +86,7 @@ build validation.
 
 ## Known Constraints And Implementation Notes
 
-1. this is the platform scaffold baseline plus RFC-0103 Slice 1 through Slice 4 internal archive
+1. this is the platform scaffold baseline plus RFC-0103 Slice 1 through Slice 6 internal archive
    structure and API support, not full RFC completeness,
 2. standards placeholders in `docs/standards/` must be replaced with service truth as the service
    matures,
