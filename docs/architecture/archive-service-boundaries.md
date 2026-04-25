@@ -10,7 +10,8 @@ RFC-0103 Slice 6 establishes the internal archive API surface for authorized Lot
 generated-document archival, support-safe metadata lookup, checksum-verified binary download,
 access-audit lookup, retention posture lookup, purge eligibility and execution, and legal-hold
 set/release with purge blocking, lifecycle relationships, and current-document resolution. Report
-handoff, gateway retrieval, and Workbench product features are not supported yet.
+handoff and Workbench product features are not supported yet. Gateway-backed retrieval is supported
+through `lotus-gateway` as the product-facing boundary.
 
 ## Authoritative Boundaries
 
@@ -25,7 +26,7 @@ handoff, gateway retrieval, and Workbench product features are not supported yet
 | Retention and purge | `lotus-archive` | Implemented for retention posture, purge eligibility, governed purge execution, and post-purge support-safe metadata |
 | Legal hold | `lotus-archive` | Implemented for legal-hold set/release, authority reference, active-hold summary, and purge blocking |
 | Lifecycle relationships | `lotus-archive` | Implemented for supersession, correction, reissue, append-only relationship records, historical lookup, and current-document resolution |
-| Product-facing retrieval | `lotus-gateway` | Deferred until gateway facade is implemented |
+| Product-facing retrieval | `lotus-gateway` | Supported through gateway metadata and controlled download routes |
 | Workbench retrieval surface | `lotus-workbench` | Not supported unless gateway-backed retrieval is implemented |
 
 ## Module Families
@@ -88,7 +89,8 @@ RFC-0103 Slice 5 adds:
    refreshing purge-blocking posture.
 
 These APIs remain internal Lotus service APIs. They do not establish report-to-archive handoff,
-gateway retrieval, Workbench retrieval, or customer-facing document delivery.
+Workbench retrieval or customer-facing document delivery. Gateway-backed document retrieval is
+supported only through the gateway facade.
 
 RFC-0103 Slice 6 adds:
 

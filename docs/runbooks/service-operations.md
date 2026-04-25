@@ -8,7 +8,7 @@ metadata model, migration contract, storage adapter, checksum validation, archiv
 service behavior, internal archive create API, controlled metadata lookup, checksum-verified binary
 download, access-audit recording, retention posture lookup, purge eligibility and execution, and
 legal-hold set/release with purge blocking, lifecycle relationship APIs, and current-document
-resolution. Do not use this service for report handoff, gateway retrieval, or Workbench retrieval
+resolution. Do not use this service for report handoff or direct Workbench retrieval
 until those capabilities are implemented and listed in `docs/supported-features.md`.
 
 ## Standard Commands
@@ -40,7 +40,7 @@ until those capabilities are implemented and listed in `docs/supported-features.
 Incident checks must preserve these boundaries:
 
 1. confirm whether the issue is metadata, storage, audit, retention, legal hold, lifecycle, report
-   handoff, or gateway retrieval;
+   handoff;
 2. do not inspect or expose document binary content while diagnosing service health;
 3. use correlation identifiers and support-safe metadata rather than object keys or customer names;
 4. distinguish render completion from archive completion.

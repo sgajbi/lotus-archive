@@ -17,10 +17,11 @@ helper, structured request logging, archive metadata model, migration contract, 
 checksum validation, idempotent archive-write domain service, internal archive create API,
 controlled metadata lookup, checksum-verified binary download, access-audit recording, and
 retention posture lookup, purge eligibility and execution, legal-hold set/release with purge
-blocking, lifecycle relationship APIs, current-document resolution, and archive-specific
-module-family/documentation structure.
+blocking, lifecycle relationship APIs, current-document resolution, gateway-backed document
+retrieval through `lotus-gateway`, and archive-specific module-family/documentation structure.
 
-No report-handoff, gateway, or Workbench retrieval capability is supported yet.
+Report-handoff and Workbench retrieval are not supported yet. Product retrieval is supported only
+through `lotus-gateway`; Workbench must not call `lotus-archive` directly.
 
 ## Architecture And Module Map
 
