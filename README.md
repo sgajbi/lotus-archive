@@ -10,9 +10,10 @@ a generic file store, manual upload service, customer delivery channel, or repor
 The current implementation supports the service scaffold, health/readiness, metadata, metrics,
 correlation and trace headers, structured request logging, safe error envelopes, caller-context
 parsing, archive metadata model, migration contract, filesystem-backed development storage adapter,
-checksum validation, idempotent archive-write domain service, quality gates, and archive-specific
-structure. Archive create/retrieval APIs, retention, purge, legal hold, lifecycle relationships,
-report handoff, gateway retrieval, and Workbench retrieval are not supported yet.
+checksum validation, idempotent archive-write domain service, archive create API, controlled
+metadata lookup, controlled binary download, access-audit recording for archive API actions,
+quality gates, and archive-specific structure. Retention, purge, legal hold, lifecycle
+relationships, report handoff, gateway retrieval, and Workbench retrieval are not supported yet.
 
 ## Quick Start
 

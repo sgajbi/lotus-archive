@@ -34,7 +34,7 @@ def test_readiness_reports_draining_state() -> None:
 def test_unknown_route_uses_support_safe_error_envelope() -> None:
     client = TestClient(app)
     response = client.get(
-        "/documents/not-yet-implemented", headers={"X-Correlation-Id": "corr-404"}
+        "/unknown-route/not-yet-implemented", headers={"X-Correlation-Id": "corr-404"}
     )
 
     assert response.status_code == 404

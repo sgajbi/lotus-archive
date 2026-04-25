@@ -23,6 +23,13 @@ SAFE_ERROR_MESSAGES: dict[str, str] = {
     "validation_failed": "The request could not be validated.",
     "internal_error": "The request could not be completed.",
     "caller_context_missing": "Required caller context is missing.",
+    "authorization_failed": "The caller is not authorized for this archive action.",
+    "document_not_found": "The requested archived document was not found.",
+    "document_binary_missing": "The archived document binary could not be found.",
+    "document_checksum_mismatch": "The archived document failed integrity verification.",
+    "duplicate_archive_request": "The archive request conflicts with an existing document.",
+    "metadata_validation_failed": "The archive metadata could not be validated.",
+    "storage_read_failed": "The archived document could not be read.",
 }
 
 

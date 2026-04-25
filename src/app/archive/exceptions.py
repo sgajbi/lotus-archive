@@ -13,6 +13,10 @@ class DuplicateArchiveRequestConflict(ArchiveError):
     pass
 
 
+class DocumentNotFoundError(ArchiveError):
+    pass
+
+
 class DocumentChecksumMismatchError(ArchiveError):
     pass
 

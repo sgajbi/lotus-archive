@@ -6,9 +6,10 @@ customer document delivery.
 
 ## Current Implementation Posture
 
-RFC-0103 Slice 1 establishes the repository and documentation structure for the archive domain. No
-archive create, retrieval, retention, purge, legal-hold, lifecycle, gateway, or Workbench product
-feature is supported yet.
+RFC-0103 Slice 4 establishes the first internal archive API surface for authorized Lotus callers:
+generated-document archival, support-safe metadata lookup, checksum-verified binary download, and
+access-audit lookup. Retention, purge, legal-hold, lifecycle, gateway, and Workbench product
+features are not supported yet.
 
 ## Authoritative Boundaries
 
@@ -17,9 +18,9 @@ feature is supported yet.
 | Report request and job identity | `lotus-report` | Upstream source for future archive records |
 | Snapshot and lineage reference | `lotus-report` | Upstream source for future archive records |
 | Render attempt and artifact metadata | `lotus-render` through `lotus-report` | Upstream source for future archive records |
-| Archived document identity | `lotus-archive` | Planned for metadata model slice |
-| Binary storage | `lotus-archive` | Planned through storage adapter slice |
-| Access audit | `lotus-archive` | Planned through audit model and API slices |
+| Archived document identity | `lotus-archive` | Implemented through metadata model and archive API |
+| Binary storage | `lotus-archive` | Implemented through storage adapter and controlled download API |
+| Access audit | `lotus-archive` | Implemented for archive create, metadata read, binary download, access-event read, and authorization denial |
 | Retention and purge | `lotus-archive` | Planned through retention slice |
 | Legal hold | `lotus-archive` | Planned through legal-hold slice |
 | Product-facing retrieval | `lotus-gateway` | Deferred until gateway facade is implemented |
@@ -58,6 +59,21 @@ RFC-0103 Slice 3 adds the first internal implementation of this posture:
 
 These are internal service capabilities. They do not create public archive APIs or product-facing
 retrieval support.
+
+## Archive API Posture
+
+RFC-0103 Slice 4 adds:
+
+1. `POST /documents` for generated-document archival by authorized `lotus-report` callers.
+2. `GET /documents/{document_id}` for support-safe metadata lookup by authorized Lotus callers.
+3. `GET /documents/{document_id}/download` for archive-mediated binary download with checksum
+   verification.
+4. `GET /documents/{document_id}/access-events` for support investigation of archive access
+   events.
+
+All archive API routes require caller context. Workbench is intentionally not an authorized direct
+archive caller. Gateway-backed product retrieval remains future work and must be implemented in
+`lotus-gateway` before any Workbench retrieval surface is claimed.
 
 ## Documentation Ownership
 

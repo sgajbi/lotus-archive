@@ -22,15 +22,20 @@ def test_archive_module_families_are_explicit_and_unique() -> None:
 def test_service_posture_does_not_overclaim_archive_features() -> None:
     posture = service_posture()
 
-    assert posture["implementedScope"] == "service_boundary_scaffold"
-    assert posture["supportedArchiveFeatures"] == []
+    assert posture["implementedScope"] == "archive_create_retrieval_api"
+    assert posture["supportedArchiveFeatures"] == [
+        "generated_document_archival",
+        "controlled_document_metadata_lookup",
+        "controlled_document_binary_download",
+        "access_audit_for_archive_api",
+    ]
 
     unsupported_capabilities = posture["unsupportedProductCapabilities"]
     assert isinstance(unsupported_capabilities, list)
 
     unsupported = {item["capability"] for item in unsupported_capabilities}
-    assert "generated_document_archival" in unsupported
-    assert "controlled_document_retrieval" in unsupported
+    assert "gateway_backed_product_retrieval" in unsupported
+    assert "retention_and_purge" in unsupported
     assert "arbitrary_file_storage" in unsupported
     assert "manual_document_upload" in unsupported
 
