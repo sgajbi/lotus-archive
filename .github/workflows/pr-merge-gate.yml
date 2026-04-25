@@ -37,7 +37,7 @@ jobs:
       - name: Install
         run: make install
       - name: Verify Dependencies
-        run: python -m pip check
+        run: ./.venv/bin/python -m pip check
       - name: Lint
         run: make lint
       - name: Typecheck
@@ -72,7 +72,7 @@ jobs:
       - name: Run tests with coverage data
         env:
           COVERAGE_FILE: .coverage.${{ matrix.suite }}
-        run: python -m pytest ${{ matrix.path }} --cov=src --cov-report=
+        run: ./.venv/bin/python -m pytest ${{ matrix.path }} --cov=src --cov-report=
       - name: Upload coverage data
         uses: actions/upload-artifact@v5
         with:
@@ -101,8 +101,8 @@ jobs:
           path: coverage-data
       - name: Enforce 99% coverage
         run: |
-          python -m coverage combine coverage-data
-          python -m coverage report --fail-under=99
+          ./.venv/bin/python -m coverage combine coverage-data
+          ./.venv/bin/python -m coverage report --fail-under=99
 
   docker-build:
     name: PR Merge Gate / Validate Docker Build

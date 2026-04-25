@@ -38,7 +38,7 @@ jobs:
       - name: Install
         run: make install
       - name: Verify Dependencies
-        run: python -m pip check
+        run: ./.venv/bin/python -m pip check
       - name: Lint
         run: make lint
       - name: Typecheck
@@ -61,4 +61,4 @@ jobs:
       - name: Install
         run: make install
       - name: Run unit tests
-        run: python -m pytest tests/unit
+        run: ./.venv/bin/python -m pytest tests/unit
