@@ -24,5 +24,6 @@ def test_metadata_endpoint() -> None:
         "legal_hold_set_release_with_purge_blocking",
         "document_lifecycle_relationships",
         "current_document_resolution",
+        "report_to_archive_handoff",
         "gateway_backed_document_retrieval",
     ]
