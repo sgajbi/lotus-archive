@@ -5,10 +5,11 @@ Lotus generated-document archive, retrieval, retention, legal hold, and access a
 ## Current posture
 
 - Governed service boundary scaffold is in place.
-- Health, readiness, metadata, metrics, correlation/trace headers, safe error envelopes, and
-  structured request logging are available.
-- Archive create, retrieval, retention, purge, legal hold, lifecycle relationships, report handoff,
-  gateway retrieval, and Workbench retrieval are not supported yet.
+- Health, readiness, metadata, metrics, correlation/trace headers, safe error envelopes, structured
+  request logging, metadata model, migration contract, filesystem-backed development storage,
+  checksum validation, and idempotent archive-write domain behavior are available.
+- Archive create/retrieval APIs, retention, purge, legal hold, lifecycle relationships, report
+  handoff, gateway retrieval, and Workbench retrieval are not supported yet.
 - This service is limited to Lotus-generated document archive scope. It is not a generic file store
   or manual upload service.
 - Wiki source lives in-repo and must be published through lotus-platform automation.

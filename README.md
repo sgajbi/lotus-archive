@@ -9,9 +9,10 @@ a generic file store, manual upload service, customer delivery channel, or repor
 
 The current implementation supports the service scaffold, health/readiness, metadata, metrics,
 correlation and trace headers, structured request logging, safe error envelopes, caller-context
-parsing, quality gates, and archive-specific structure. Archive create, retrieval, retention, purge,
-legal hold, lifecycle relationships, report handoff, gateway retrieval, and Workbench retrieval are
-not supported yet.
+parsing, archive metadata model, migration contract, filesystem-backed development storage adapter,
+checksum validation, idempotent archive-write domain service, quality gates, and archive-specific
+structure. Archive create/retrieval APIs, retention, purge, legal hold, lifecycle relationships,
+report handoff, gateway retrieval, and Workbench retrieval are not supported yet.
 
 ## Quick Start
 
@@ -20,6 +21,7 @@ make install
 make lint
 make typecheck
 make openapi-gate
+make migration-gate
 make check
 make ci
 ```
