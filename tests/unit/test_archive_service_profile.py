@@ -23,7 +23,8 @@ def test_service_posture_does_not_overclaim_archive_features() -> None:
     posture = service_posture()
 
     assert (
-        posture["implementedScope"] == "retention_purge_legal_hold_lifecycle_gateway_retrieval_api"
+        posture["implementedScope"]
+        == "retention_purge_legal_hold_lifecycle_report_handoff_gateway_retrieval"
     )
     assert posture["supportedArchiveFeatures"] == [
         "generated_document_archival",
@@ -35,6 +36,7 @@ def test_service_posture_does_not_overclaim_archive_features() -> None:
         "legal_hold_set_release_with_purge_blocking",
         "document_lifecycle_relationships",
         "current_document_resolution",
+        "report_to_archive_handoff",
         "gateway_backed_document_retrieval",
     ]
 

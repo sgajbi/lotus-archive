@@ -27,7 +27,8 @@ archive API surface:
 17. Purge eligibility evaluation and governed purge execution after retention expiry.
 18. Legal-hold set/release with purge blocking and audit events.
 19. Supersession, correction, and reissue relationships with current-document resolution.
-20. Gateway-backed product retrieval through `lotus-gateway` archived document routes.
+20. Report-to-archive handoff after successful PDF render through `lotus-report`.
+21. Gateway-backed product retrieval through `lotus-gateway` archived document routes.
 
 Workbench-facing archive retrieval is not supported yet. Product retrieval must continue to flow
 through `lotus-gateway`; Workbench must not call `lotus-archive` directly.
@@ -45,13 +46,13 @@ through `lotus-gateway`; Workbench must not call `lotus-archive` directly.
 | Legal hold set/release with purge blocking | `ready` | `POST /documents/{document_id}/legal-holds`, `DELETE /documents/{document_id}/legal-holds/{legal_hold_id}`, legal-hold repository model, migration contract, metadata summary refresh, purge blocking, and audit. |
 | Supersession, correction, and reissue relationships | `ready` | `POST /documents/{document_id}/supersede`, `POST /documents/{document_id}/correct`, `POST /documents/{document_id}/reissue`, append-only lifecycle relationship records, current-document resolution, conflict checks, and audit. |
 | Current document resolution | `ready` | `GET /documents/{document_id}/current` resolves supersession, correction, and reissue chains while preserving historical metadata lookup through `GET /documents/{document_id}`. |
+| Report-to-archive handoff | `ready` | `lotus-report` PR #66 hands successful PDF render artifacts and source-backed metadata to `POST /documents`, records `archiving` and `archived` ledger events, and maps archive validation, conflict, storage, and execution failures truthfully. |
 | Gateway-backed document retrieval | `ready` | `lotus-gateway` PR #150 exposes `/api/v1/documents/{document_id}` and `/api/v1/documents/{document_id}/download`, forwards caller context as `lotus-gateway`, preserves support-safe metadata and checksum headers, and keeps archive storage locations hidden. |
 
 ## Not Yet Supported
 
 | Capability | Support state | Reason |
 | --- | --- | --- |
-| Report-to-archive handoff | `not_supported` | `lotus-report` integration is not implemented yet. |
 | Workbench document retrieval surface | `not_supported` | Product surface is not implemented and must remain gateway-backed if added. |
 | Arbitrary file storage | `not_supported` | Out of RFC-0103 scope. |
 | Manual customer document upload | `not_supported` | Out of RFC-0103 first-wave scope. |

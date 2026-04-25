@@ -30,7 +30,9 @@ def test_supported_features_baseline_blocks_client_feature_overclaim() -> None:
     assert "Workbench-facing archive retrieval is not supported yet." in (supported_features)
     assert "| Generated-document archival | `ready` |" in supported_features
     assert "| Controlled document binary download | `ready` |" in supported_features
+    assert "| Report-to-archive handoff | `ready` |" in supported_features
     assert "| Gateway-backed document retrieval | `ready` |" in supported_features
+    assert "| Report-to-archive handoff | `not_supported` |" not in supported_features
     assert "| Workbench document retrieval surface | `not_supported` |" in supported_features
     assert "| Arbitrary file storage | `not_supported` |" in supported_features
 
