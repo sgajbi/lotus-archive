@@ -16,10 +16,10 @@ contract, repository engineering context, safe service-level error envelope, cal
 helper, structured request logging, archive metadata model, migration contract, storage adapter,
 checksum validation, idempotent archive-write domain service, internal archive create API,
 controlled metadata lookup, checksum-verified binary download, access-audit recording, and
-archive-specific module-family/documentation structure.
+retention posture lookup, purge eligibility and execution, legal-hold set/release with purge
+blocking, and archive-specific module-family/documentation structure.
 
-No retention, purge, legal-hold, lifecycle, report-handoff, gateway, or Workbench retrieval
-capability is supported yet.
+No lifecycle, report-handoff, gateway, or Workbench retrieval capability is supported yet.
 
 ## Architecture And Module Map
 
@@ -38,8 +38,8 @@ capability is supported yet.
 10. `src/app/archive/api_models.py`: support-safe archive API request and response models.
 11. `src/app/archive/audit.py`: access-audit event model and repository protocol.
 12. `src/app/archive/authorization.py`: first-wave archive caller authorization policy.
-13. `src/app/archive/service.py`: archive API orchestration and retrieval-time checksum
-   verification.
+13. `src/app/archive/service.py`: archive API orchestration, retrieval-time checksum
+   verification, retention posture, purge eligibility/execution, and legal-hold state changes.
 14. `migrations/`: PostgreSQL metadata contract migrations.
 15. `src/app/contracts/`: API and contract models.
 16. `src/app/middleware/`: shared request middleware.

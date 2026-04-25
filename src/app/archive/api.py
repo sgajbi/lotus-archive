@@ -9,6 +9,12 @@ from app.archive.api_models import (
     AccessEventListResponse,
     ArchiveDocumentCreateRequest,
     ArchiveDocumentResponse,
+    LegalHoldCreateRequest,
+    LegalHoldReleaseRequest,
+    LegalHoldResponse,
+    PurgeEvaluationResponse,
+    PurgeExecutionResponse,
+    RetentionResponse,
 )
 from app.archive.archive_writer import ArchiveWriter
 from app.archive.audit import InMemoryAccessAuditRepository
@@ -183,3 +189,165 @@ async def list_access_events(
         trace_id=request_trace_id,
     )
     return AccessEventListResponse(document_id=document_id, events=events)
+
+
+@router.get(
+    "/{document_id}/retention",
+    response_model=RetentionResponse,
+    summary="Get document retention posture",
+    description=(
+        "Returns the archived document retention, purge, and legal-hold posture for support and "
+        "operations. The response is support-safe and does not expose object-storage paths."
+    ),
+    responses={
+        200: {"description": "Retention and legal-hold posture for the document."},
+        401: {"description": "Required caller context is missing."},
+        403: {"description": "The caller is not authorized to read retention posture."},
+        404: {"description": "The document does not exist."},
+    },
+)
+async def get_retention(
+    document_id: str,
+    service: ArchiveDocumentService = Depends(archive_service),
+    context: CallerContext = Depends(caller_context),
+    request_trace_id: str = Depends(trace_id),
+) -> RetentionResponse:
+    metadata = service.get_retention(
+        document_id=document_id,
+        caller_context=context,
+        trace_id=request_trace_id,
+    )
+    return RetentionResponse.from_metadata(metadata)
+
+
+@router.post(
+    "/{document_id}/purge-evaluation",
+    response_model=PurgeEvaluationResponse,
+    summary="Evaluate document purge eligibility",
+    description=(
+        "Evaluates whether retention has elapsed and no active legal hold blocks purge. This "
+        "action records audit evidence but does not delete document binary content."
+    ),
+    responses={
+        200: {"description": "Purge eligibility evaluation result."},
+        401: {"description": "Required caller context is missing."},
+        403: {"description": "The caller is not authorized to evaluate purge."},
+        404: {"description": "The document does not exist."},
+    },
+)
+async def evaluate_purge(
+    document_id: str,
+    service: ArchiveDocumentService = Depends(archive_service),
+    context: CallerContext = Depends(caller_context),
+    request_trace_id: str = Depends(trace_id),
+) -> PurgeEvaluationResponse:
+    metadata, purge_eligible, reason_code = service.evaluate_purge(
+        document_id=document_id,
+        caller_context=context,
+        trace_id=request_trace_id,
+    )
+    return PurgeEvaluationResponse(
+        **RetentionResponse.from_metadata(metadata).model_dump(),
+        purge_eligible=purge_eligible,
+        reason_code=reason_code,
+    )
+
+
+@router.post(
+    "/{document_id}/purge",
+    response_model=PurgeExecutionResponse,
+    summary="Execute document purge",
+    description=(
+        "Executes a governed purge only when retention has elapsed and no legal hold is active. "
+        "The action removes the stored binary through the archive storage abstraction and leaves "
+        "support-safe metadata and audit evidence."
+    ),
+    responses={
+        200: {"description": "Purge execution result."},
+        401: {"description": "Required caller context is missing."},
+        403: {"description": "The caller is not authorized to execute purge."},
+        404: {"description": "The document does not exist."},
+        409: {"description": "The document is not purge eligible or legal hold blocks purge."},
+    },
+)
+async def purge_document(
+    document_id: str,
+    service: ArchiveDocumentService = Depends(archive_service),
+    context: CallerContext = Depends(caller_context),
+    request_trace_id: str = Depends(trace_id),
+) -> PurgeExecutionResponse:
+    metadata, reason_code = service.purge_document(
+        document_id=document_id,
+        caller_context=context,
+        trace_id=request_trace_id,
+    )
+    return PurgeExecutionResponse(
+        **RetentionResponse.from_metadata(metadata).model_dump(),
+        purged=True,
+        reason_code=reason_code,
+    )
+
+
+@router.post(
+    "/{document_id}/legal-holds",
+    status_code=status.HTTP_201_CREATED,
+    response_model=LegalHoldResponse,
+    summary="Set a document legal hold",
+    description=(
+        "Sets a legal hold on an archived document with a reason and authority reference. Active "
+        "legal holds block purge regardless of retention eligibility."
+    ),
+    responses={
+        201: {"description": "Legal hold was set."},
+        401: {"description": "Required caller context is missing."},
+        403: {"description": "The caller is not authorized to set legal holds."},
+        404: {"description": "The document does not exist."},
+    },
+)
+async def set_legal_hold(
+    document_id: str,
+    request_body: LegalHoldCreateRequest,
+    service: ArchiveDocumentService = Depends(archive_service),
+    context: CallerContext = Depends(caller_context),
+    request_trace_id: str = Depends(trace_id),
+) -> LegalHoldResponse:
+    legal_hold = service.set_legal_hold(
+        document_id=document_id,
+        request=request_body,
+        caller_context=context,
+        trace_id=request_trace_id,
+    )
+    return LegalHoldResponse.from_record(legal_hold)
+
+
+@router.delete(
+    "/{document_id}/legal-holds/{legal_hold_id}",
+    response_model=LegalHoldResponse,
+    summary="Release a document legal hold",
+    description=(
+        "Releases an active legal hold and refreshes the document purge-blocking posture. The "
+        "release is idempotent for already released holds and is recorded in access audit."
+    ),
+    responses={
+        200: {"description": "Legal hold release result."},
+        401: {"description": "Required caller context is missing."},
+        403: {"description": "The caller is not authorized to release legal holds."},
+        404: {"description": "The document or legal hold does not exist."},
+    },
+)
+async def release_legal_hold(
+    document_id: str,
+    legal_hold_id: str,
+    request_body: LegalHoldReleaseRequest,
+    service: ArchiveDocumentService = Depends(archive_service),
+    context: CallerContext = Depends(caller_context),
+    request_trace_id: str = Depends(trace_id),
+) -> LegalHoldResponse:
+    legal_hold = service.release_legal_hold(
+        document_id=document_id,
+        legal_hold_id=legal_hold_id,
+        release_reason=request_body.release_reason,
+        caller_context=context,
+        trace_id=request_trace_id,
+    )
+    return LegalHoldResponse.from_record(legal_hold)

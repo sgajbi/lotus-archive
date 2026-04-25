@@ -27,3 +27,24 @@ def test_initial_migration_contains_required_archive_document_fields() -> None:
         assert field in migration
     assert "archive_request_id TEXT NOT NULL UNIQUE" in migration
     assert "storage_key TEXT NOT NULL UNIQUE" in migration
+
+
+def test_legal_hold_migration_contains_required_fields() -> None:
+    migration = (ROOT / "migrations" / "002_create_archive_legal_holds.sql").read_text(
+        encoding="utf-8"
+    )
+
+    for field in [
+        "legal_hold_id",
+        "document_id",
+        "hold_status",
+        "hold_reason",
+        "authority_reference",
+        "requested_by",
+        "requested_at",
+        "released_by",
+        "released_at",
+        "release_reason",
+    ]:
+        assert field in migration
+    assert "REFERENCES archive_documents(document_id)" in migration

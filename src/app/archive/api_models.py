@@ -10,6 +10,7 @@ from app.archive.models import (
     ArchiveDocumentMetadata,
     DocumentClassification,
     LegalHoldStatus,
+    LegalHoldRecord,
     PurgeStatus,
 )
 
@@ -110,3 +111,91 @@ class ArchiveDocumentResponse(BaseModel):
 class AccessEventListResponse(BaseModel):
     document_id: str = Field(description="Archived document identifier.")
     events: list[AccessAuditEvent] = Field(description="Access-audit events for this document.")
+
+
+class RetentionResponse(BaseModel):
+    document_id: str = Field(description="Archived document identifier.")
+    retention_policy_id: str | None = Field(
+        default=None,
+        description="Retention policy assigned to the document.",
+    )
+    retention_start_date: date | None = Field(
+        default=None,
+        description="Date retention starts for the document.",
+    )
+    retain_until_date: date | None = Field(
+        default=None,
+        description="Date until which the document must be retained.",
+    )
+    purge_eligible_at: datetime | None = Field(
+        default=None,
+        description="Timestamp when the document became purge-eligible.",
+    )
+    purged_at: datetime | None = Field(
+        default=None,
+        description="Timestamp when purge execution completed.",
+    )
+    purge_status: PurgeStatus = Field(description="Current purge status.")
+    legal_hold_status: LegalHoldStatus = Field(description="Current legal-hold status.")
+    legal_hold_count: int = Field(description="Number of active legal holds.")
+
+    @classmethod
+    def from_metadata(cls, metadata: ArchiveDocumentMetadata) -> RetentionResponse:
+        return cls(
+            document_id=metadata.document_id,
+            retention_policy_id=metadata.retention_policy_id,
+            retention_start_date=metadata.retention_start_date,
+            retain_until_date=metadata.retain_until_date,
+            purge_eligible_at=metadata.purge_eligible_at,
+            purged_at=metadata.purged_at,
+            purge_status=metadata.purge_status,
+            legal_hold_status=metadata.legal_hold_status,
+            legal_hold_count=metadata.legal_hold_count,
+        )
+
+
+class PurgeEvaluationResponse(RetentionResponse):
+    purge_eligible: bool = Field(description="Whether purge execution is currently allowed.")
+    reason_code: str = Field(description="Stable support-safe purge eligibility reason code.")
+
+
+class PurgeExecutionResponse(RetentionResponse):
+    purged: bool = Field(description="Whether this request completed or confirmed purge execution.")
+    reason_code: str = Field(description="Stable support-safe purge execution reason code.")
+
+
+class LegalHoldCreateRequest(BaseModel):
+    hold_reason: str = Field(min_length=1, description="Reason the legal hold is required.")
+    authority_reference: str = Field(
+        min_length=1,
+        description="Legal, compliance, or operational authority reference for the hold.",
+    )
+
+
+class LegalHoldReleaseRequest(BaseModel):
+    release_reason: str = Field(
+        min_length=1, description="Reason the legal hold is being released."
+    )
+
+
+class LegalHoldResponse(BaseModel):
+    legal_hold_id: str = Field(description="Stable legal-hold identifier.")
+    document_id: str = Field(description="Archived document identifier.")
+    hold_status: LegalHoldStatus = Field(description="Current legal-hold status.")
+    hold_reason: str = Field(description="Reason the legal hold was set.")
+    authority_reference: str = Field(description="Authority reference for the legal hold.")
+    requested_by: str = Field(description="Actor that requested the legal hold.")
+    requested_at: datetime = Field(description="UTC timestamp when the legal hold was requested.")
+    released_by: str | None = Field(default=None, description="Actor that released the legal hold.")
+    released_at: datetime | None = Field(
+        default=None,
+        description="UTC timestamp when the legal hold was released.",
+    )
+    release_reason: str | None = Field(
+        default=None,
+        description="Reason the legal hold was released.",
+    )
+
+    @classmethod
+    def from_record(cls, record: LegalHoldRecord) -> LegalHoldResponse:
+        return cls.model_validate(record.model_dump())

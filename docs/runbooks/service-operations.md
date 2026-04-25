@@ -6,9 +6,10 @@
 caller-context-parsing, correlation/trace propagation, metrics, structured request-log behavior,
 metadata model, migration contract, storage adapter, checksum validation, archive-write domain
 service behavior, internal archive create API, controlled metadata lookup, checksum-verified binary
-download, and access-audit recording. Do not use this service for legal hold, purge, retention,
-document lifecycle relationships, report handoff, gateway retrieval, or Workbench retrieval until
-those capabilities are implemented and listed in `docs/supported-features.md`.
+download, access-audit recording, retention posture lookup, purge eligibility and execution, and
+legal-hold set/release with purge blocking. Do not use this service for document lifecycle
+relationships, report handoff, gateway retrieval, or Workbench retrieval until those capabilities are
+implemented and listed in `docs/supported-features.md`.
 
 ## Standard Commands
 
@@ -36,7 +37,7 @@ those capabilities are implemented and listed in `docs/supported-features.md`.
 
 ## Archive-Specific First Checks
 
-When archive domain behavior is added, incident checks must preserve these boundaries:
+Incident checks must preserve these boundaries:
 
 1. confirm whether the issue is metadata, storage, audit, retention, legal hold, lifecycle, report
    handoff, or gateway retrieval;
@@ -45,3 +46,6 @@ When archive domain behavior is added, incident checks must preserve these bound
 4. distinguish render completion from archive completion.
 5. verify caller context and authorization before treating archive reads as data loss.
 6. verify checksum mismatch and missing-binary errors through support-safe error codes.
+7. verify purge eligibility through retention date, active legal-hold summary, and support-safe
+   reason code before treating purge rejection as an outage.
+8. verify legal-hold set/release audit events before treating a hold state mismatch as data loss.

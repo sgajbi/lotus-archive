@@ -7,16 +7,20 @@ from fastapi import Request
 import pytest
 
 from app.archive.api import archive_service, build_default_archive_service
-from app.archive.api_models import ArchiveDocumentCreateRequest
+from app.archive.api_models import ArchiveDocumentCreateRequest, LegalHoldCreateRequest
 from app.archive.archive_writer import ArchiveWriter
 from app.archive.audit import AccessEventType, AuthorizationDecision, InMemoryAccessAuditRepository
 from app.archive.authorization import AuthorizationFailedError
 from app.archive.exceptions import (
     DocumentChecksumMismatchError,
     DocumentNotFoundError,
+    LegalHoldActiveError,
+    LegalHoldNotFoundError,
     MetadataValidationError,
+    PurgeNotEligibleError,
     StorageReadFailedError,
 )
+from app.archive.models import LegalHoldStatus, PurgeStatus
 from app.archive.repository import InMemoryArchiveDocumentRepository
 from app.archive.service import ArchiveDocumentService
 from app.archive.storage import FilesystemObjectStorage
@@ -174,3 +178,152 @@ def test_archive_service_dependency_caches_default_service() -> None:
     second = archive_service(request)
 
     assert second is first
+
+
+def test_purge_evaluation_marks_document_eligible_after_retention_date(tmp_path: Path) -> None:
+    service = _service(tmp_path)
+    metadata = service.create_document(
+        request=_create_request(),
+        caller_context=_caller(),
+        trace_id="trace-create",
+    )
+
+    metadata, purge_eligible, reason_code = service.evaluate_purge(
+        document_id=metadata.document_id,
+        caller_context=_caller(),
+        trace_id="trace-eval",
+        evaluation_date=metadata.retain_until_date,
+    )
+
+    assert purge_eligible is True
+    assert reason_code == "retention_elapsed"
+    assert metadata.purge_status == PurgeStatus.ELIGIBLE
+    events = service.audit_repository.list_by_document_id(metadata.document_id)
+    assert AccessEventType.PURGE_EVALUATION in [event.event_type for event in events]
+
+
+def test_purge_evaluation_blocks_active_retention_period(tmp_path: Path) -> None:
+    service = _service(tmp_path)
+    metadata = service.create_document(
+        request=_create_request(),
+        caller_context=_caller(),
+        trace_id="trace-create",
+    )
+
+    metadata, purge_eligible, reason_code = service.evaluate_purge(
+        document_id=metadata.document_id,
+        caller_context=_caller(),
+        trace_id="trace-eval",
+        evaluation_date=metadata.retention_start_date,
+    )
+
+    assert purge_eligible is False
+    assert reason_code == "retention_period_active"
+    assert metadata.purge_status == PurgeStatus.NOT_ELIGIBLE
+
+
+def test_legal_hold_blocks_purge_until_released(tmp_path: Path) -> None:
+    service = _service(tmp_path)
+    metadata = service.create_document(
+        request=_create_request(),
+        caller_context=_caller(),
+        trace_id="trace-create",
+    )
+    legal_hold = service.set_legal_hold(
+        document_id=metadata.document_id,
+        request=LegalHoldCreateRequest(
+            hold_reason="Regulatory review",
+            authority_reference="CASE-001",
+        ),
+        caller_context=_caller(),
+        trace_id="trace-hold",
+    )
+
+    with pytest.raises(LegalHoldActiveError):
+        service.purge_document(
+            document_id=metadata.document_id,
+            caller_context=_caller(),
+            trace_id="trace-purge-blocked",
+            evaluation_date=metadata.retain_until_date,
+        )
+
+    released = service.release_legal_hold(
+        document_id=metadata.document_id,
+        legal_hold_id=legal_hold.legal_hold_id,
+        release_reason="Review complete",
+        caller_context=_caller(),
+        trace_id="trace-release",
+    )
+    purged, reason_code = service.purge_document(
+        document_id=metadata.document_id,
+        caller_context=_caller(),
+        trace_id="trace-purge",
+        evaluation_date=metadata.retain_until_date,
+    )
+
+    assert released.hold_status == LegalHoldStatus.CLEAR
+    assert purged.purge_status == PurgeStatus.PURGED
+    assert purged.purged_at is not None
+    assert reason_code == "purged"
+    assert not (tmp_path / "objects" / metadata.storage_key).exists()
+
+
+def test_purge_is_idempotent_after_first_execution(tmp_path: Path) -> None:
+    service = _service(tmp_path)
+    metadata = service.create_document(
+        request=_create_request(),
+        caller_context=_caller(),
+        trace_id="trace-create",
+    )
+    first, first_reason = service.purge_document(
+        document_id=metadata.document_id,
+        caller_context=_caller(),
+        trace_id="trace-purge",
+        evaluation_date=metadata.retain_until_date,
+    )
+    second, second_reason = service.purge_document(
+        document_id=metadata.document_id,
+        caller_context=_caller(),
+        trace_id="trace-purge-again",
+        evaluation_date=metadata.retain_until_date,
+    )
+
+    assert first.purge_status == PurgeStatus.PURGED
+    assert first_reason == "purged"
+    assert second.purge_status == PurgeStatus.PURGED
+    assert second_reason == "already_purged"
+
+
+def test_purge_rejects_document_still_under_retention(tmp_path: Path) -> None:
+    service = _service(tmp_path)
+    metadata = service.create_document(
+        request=_create_request(),
+        caller_context=_caller(),
+        trace_id="trace-create",
+    )
+
+    with pytest.raises(PurgeNotEligibleError):
+        service.purge_document(
+            document_id=metadata.document_id,
+            caller_context=_caller(),
+            trace_id="trace-purge",
+            evaluation_date=metadata.retention_start_date,
+        )
+
+
+def test_release_unknown_legal_hold_reports_not_found(tmp_path: Path) -> None:
+    service = _service(tmp_path)
+    metadata = service.create_document(
+        request=_create_request(),
+        caller_context=_caller(),
+        trace_id="trace-create",
+    )
+
+    with pytest.raises(LegalHoldNotFoundError):
+        service.release_legal_hold(
+            document_id=metadata.document_id,
+            legal_hold_id="hold_missing",
+            release_reason="No longer needed",
+            caller_context=_caller(),
+            trace_id="trace-release",
+        )

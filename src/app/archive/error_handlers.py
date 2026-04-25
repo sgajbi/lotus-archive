@@ -10,7 +10,10 @@ from app.archive.exceptions import (
     DocumentChecksumMismatchError,
     DocumentNotFoundError,
     DuplicateArchiveRequestConflict,
+    LegalHoldActiveError,
+    LegalHoldNotFoundError,
     MetadataValidationError,
+    PurgeNotEligibleError,
     StorageReadFailedError,
 )
 from app.contracts.errors import error_response
@@ -103,6 +106,42 @@ def register_archive_exception_handlers(
         return error_response(
             code="metadata_validation_failed",
             http_status=status.HTTP_400_BAD_REQUEST,
+            correlation_id=correlation_id(request),
+            service=service_name,
+        )
+
+    @app.exception_handler(LegalHoldActiveError)
+    async def legal_hold_active_exception_handler(
+        request: Request,
+        _exc: LegalHoldActiveError,
+    ) -> JSONResponse:
+        return error_response(
+            code="legal_hold_active",
+            http_status=status.HTTP_409_CONFLICT,
+            correlation_id=correlation_id(request),
+            service=service_name,
+        )
+
+    @app.exception_handler(LegalHoldNotFoundError)
+    async def legal_hold_not_found_exception_handler(
+        request: Request,
+        _exc: LegalHoldNotFoundError,
+    ) -> JSONResponse:
+        return error_response(
+            code="legal_hold_not_found",
+            http_status=status.HTTP_404_NOT_FOUND,
+            correlation_id=correlation_id(request),
+            service=service_name,
+        )
+
+    @app.exception_handler(PurgeNotEligibleError)
+    async def purge_not_eligible_exception_handler(
+        request: Request,
+        _exc: PurgeNotEligibleError,
+    ) -> JSONResponse:
+        return error_response(
+            code="purge_not_eligible",
+            http_status=status.HTTP_409_CONFLICT,
             correlation_id=correlation_id(request),
             service=service_name,
         )

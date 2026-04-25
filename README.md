@@ -12,8 +12,9 @@ correlation and trace headers, structured request logging, safe error envelopes,
 parsing, archive metadata model, migration contract, filesystem-backed development storage adapter,
 checksum validation, idempotent archive-write domain service, archive create API, controlled
 metadata lookup, controlled binary download, access-audit recording for archive API actions,
-quality gates, and archive-specific structure. Retention, purge, legal hold, lifecycle
-relationships, report handoff, gateway retrieval, and Workbench retrieval are not supported yet.
+retention posture lookup, purge eligibility and execution, legal-hold set/release with purge
+blocking, quality gates, and archive-specific structure. Lifecycle relationships, report handoff,
+gateway retrieval, and Workbench retrieval are not supported yet.
 
 ## Quick Start
 
