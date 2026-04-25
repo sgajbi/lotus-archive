@@ -14,3 +14,4 @@ def test_metadata_endpoint() -> None:
     response = client.get("/metadata")
     assert response.status_code == 200
     assert response.json()["service"].startswith("lotus-")
+    assert response.json()["archivePosture"]["supportedArchiveFeatures"] == []

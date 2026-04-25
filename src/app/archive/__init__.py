@@ -1,0 +1,1 @@
+"""Archive service domain structure."""

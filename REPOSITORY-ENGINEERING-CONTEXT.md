@@ -12,15 +12,23 @@
 
 `lotus-archive` is scaffolded from platform automation and starts with the governed backend baseline:
 FastAPI service shell, CI workflows, repo-native quality commands, Docker baseline, AGENTS
-contract, and repository engineering context.
+contract, repository engineering context, and archive-specific module-family/documentation
+structure.
+
+No archive create, retrieval, retention, purge, legal-hold, lifecycle, report-handoff, gateway, or
+Workbench retrieval capability is supported yet.
 
 ## Architecture And Module Map
 
 1. `src/app/main.py`: application entrypoint, health/readiness, metadata.
-2. `src/app/contracts/`: API and contract models.
-3. `src/app/middleware/`: shared request middleware.
-4. `tests/unit`, `tests/integration`, `tests/e2e`: test pyramid baseline.
-5. `docs/standards/`: repository standards placeholders to be replaced with service truth.
+2. `src/app/archive/service_profile.py`: implementation posture, module families, and
+   unsupported product-capability baseline.
+3. `src/app/contracts/`: API and contract models.
+4. `src/app/middleware/`: shared request middleware.
+5. `tests/unit`, `tests/integration`, `tests/e2e`: test pyramid baseline.
+6. `docs/architecture/`: archive service boundaries and structure.
+7. `docs/supported-features.md`: implementation-backed support posture.
+8. `docs/standards/`: repository standards placeholders to be replaced with service truth.
 
 ## Runtime And Integration Boundaries
 
@@ -57,10 +65,12 @@ build validation.
 
 ## Known Constraints And Implementation Notes
 
-1. this is the platform scaffold baseline, not business-logic completeness,
+1. this is the platform scaffold baseline plus RFC-0103 Slice 1 structure, not business-logic
+   completeness,
 2. standards placeholders in `docs/standards/` must be replaced with service truth as the service
    matures,
-3. keep business role, naming, docs, and tests aligned with actual implemented scope.
+3. keep business role, naming, docs, and tests aligned with actual implemented scope,
+4. do not claim archive product support until code, tests, documentation, and PR evidence exist.
 
 ## Context Maintenance Rule
 
