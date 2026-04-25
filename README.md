@@ -14,8 +14,9 @@ checksum validation, idempotent archive-write domain service, archive create API
 metadata lookup, controlled binary download, access-audit recording for archive API actions,
 retention posture lookup, purge eligibility and execution, legal-hold set/release with purge
 blocking, lifecycle relationship APIs for supersession/correction/reissue, current-document
-resolution, quality gates, and archive-specific structure. Report handoff, gateway retrieval, and
-Workbench retrieval are not supported yet.
+resolution, quality gates, archive-specific structure, and gateway-backed document retrieval.
+Report handoff and Workbench retrieval are not supported yet. Product retrieval must flow through
+`lotus-gateway`; Workbench must not call `lotus-archive` directly.
 
 ## Quick Start
 
