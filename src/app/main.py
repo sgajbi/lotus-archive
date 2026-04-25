@@ -1,5 +1,6 @@
 from fastapi import FastAPI, Response, status
 from prometheus_fastapi_instrumentator import Instrumentator
+from app.archive.service_profile import service_posture
 from app.middleware.correlation import CorrelationIdMiddleware
 
 SERVICE_NAME = "lotus-archive"
@@ -30,9 +31,10 @@ async def health_ready(response: Response) -> dict[str, str]:
 
 
 @app.get("/metadata")
-async def metadata() -> dict[str, str]:
+async def metadata() -> dict[str, object]:
     return {
         "service": SERVICE_NAME,
         "version": SERVICE_VERSION,
         "roundingPolicyVersion": ROUNDING_POLICY_VERSION,
+        "archivePosture": service_posture(),
     }

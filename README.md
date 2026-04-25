@@ -2,6 +2,16 @@
 
 Lotus generated-document archive, retrieval, retention, legal hold, and access audit service
 
+## Current Posture
+
+`lotus-archive` is the governed service boundary for generated Lotus reporting documents. It is not
+a generic file store, manual upload service, customer delivery channel, or report-rendering service.
+
+The current implementation supports the service scaffold, health/readiness, metadata, metrics,
+correlation headers, quality gates, and archive-specific structure. Archive create, retrieval,
+retention, purge, legal hold, lifecycle relationships, report handoff, gateway retrieval, and
+Workbench retrieval are not supported yet.
+
 ## Quick Start
 
 ```powershell
@@ -39,3 +49,5 @@ docker compose up --build
 - CI and governance: .github/workflows/
 - Engineering commands: Makefile
 - Platform standards docs: docs/standards/
+- Archive boundaries: docs/architecture/archive-service-boundaries.md
+- Supported feature posture: docs/supported-features.md
