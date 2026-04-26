@@ -30,6 +30,7 @@ from app.archive.exceptions import (
     SupersessionConflictError,
     UnsupportedLifecycleTransitionError,
 )
+from app.archive.metrics import archive_metric
 from app.archive.models import (
     ArchiveDocumentMetadata,
     LegalHoldRecord,
@@ -59,6 +60,7 @@ class ArchiveDocumentService:
         self.audit_repository = audit_repository
         self.authorization_policy = authorization_policy or ArchiveAuthorizationPolicy()
 
+    @archive_metric("archive_create")
     def create_document(
         self,
         *,
@@ -82,6 +84,7 @@ class ArchiveDocumentService:
         )
         return metadata
 
+    @archive_metric("metadata_lookup")
     def get_document_metadata(
         self,
         *,
@@ -105,6 +108,7 @@ class ArchiveDocumentService:
         )
         return metadata
 
+    @archive_metric("binary_download")
     def get_document_binary(
         self,
         *,
@@ -131,6 +135,7 @@ class ArchiveDocumentService:
         )
         return metadata, content
 
+    @archive_metric("access_events_lookup")
     def list_access_events(
         self,
         *,
@@ -154,6 +159,7 @@ class ArchiveDocumentService:
         )
         return self.audit_repository.list_by_document_id(document_id)
 
+    @archive_metric("retention_lookup")
     def get_retention(
         self,
         *,
@@ -177,6 +183,7 @@ class ArchiveDocumentService:
         )
         return metadata
 
+    @archive_metric("purge_evaluation")
     def evaluate_purge(
         self,
         *,
@@ -202,6 +209,7 @@ class ArchiveDocumentService:
         )
         return metadata, purge_eligible, reason_code
 
+    @archive_metric("purge_execution")
     def purge_document(
         self,
         *,
@@ -250,6 +258,7 @@ class ArchiveDocumentService:
         )
         return metadata, "purged"
 
+    @archive_metric("legal_hold_set")
     def set_legal_hold(
         self,
         *,
@@ -283,6 +292,7 @@ class ArchiveDocumentService:
         )
         return legal_hold
 
+    @archive_metric("legal_hold_release")
     def release_legal_hold(
         self,
         *,
@@ -322,6 +332,7 @@ class ArchiveDocumentService:
         )
         return legal_hold
 
+    @archive_metric("current_document_lookup")
     def get_current_document_metadata(
         self,
         *,
@@ -345,6 +356,7 @@ class ArchiveDocumentService:
         )
         return current
 
+    @archive_metric("lifecycle_supersede")
     def supersede_document(
         self,
         *,
@@ -362,6 +374,7 @@ class ArchiveDocumentService:
             trace_id=trace_id,
         )
 
+    @archive_metric("lifecycle_correct")
     def correct_document(
         self,
         *,
@@ -379,6 +392,7 @@ class ArchiveDocumentService:
             trace_id=trace_id,
         )
 
+    @archive_metric("lifecycle_reissue")
     def reissue_document(
         self,
         *,
