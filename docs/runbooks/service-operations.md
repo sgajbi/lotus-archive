@@ -8,8 +8,9 @@ metadata model, migration contract, storage adapter, checksum validation, archiv
 service behavior, internal archive create API, controlled metadata lookup, checksum-verified binary
 download, access-audit recording, retention posture lookup, purge eligibility and execution, and
 legal-hold set/release with purge blocking, lifecycle relationship APIs, and current-document
-resolution. Do not use this service for report handoff or direct Workbench retrieval
-until those capabilities are implemented and listed in `docs/supported-features.md`.
+resolution, report-to-archive handoff through `lotus-report`, and product-facing retrieval through
+the `lotus-gateway` document facade. Do not use this service for direct Workbench retrieval until a
+gateway-backed Workbench surface is implemented and listed in `docs/supported-features.md`.
 
 ## Standard Commands
 

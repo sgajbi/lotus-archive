@@ -6,7 +6,7 @@ customer document delivery.
 
 ## Current Implementation Posture
 
-RFC-0103 Slice 6 establishes the internal archive API surface for authorized Lotus callers:
+RFC-0103 establishes the supported first-wave archive API surface for authorized Lotus callers:
 generated-document archival, support-safe metadata lookup, checksum-verified binary download,
 access-audit lookup, retention posture lookup, purge eligibility and execution, and legal-hold
 set/release with purge blocking, lifecycle relationships, current-document resolution, and
@@ -27,7 +27,7 @@ yet. Gateway-backed retrieval is supported through `lotus-gateway` as the produc
 | Legal hold | `lotus-archive` | Implemented for legal-hold set/release, authority reference, active-hold summary, and purge blocking |
 | Lifecycle relationships | `lotus-archive` | Implemented for supersession, correction, reissue, append-only relationship records, historical lookup, and current-document resolution |
 | Product-facing retrieval | `lotus-gateway` | Supported through gateway metadata and controlled download routes |
-| Workbench retrieval surface | `lotus-workbench` | Not supported unless gateway-backed retrieval is implemented |
+| Workbench retrieval surface | `lotus-workbench` | Not supported; any future product surface must consume the existing gateway-backed retrieval boundary |
 
 ## Module Families
 
@@ -75,8 +75,9 @@ RFC-0103 Slice 4 adds:
    events.
 
 All archive API routes require caller context. Workbench is intentionally not an authorized direct
-archive caller. Gateway-backed product retrieval remains future work and must be implemented in
-`lotus-gateway` before any Workbench retrieval surface is claimed.
+archive caller. Gateway-backed product retrieval is implemented in `lotus-gateway`; any future
+Workbench retrieval surface must consume that gateway boundary and must not call `lotus-archive`
+directly.
 
 RFC-0103 Slice 5 adds:
 

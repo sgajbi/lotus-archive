@@ -37,6 +37,22 @@ def test_supported_features_baseline_blocks_client_feature_overclaim() -> None:
     assert "| Arbitrary file storage | `not_supported` |" in supported_features
 
 
+def test_operator_docs_match_report_handoff_and_gateway_retrieval_support() -> None:
+    docs = "\n".join(
+        [
+            _read("README.md"),
+            _read("docs/runbooks/service-operations.md"),
+            _read("docs/supported-features.md"),
+            _read("docs/architecture/archive-service-boundaries.md"),
+        ]
+    )
+
+    assert "report-to-archive handoff through `lotus-report`" in docs
+    assert "Gateway-backed product retrieval is implemented in `lotus-gateway`" in docs
+    assert "Gateway-backed product retrieval remains future work" not in docs
+    assert "Do not use this service for report handoff" not in docs
+
+
 def test_archive_boundary_doc_rejects_local_output_directory_architecture() -> None:
     boundary_doc = " ".join(
         _read("docs/architecture/archive-service-boundaries.md").lower().split()
