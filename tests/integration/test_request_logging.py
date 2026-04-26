@@ -5,6 +5,17 @@ from fastapi.testclient import TestClient
 import pytest
 
 from app.main import app
+from app.middleware.correlation import LOGGER, configure_request_logging
+
+
+def test_request_logger_is_enabled_for_runtime_info_logs(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("LOG_LEVEL", "INFO")
+
+    configure_request_logging()
+
+    assert LOGGER.isEnabledFor(logging.INFO)
 
 
 def test_request_log_is_structured_and_support_safe(caplog: pytest.LogCaptureFixture) -> None:

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 import re
 import time
 import uuid
@@ -14,6 +15,10 @@ from starlette.types import ASGIApp
 LOGGER = logging.getLogger("lotus_archive.requests")
 
 _W3C_TRACE_ID_PATTERN = re.compile(r"^[0-9a-f]{32}$")
+
+
+def configure_request_logging() -> None:
+    LOGGER.setLevel(os.getenv("LOG_LEVEL", "INFO").upper())
 
 
 class CorrelationIdMiddleware(BaseHTTPMiddleware):

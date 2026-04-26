@@ -6,13 +6,15 @@ from app.archive.api import router as archive_documents_router
 from app.archive.error_handlers import register_archive_exception_handlers
 from app.archive.service_profile import service_posture
 from app.contracts.errors import error_response
-from app.middleware.correlation import CorrelationIdMiddleware
+from app.middleware.correlation import CorrelationIdMiddleware, configure_request_logging
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 SERVICE_NAME = "lotus-archive"
 SERVICE_VERSION = "0.1.0"
 ROUNDING_POLICY_VERSION = "v1"
 HTTP_422_UNPROCESSABLE_CONTENT = 422
+
+configure_request_logging()
 
 app = FastAPI(title=SERVICE_NAME, version=SERVICE_VERSION)
 app.add_middleware(CorrelationIdMiddleware, service_name=SERVICE_NAME)
