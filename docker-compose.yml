@@ -2,11 +2,11 @@ services:
   lotus-archive:
     build: .
     ports:
-      - \"8150:8150\"
+      - "8150:8150"
     env_file:
-      - .env
+      - .env.example
     healthcheck:
-      test: [\"CMD\", \"python\", \"-c\", \"import urllib.request; urllib.request.urlopen('http://localhost:8150/health/ready')\"]
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8150/health/ready')"]
       interval: 15s
       timeout: 3s
       retries: 10
