@@ -4,6 +4,7 @@ import json
 import logging
 import os
 import re
+import sys
 import time
 import uuid
 from collections.abc import Awaitable, Callable
@@ -13,12 +14,18 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.types import ASGIApp
 
 LOGGER = logging.getLogger("lotus_archive.requests")
+REQUEST_LOG_HANDLER_MARKER = "_lotus_archive_request_log_handler"
 
 _W3C_TRACE_ID_PATTERN = re.compile(r"^[0-9a-f]{32}$")
 
 
 def configure_request_logging() -> None:
     LOGGER.setLevel(os.getenv("LOG_LEVEL", "INFO").upper())
+    if not any(getattr(handler, REQUEST_LOG_HANDLER_MARKER, False) for handler in LOGGER.handlers):
+        handler = logging.StreamHandler(sys.stdout)
+        handler.setFormatter(logging.Formatter("%(message)s"))
+        setattr(handler, REQUEST_LOG_HANDLER_MARKER, True)
+        LOGGER.addHandler(handler)
 
 
 class CorrelationIdMiddleware(BaseHTTPMiddleware):
