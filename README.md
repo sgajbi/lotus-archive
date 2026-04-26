@@ -8,7 +8,7 @@ Lotus generated-document archive, retrieval, retention, legal hold, and access a
 a generic file store, manual upload service, customer delivery channel, or report-rendering service.
 
 The current implementation supports the service scaffold, health/readiness, metadata, metrics,
-correlation and trace headers, structured request logging, safe error envelopes, caller-context
+correlation, trace, and `traceparent` headers, structured request logging, safe error envelopes, caller-context
 parsing, archive metadata model, migration contract, filesystem-backed development storage adapter,
 checksum validation, idempotent archive-write domain service, archive create API, controlled
 metadata lookup, controlled binary download, access-audit recording for archive API actions,

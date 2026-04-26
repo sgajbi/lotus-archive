@@ -24,7 +24,7 @@ class CorrelationIdMiddleware(BaseHTTPMiddleware):
         call_next: Callable[[Request], Awaitable[Response]],
     ) -> Response:
         correlation_id = request.headers.get("X-Correlation-Id") or str(uuid.uuid4())
-        trace_id = request.headers.get("X-Trace-Id") or correlation_id
+        trace_id = _resolve_trace_id(request) or str(uuid.uuid4())
         request.state.correlation_id = correlation_id
         request.state.trace_id = trace_id
         start = time.perf_counter()
@@ -32,6 +32,7 @@ class CorrelationIdMiddleware(BaseHTTPMiddleware):
         duration_ms = (time.perf_counter() - start) * 1000.0
         response.headers["X-Correlation-Id"] = correlation_id
         response.headers["X-Trace-Id"] = trace_id
+        response.headers["traceparent"] = f"00-{trace_id}-0000000000000001-01"
         response.headers["X-Service-Name"] = self._service_name
         response.headers["X-Request-Duration-Ms"] = f"{duration_ms:.3f}"
         LOGGER.info(
@@ -50,3 +51,12 @@ class CorrelationIdMiddleware(BaseHTTPMiddleware):
             )
         )
         return response
+
+
+def _resolve_trace_id(request: Request) -> str | None:
+    traceparent = request.headers.get("traceparent")
+    if traceparent:
+        parts = traceparent.split("-")
+        if len(parts) >= 4 and len(parts[1]) == 32:
+            return parts[1]
+    return request.headers.get("X-Trace-Id") or request.headers.get("X-Trace-ID")

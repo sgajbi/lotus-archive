@@ -29,6 +29,7 @@ gateway-backed Workbench surface is implemented and listed in `docs/supported-fe
 - Metrics: `/metrics`
 - Correlation header: `X-Correlation-Id`
 - Trace header: `X-Trace-Id`
+- W3C trace context response/header propagation: `traceparent`
 
 ## Incident First Checks
 
