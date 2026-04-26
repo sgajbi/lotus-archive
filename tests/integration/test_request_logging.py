@@ -11,7 +11,10 @@ def test_request_log_is_structured_and_support_safe(caplog: pytest.LogCaptureFix
     caplog.set_level(logging.INFO, logger="lotus_archive.requests")
 
     client = TestClient(app)
-    response = client.get("/health", headers={"X-Correlation-Id": "corr-log"})
+    response = client.get(
+        "/health",
+        headers={"X-Correlation-Id": "corr-log", "X-Trace-Id": "trace-log"},
+    )
 
     assert response.status_code == 200
     messages = [
@@ -22,6 +25,7 @@ def test_request_log_is_structured_and_support_safe(caplog: pytest.LogCaptureFix
     assert event["event"] == "request_completed"
     assert event["service"] == "lotus-archive"
     assert event["correlation_id"] == "corr-log"
+    assert event["trace_id"] == "trace-log"
     assert event["path"] == "/health"
     assert "bucket" not in messages[-1].lower()
     assert "storage_key" not in messages[-1].lower()
