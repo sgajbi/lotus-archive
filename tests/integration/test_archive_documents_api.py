@@ -106,6 +106,60 @@ def test_document_create_lookup_download_and_access_events_api(tmp_path: Path) -
         app.dependency_overrides.clear()
 
 
+def test_archive_metrics_expose_bounded_operation_status_and_size_labels(tmp_path: Path) -> None:
+    service = _service(tmp_path)
+    app.dependency_overrides[archive_service] = lambda: service
+    client = TestClient(app)
+    try:
+        create_response = client.post("/documents", json=_payload(), headers=_headers())
+        assert create_response.status_code == 201
+        body = create_response.json()
+        document_id = body["document_id"]
+
+        metadata_response = client.get(
+            f"/documents/{document_id}",
+            headers=_headers(caller_service="lotus-gateway"),
+        )
+        assert metadata_response.status_code == 200
+
+        download_response = client.get(
+            f"/documents/{document_id}/download",
+            headers=_headers(caller_service="lotus-gateway"),
+        )
+        assert download_response.status_code == 200
+
+        retention_response = client.get(
+            f"/documents/{document_id}/retention",
+            headers=_headers(),
+        )
+        assert retention_response.status_code == 200
+
+        metrics_response = client.get("/metrics")
+        assert metrics_response.status_code == 200
+        metrics_text = metrics_response.text
+
+        expected_metrics = [
+            'lotus_archive_operations_total{failure_category="none",operation="archive_create",status="archived"}',
+            'lotus_archive_operations_total{failure_category="none",operation="metadata_lookup",status="archived"}',
+            'lotus_archive_operations_total{failure_category="none",operation="binary_download",status="succeeded"}',
+            'lotus_archive_operations_total{failure_category="none",operation="retention_lookup",status="clear"}',
+        ]
+        for expected_metric in expected_metrics:
+            assert expected_metric in metrics_text
+        assert "lotus_archive_operation_duration_seconds_count" in metrics_text
+        assert "lotus_archive_document_size_bytes_count" in metrics_text
+        assert document_id not in metrics_text
+        assert body["report_job_id"] not in metrics_text
+        assert body["render_job_id"] not in metrics_text
+        assert "corr-api" not in metrics_text
+        assert "trace-api" not in metrics_text
+        assert "PB_SG_GLOBAL_BAL_001" not in metrics_text
+        assert "client-ref-001" not in metrics_text
+        assert "storage_key" not in metrics_text
+    finally:
+        app.dependency_overrides.clear()
+
+
 def test_document_api_requires_caller_context(tmp_path: Path) -> None:
     service = _service(tmp_path)
     app.dependency_overrides[archive_service] = lambda: service
