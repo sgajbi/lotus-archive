@@ -71,6 +71,31 @@ def test_readiness_reports_draining_state() -> None:
         app.state.is_draining = False
 
 
+def test_metadata_reports_archive_supportability() -> None:
+    client = TestClient(app)
+    response = client.get("/metadata")
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["service"] == "lotus-archive"
+    assert payload["supportability"]["featureKey"] == (
+        "archive.observability.archive_supportability"
+    )
+    assert payload["supportability"]["state"] == "ready"
+    assert payload["supportability"]["reason"] == "archive_supportability_ready"
+    assert payload["supportability"]["freshnessBucket"] == "current"
+    assert payload["supportability"]["retrievalSupported"] is True
+    assert payload["supportability"]["retentionSupported"] is True
+    assert payload["supportability"]["legalHoldSupported"] is True
+    assert payload["supportability"]["accessAuditSupported"] is True
+    assert payload["supportability"]["documentLifecycleSupported"] is True
+    assert payload["supportability"]["gatewayRetrievalSupported"] is True
+    assert payload["supportability"]["workbenchRetrievalSupported"] is False
+    assert (
+        "gateway_backed_document_retrieval" in payload["supportability"]["supportedArchiveFeatures"]
+    )
+
+
 def test_unknown_route_uses_support_safe_error_envelope() -> None:
     client = TestClient(app)
     response = client.get(

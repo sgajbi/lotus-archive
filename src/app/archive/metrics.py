@@ -11,10 +11,16 @@ from prometheus_client import Counter, Histogram
 METRIC_OPERATION_LABEL = "operation"
 METRIC_STATUS_LABEL = "status"
 METRIC_FAILURE_CATEGORY_LABEL = "failure_category"
+METRIC_STATE_LABEL = "state"
+METRIC_REASON_LABEL = "reason"
+METRIC_FRESHNESS_BUCKET_LABEL = "freshness_bucket"
 
 ARCHIVE_METRIC_LABELS = frozenset(
     {
+        METRIC_FRESHNESS_BUCKET_LABEL,
         METRIC_OPERATION_LABEL,
+        METRIC_REASON_LABEL,
+        METRIC_STATE_LABEL,
         METRIC_STATUS_LABEL,
         METRIC_FAILURE_CATEGORY_LABEL,
     }
@@ -75,6 +81,15 @@ ARCHIVE_OPERATION_STATUSES = frozenset(
         "succeeded",
     }
 )
+ARCHIVE_SUPPORTABILITY_STATES = frozenset({"ready", "degraded", "unavailable"})
+ARCHIVE_SUPPORTABILITY_REASONS = frozenset(
+    {
+        "archive_supportability_ready",
+        "archive_supportability_draining",
+        "archive_capability_unavailable",
+    }
+)
+ARCHIVE_SUPPORTABILITY_FRESHNESS_BUCKETS = frozenset({"current", "unknown"})
 
 P = ParamSpec("P")
 R = TypeVar("R")
@@ -117,6 +132,16 @@ ARCHIVE_METRIC_CONTRACTS: tuple[ArchiveMetricContract, ...] = (
             "render, portfolio, tenant, trace, correlation, or storage identifiers."
         ),
     ),
+    ArchiveMetricContract(
+        name="lotus_archive_supportability_total",
+        metric_type="counter",
+        labels=(METRIC_STATE_LABEL, METRIC_REASON_LABEL, METRIC_FRESHNESS_BUCKET_LABEL),
+        implemented=True,
+        description=(
+            "Counts source-backed RFC-0108 archive supportability observations using bounded "
+            "state, reason, and freshness labels."
+        ),
+    ),
 )
 
 _ARCHIVE_OPERATIONS_TOTAL = Counter(
@@ -135,6 +160,11 @@ _ARCHIVE_DOCUMENT_SIZE_BYTES = Histogram(
     ARCHIVE_METRIC_CONTRACTS[2].description,
     [METRIC_STATUS_LABEL],
     buckets=(1_024, 10_240, 102_400, 1_048_576, 5_242_880, 10_485_760),
+)
+_ARCHIVE_SUPPORTABILITY_TOTAL = Counter(
+    "lotus_archive_supportability_total",
+    ARCHIVE_METRIC_CONTRACTS[3].description,
+    [METRIC_STATE_LABEL, METRIC_REASON_LABEL, METRIC_FRESHNESS_BUCKET_LABEL],
 )
 
 
@@ -173,6 +203,19 @@ def record_archive_document_size(*, status: str, size_bytes: int | None) -> None
     if size_bytes is None:
         return
     _ARCHIVE_DOCUMENT_SIZE_BYTES.labels(status=_bounded_status(status)).observe(max(0, size_bytes))
+
+
+def record_archive_supportability(
+    *,
+    state: str,
+    reason: str,
+    freshness_bucket: str,
+) -> None:
+    _ARCHIVE_SUPPORTABILITY_TOTAL.labels(
+        state=_bounded_supportability_state(state),
+        reason=_bounded_supportability_reason(reason),
+        freshness_bucket=_bounded_supportability_freshness_bucket(freshness_bucket),
+    ).inc()
 
 
 def archive_metric(operation: str) -> Callable[[Callable[P, R]], Callable[P, R]]:
@@ -291,3 +334,21 @@ def _bounded_failure_category(failure_category: str | None) -> str:
     if not all(character.isalnum() or character == "_" for character in normalized):
         return "other"
     return normalized
+
+
+def _bounded_supportability_state(state: str) -> str:
+    if state in ARCHIVE_SUPPORTABILITY_STATES:
+        return state
+    return "unavailable"
+
+
+def _bounded_supportability_reason(reason: str) -> str:
+    if reason in ARCHIVE_SUPPORTABILITY_REASONS:
+        return reason
+    return "archive_capability_unavailable"
+
+
+def _bounded_supportability_freshness_bucket(freshness_bucket: str) -> str:
+    if freshness_bucket in ARCHIVE_SUPPORTABILITY_FRESHNESS_BUCKETS:
+        return freshness_bucket
+    return "unknown"

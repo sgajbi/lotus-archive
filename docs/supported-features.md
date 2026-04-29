@@ -29,6 +29,10 @@ archive API surface:
 19. Supersession, correction, and reissue relationships with current-document resolution.
 20. Report-to-archive handoff after successful PDF render through `lotus-report`.
 21. Gateway-backed product retrieval through `lotus-gateway` archived document routes.
+22. RFC-0108 archive supportability posture through `/metadata`
+    `archive.observability.archive_supportability`.
+23. Bounded archive supportability metric `lotus_archive_supportability_total` with only `state`,
+    `reason`, and `freshness_bucket` labels.
 
 Workbench-facing archive retrieval is not supported yet. Product retrieval must continue to flow
 through `lotus-gateway`; Workbench must not call `lotus-archive` directly.
@@ -48,6 +52,7 @@ through `lotus-gateway`; Workbench must not call `lotus-archive` directly.
 | Current document resolution | `ready` | `GET /documents/{document_id}/current` resolves supersession, correction, and reissue chains while preserving historical metadata lookup through `GET /documents/{document_id}`. |
 | Report-to-archive handoff | `ready` | `lotus-report` PR #66 hands successful PDF render artifacts and source-backed metadata to `POST /documents`, records `archiving` and `archived` ledger events, and maps archive validation, conflict, storage, and execution failures truthfully. |
 | Gateway-backed document retrieval | `ready` | `lotus-gateway` PR #150 exposes `/api/v1/documents/{document_id}` and `/api/v1/documents/{document_id}/download`, forwards caller context as `lotus-gateway`, preserves support-safe metadata and checksum headers, and keeps archive storage locations hidden. |
+| Archive supportability posture | `ready` | `/metadata` publishes `archive.observability.archive_supportability`, sourced from supported archive feature posture and drain state, with bounded `lotus_archive_supportability_total` metric observations. |
 
 ## Not Yet Supported
 

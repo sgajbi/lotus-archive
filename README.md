@@ -19,6 +19,12 @@ archive-specific structure, and gateway-backed document retrieval. Workbench ret
 supported yet. Product retrieval must flow through `lotus-gateway`; Workbench must not call
 `lotus-archive` directly.
 
+RFC-0108 archive supportability posture is published through `/metadata` as
+`archive.observability.archive_supportability` and counted through bounded
+`lotus_archive_supportability_total` observations. The posture covers retrieval, retention,
+legal-hold, access-audit, lifecycle, gateway-retrieval, and explicit Workbench non-support state
+without document, storage, report, render, tenant, trace, or correlation labels.
+
 ## Quick Start
 
 ```powershell

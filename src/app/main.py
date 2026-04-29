@@ -4,8 +4,8 @@ from fastapi.responses import JSONResponse
 from prometheus_fastapi_instrumentator import Instrumentator
 from app.archive.api import router as archive_documents_router
 from app.archive.error_handlers import register_archive_exception_handlers
-from app.archive.metrics import validate_archive_metric_contracts
-from app.archive.service_profile import service_posture
+from app.archive.metrics import record_archive_supportability, validate_archive_metric_contracts
+from app.archive.service_profile import archive_supportability, service_posture
 from app.contracts.errors import error_response
 from app.middleware.correlation import CorrelationIdMiddleware, configure_request_logging
 from starlette.exceptions import HTTPException as StarletteHTTPException
@@ -87,9 +87,18 @@ async def health_ready(response: Response) -> dict[str, str]:
 
 @app.get("/metadata")
 async def metadata() -> dict[str, object]:
+    supportability = archive_supportability(
+        is_draining=bool(getattr(app.state, "is_draining", False))
+    )
+    record_archive_supportability(
+        state=str(supportability["state"]),
+        reason=str(supportability["reason"]),
+        freshness_bucket=str(supportability["freshnessBucket"]),
+    )
     return {
         "service": SERVICE_NAME,
         "version": SERVICE_VERSION,
         "roundingPolicyVersion": ROUNDING_POLICY_VERSION,
         "archivePosture": service_posture(),
+        "supportability": supportability,
     }

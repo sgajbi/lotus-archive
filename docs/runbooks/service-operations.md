@@ -9,8 +9,11 @@ service behavior, internal archive create API, controlled metadata lookup, check
 download, access-audit recording, retention posture lookup, purge eligibility and execution, and
 legal-hold set/release with purge blocking, lifecycle relationship APIs, and current-document
 resolution, report-to-archive handoff through `lotus-report`, and product-facing retrieval through
-the `lotus-gateway` document facade. Do not use this service for direct Workbench retrieval until a
-gateway-backed Workbench surface is implemented and listed in `docs/supported-features.md`.
+the `lotus-gateway` document facade. `/metadata` also publishes RFC-0108
+`archive.observability.archive_supportability` posture and the service emits bounded
+`lotus_archive_supportability_total` metric observations. Do not use this service for direct
+Workbench retrieval until a gateway-backed Workbench surface is implemented and listed in
+`docs/supported-features.md`.
 
 ## Standard Commands
 
@@ -25,7 +28,7 @@ gateway-backed Workbench surface is implemented and listed in `docs/supported-fe
 - Liveness: /health/live
 - Readiness: /health/ready
 - General health: `/health`
-- Metadata: `/metadata`
+- Metadata and RFC-0108 archive supportability posture: `/metadata`
 - Metrics: `/metrics`
 - Correlation header: `X-Correlation-Id`
 - Trace header: `X-Trace-Id`
@@ -34,7 +37,7 @@ gateway-backed Workbench surface is implemented and listed in `docs/supported-fe
 ## Incident First Checks
 
 1. Check structured request logs for correlation ID, trace ID, method, path, status, and duration.
-2. Verify `/health/ready` and metrics endpoint.
+2. Verify `/health/ready`, `/metadata` supportability state and reason, and metrics endpoint.
 3. Run local parity check (make ci) before hotfix PR.
 
 ## Archive-Specific First Checks

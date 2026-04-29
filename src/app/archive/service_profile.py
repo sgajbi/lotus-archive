@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import Literal
 
 
 @dataclass(frozen=True)
@@ -51,6 +52,20 @@ ARCHIVE_MODULE_FAMILIES: tuple[ArchiveModuleFamily, ...] = (
     ),
 )
 
+SUPPORTED_ARCHIVE_FEATURES = (
+    "generated_document_archival",
+    "controlled_document_metadata_lookup",
+    "controlled_document_binary_download",
+    "access_audit_for_archive_api",
+    "retention_policy_posture",
+    "purge_eligibility_and_execution",
+    "legal_hold_set_release_with_purge_blocking",
+    "document_lifecycle_relationships",
+    "current_document_resolution",
+    "report_to_archive_handoff",
+    "gateway_backed_document_retrieval",
+)
+
 UNSUPPORTED_PRODUCT_CAPABILITIES: tuple[UnsupportedProductCapability, ...] = (
     UnsupportedProductCapability(
         capability="workbench_document_retrieval_surface",
@@ -66,23 +81,53 @@ UNSUPPORTED_PRODUCT_CAPABILITIES: tuple[UnsupportedProductCapability, ...] = (
     ),
 )
 
+ArchiveSupportabilityState = Literal["ready", "degraded", "unavailable"]
+ArchiveSupportabilityReason = Literal[
+    "archive_supportability_ready",
+    "archive_supportability_draining",
+    "archive_capability_unavailable",
+]
+ArchiveSupportabilityFreshness = Literal["current", "unknown"]
+
+
+def archive_supportability(*, is_draining: bool) -> dict[str, object]:
+    supported_features = list(SUPPORTED_ARCHIVE_FEATURES)
+    state: ArchiveSupportabilityState = "ready"
+    reason: ArchiveSupportabilityReason = "archive_supportability_ready"
+    freshness_bucket: ArchiveSupportabilityFreshness = "current"
+    if is_draining:
+        state = "degraded"
+        reason = "archive_supportability_draining"
+    elif not supported_features:
+        state = "unavailable"
+        reason = "archive_capability_unavailable"
+        freshness_bucket = "unknown"
+
+    return {
+        "featureKey": "archive.observability.archive_supportability",
+        "state": state,
+        "reason": reason,
+        "freshnessBucket": freshness_bucket,
+        "retrievalSupported": True,
+        "retentionSupported": True,
+        "legalHoldSupported": True,
+        "accessAuditSupported": True,
+        "documentLifecycleSupported": True,
+        "gatewayRetrievalSupported": True,
+        "workbenchRetrievalSupported": False,
+        "supportedArchiveFeatures": supported_features,
+        "unsupportedProductCapabilities": [
+            {"capability": item.capability, "reason": item.reason}
+            for item in UNSUPPORTED_PRODUCT_CAPABILITIES
+        ],
+        "draining": is_draining,
+    }
+
 
 def service_posture() -> dict[str, object]:
     return {
         "implementedScope": "retention_purge_legal_hold_lifecycle_report_handoff_gateway_retrieval",
-        "supportedArchiveFeatures": [
-            "generated_document_archival",
-            "controlled_document_metadata_lookup",
-            "controlled_document_binary_download",
-            "access_audit_for_archive_api",
-            "retention_policy_posture",
-            "purge_eligibility_and_execution",
-            "legal_hold_set_release_with_purge_blocking",
-            "document_lifecycle_relationships",
-            "current_document_resolution",
-            "report_to_archive_handoff",
-            "gateway_backed_document_retrieval",
-        ],
+        "supportedArchiveFeatures": list(SUPPORTED_ARCHIVE_FEATURES),
         "moduleFamilies": [
             {
                 "name": module.name,

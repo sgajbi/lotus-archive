@@ -16,6 +16,7 @@ from app.archive.metrics import (
     ArchiveMetricContract,
     record_archive_document_size,
     record_archive_operation,
+    record_archive_supportability,
     validate_archive_metric_contracts,
 )
 
@@ -30,6 +31,7 @@ def test_archive_metric_contracts_are_bounded_and_implementation_truthful() -> N
         "lotus_archive_operations_total",
         "lotus_archive_operation_duration_seconds",
         "lotus_archive_document_size_bytes",
+        "lotus_archive_supportability_total",
     } <= implemented_names
     assert {
         "archive_create",
@@ -140,6 +142,19 @@ def test_record_archive_document_size_clamps_counts_and_ignores_missing_size() -
     record_archive_document_size(status="archived", size_bytes=-1)
     record_archive_document_size(status="not-a-contract-status", size_bytes=1)
     record_archive_document_size(status="archived", size_bytes=None)
+
+
+def test_record_archive_supportability_bounds_state_reason_and_freshness() -> None:
+    record_archive_supportability(
+        state="ready",
+        reason="archive_supportability_ready",
+        freshness_bucket="current",
+    )
+    record_archive_supportability(
+        state="not-a-contract-state",
+        reason="not-a-contract-reason",
+        freshness_bucket="not-a-contract-freshness",
+    )
 
 
 def test_status_derivation_uses_operation_contracts() -> None:

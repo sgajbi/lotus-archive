@@ -19,7 +19,10 @@ controlled metadata lookup, checksum-verified binary download, access-audit reco
 retention posture lookup, purge eligibility and execution, legal-hold set/release with purge
 blocking, lifecycle relationship APIs, current-document resolution, gateway-backed document
 retrieval through `lotus-gateway`, report-to-archive handoff through `lotus-report`, and
-archive-specific module-family/documentation structure.
+archive-specific module-family/documentation structure. RFC-0108 archive supportability now
+publishes `archive.observability.archive_supportability` through `/metadata` and
+`lotus_archive_supportability_total`, covering retrieval, retention, legal-hold, access-audit,
+lifecycle, gateway-retrieval, and explicit Workbench non-support posture with bounded labels only.
 
 Workbench retrieval is not supported yet. Product retrieval is supported only through
 `lotus-gateway`; Workbench must not call `lotus-archive` directly.
@@ -51,6 +54,7 @@ Workbench retrieval is not supported yet. Product retrieval is supported only th
 18. `docs/architecture/`: archive service boundaries and structure.
 19. `docs/supported-features.md`: implementation-backed support posture.
 20. `docs/standards/`: repository standards placeholders to be replaced with service truth.
+21. `src/app/archive/metrics.py`: bounded archive operation, size, and supportability metrics.
 
 ## Runtime And Integration Boundaries
 
@@ -94,6 +98,8 @@ build validation.
    matures,
 3. keep business role, naming, docs, and tests aligned with actual implemented scope,
 4. do not claim archive product support until code, tests, documentation, and PR evidence exist.
+5. supportability metrics must remain bounded to state, reason, and freshness bucket only; do not
+   add document, report, render, storage, tenant, trace, or correlation labels.
 
 ## Context Maintenance Rule
 
