@@ -64,12 +64,13 @@ SUPPORTED_ARCHIVE_FEATURES = (
     "current_document_resolution",
     "report_to_archive_handoff",
     "gateway_backed_document_retrieval",
+    "gateway_backed_workbench_document_retrieval",
 )
 
 UNSUPPORTED_PRODUCT_CAPABILITIES: tuple[UnsupportedProductCapability, ...] = (
     UnsupportedProductCapability(
-        capability="workbench_document_retrieval_surface",
-        reason="not implemented yet; any future Workbench surface must stay gateway-backed",
+        capability="direct_workbench_archive_calls",
+        reason="out of scope; Workbench retrieval must stay gateway-backed",
     ),
     UnsupportedProductCapability(
         capability="arbitrary_file_storage",
@@ -114,7 +115,7 @@ def archive_supportability(*, is_draining: bool) -> dict[str, object]:
         "accessAuditSupported": True,
         "documentLifecycleSupported": True,
         "gatewayRetrievalSupported": True,
-        "workbenchRetrievalSupported": False,
+        "workbenchRetrievalSupported": True,
         "supportedArchiveFeatures": supported_features,
         "unsupportedProductCapabilities": [
             {"capability": item.capability, "reason": item.reason}
@@ -126,7 +127,7 @@ def archive_supportability(*, is_draining: bool) -> dict[str, object]:
 
 def service_posture() -> dict[str, object]:
     return {
-        "implementedScope": "retention_purge_legal_hold_lifecycle_report_handoff_gateway_retrieval",
+        "implementedScope": "retention_purge_legal_hold_lifecycle_report_handoff_gateway_workbench_retrieval",
         "supportedArchiveFeatures": list(SUPPORTED_ARCHIVE_FEATURES),
         "moduleFamilies": [
             {

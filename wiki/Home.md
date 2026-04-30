@@ -15,13 +15,12 @@ Lotus generated-document archive, retrieval, retention, legal hold, and access a
   resolution are available.
 - Report-to-archive handoff after successful PDF render is available through `lotus-report`.
 - `/metadata` publishes RFC-0108 `archive.observability.archive_supportability` posture covering
-  retrieval, retention, legal hold, access audit, lifecycle, gateway retrieval, and explicit
-  Workbench non-support state.
+  retrieval, retention, legal hold, access audit, lifecycle, gateway retrieval, and Gateway-backed
+  Workbench retrieval.
 - `lotus_archive_supportability_total` is implementation-backed with bounded `state`, `reason`,
   and `freshness_bucket` labels only.
-- Workbench retrieval is not supported yet.
-- Product retrieval is supported only through `lotus-gateway`; Workbench must not call
-  `lotus-archive` directly.
+- Workbench retrieval is supported only through the Workbench BFF and `lotus-gateway`; Workbench
+  must not call `lotus-archive` directly.
 - This service is limited to Lotus-generated document archive scope. It is not a generic file store
   or manual upload service.
 - Wiki source lives in-repo and must be published through lotus-platform automation.
