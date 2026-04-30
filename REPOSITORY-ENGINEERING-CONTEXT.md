@@ -18,14 +18,15 @@ checksum validation, idempotent archive-write domain service, internal archive c
 controlled metadata lookup, checksum-verified binary download, access-audit recording, and
 retention posture lookup, purge eligibility and execution, legal-hold set/release with purge
 blocking, lifecycle relationship APIs, current-document resolution, gateway-backed document
-retrieval through `lotus-gateway`, report-to-archive handoff through `lotus-report`, and
+retrieval through `lotus-gateway`, Gateway-backed Workbench retrieval through the Workbench BFF,
+report-to-archive handoff through `lotus-report`, and
 archive-specific module-family/documentation structure. RFC-0108 archive supportability now
 publishes `archive.observability.archive_supportability` through `/metadata` and
 `lotus_archive_supportability_total`, covering retrieval, retention, legal-hold, access-audit,
-lifecycle, gateway-retrieval, and explicit Workbench non-support posture with bounded labels only.
+lifecycle, gateway retrieval, and Gateway-backed Workbench retrieval with bounded labels only.
 
-Workbench retrieval is not supported yet. Product retrieval is supported only through
-`lotus-gateway`; Workbench must not call `lotus-archive` directly.
+Workbench retrieval is supported only through the Workbench BFF and `lotus-gateway`; Workbench must
+not call `lotus-archive` directly.
 
 ## Architecture And Module Map
 
@@ -92,8 +93,9 @@ build validation.
 
 ## Known Constraints And Implementation Notes
 
-1. this is the platform scaffold baseline plus RFC-0103 internal archive API, report handoff, and
-   gateway retrieval support, not full Workbench retrieval or production certification,
+1. this is the platform scaffold baseline plus RFC-0103 internal archive API, report handoff,
+   gateway retrieval support, and Gateway-backed Workbench retrieval support, not production
+   certification or customer-facing document delivery,
 2. standards placeholders in `docs/standards/` must be replaced with service truth as the service
    matures,
 3. keep business role, naming, docs, and tests aligned with actual implemented scope,

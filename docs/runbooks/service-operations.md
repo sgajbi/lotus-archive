@@ -9,11 +9,11 @@ service behavior, internal archive create API, controlled metadata lookup, check
 download, access-audit recording, retention posture lookup, purge eligibility and execution, and
 legal-hold set/release with purge blocking, lifecycle relationship APIs, and current-document
 resolution, report-to-archive handoff through `lotus-report`, and product-facing retrieval through
-the `lotus-gateway` document facade. `/metadata` also publishes RFC-0108
+the `lotus-gateway` document facade and `lotus-workbench` BFF. `/metadata` also publishes RFC-0108
 `archive.observability.archive_supportability` posture and the service emits bounded
-`lotus_archive_supportability_total` metric observations. Do not use this service for direct
-Workbench retrieval until a gateway-backed Workbench surface is implemented and listed in
-`docs/supported-features.md`.
+`lotus_archive_supportability_total` metric observations. Workbench archive retrieval must remain
+routed through the Workbench BFF and `lotus-gateway`; direct Workbench-to-archive calls are not a
+supported product boundary.
 
 ## Standard Commands
 

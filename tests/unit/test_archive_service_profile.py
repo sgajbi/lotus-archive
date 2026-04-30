@@ -26,7 +26,7 @@ def test_service_posture_does_not_overclaim_archive_features() -> None:
 
     assert (
         posture["implementedScope"]
-        == "retention_purge_legal_hold_lifecycle_report_handoff_gateway_retrieval"
+        == "retention_purge_legal_hold_lifecycle_report_handoff_gateway_workbench_retrieval"
     )
     assert posture["supportedArchiveFeatures"] == list(SUPPORTED_ARCHIVE_FEATURES)
 
@@ -34,8 +34,9 @@ def test_service_posture_does_not_overclaim_archive_features() -> None:
     assert isinstance(unsupported_capabilities, list)
 
     unsupported = {item["capability"] for item in unsupported_capabilities}
-    assert "workbench_document_retrieval_surface" in unsupported
+    assert "direct_workbench_archive_calls" in unsupported
     assert "gateway_backed_product_retrieval" not in unsupported
+    assert "gateway_backed_workbench_document_retrieval" not in unsupported
     assert "arbitrary_file_storage" in unsupported
     assert "manual_document_upload" in unsupported
 
@@ -44,10 +45,10 @@ def test_unsupported_capabilities_have_actionable_reasons() -> None:
     for item in UNSUPPORTED_PRODUCT_CAPABILITIES:
         assert item.capability
         assert item.reason
-        assert "not implemented yet" in item.reason or "out of scope" in item.reason
+        assert "out of scope" in item.reason
 
 
-def test_archive_supportability_reports_ready_posture_without_overclaiming_workbench() -> None:
+def test_archive_supportability_reports_ready_gateway_backed_workbench_posture() -> None:
     supportability = archive_supportability(is_draining=False)
 
     assert supportability["featureKey"] == "archive.observability.archive_supportability"
@@ -60,8 +61,11 @@ def test_archive_supportability_reports_ready_posture_without_overclaiming_workb
     assert supportability["accessAuditSupported"] is True
     assert supportability["documentLifecycleSupported"] is True
     assert supportability["gatewayRetrievalSupported"] is True
-    assert supportability["workbenchRetrievalSupported"] is False
-    assert supportability["supportedArchiveFeatures"] == list(SUPPORTED_ARCHIVE_FEATURES)
+    assert supportability["workbenchRetrievalSupported"] is True
+    supported_archive_features = supportability["supportedArchiveFeatures"]
+    assert isinstance(supported_archive_features, list)
+    assert supported_archive_features == list(SUPPORTED_ARCHIVE_FEATURES)
+    assert "gateway_backed_workbench_document_retrieval" in supported_archive_features
 
 
 def test_archive_supportability_reports_draining_degradation() -> None:

@@ -26,4 +26,5 @@ def test_metadata_endpoint() -> None:
         "current_document_resolution",
         "report_to_archive_handoff",
         "gateway_backed_document_retrieval",
+        "gateway_backed_workbench_document_retrieval",
     ]

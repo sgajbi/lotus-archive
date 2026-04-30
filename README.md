@@ -15,14 +15,14 @@ metadata lookup, controlled binary download, access-audit recording for archive 
 retention posture lookup, purge eligibility and execution, legal-hold set/release with purge
 blocking, lifecycle relationship APIs for supersession/correction/reissue, current-document
 resolution, report-to-archive handoff after successful PDF render, quality gates,
-archive-specific structure, and gateway-backed document retrieval. Workbench retrieval is not
-supported yet. Product retrieval must flow through `lotus-gateway`; Workbench must not call
+archive-specific structure, gateway-backed document retrieval, and Gateway-backed Workbench archive
+retrieval. Product retrieval must flow through `lotus-gateway`; Workbench must not call
 `lotus-archive` directly.
 
 RFC-0108 archive supportability posture is published through `/metadata` as
 `archive.observability.archive_supportability` and counted through bounded
 `lotus_archive_supportability_total` observations. The posture covers retrieval, retention,
-legal-hold, access-audit, lifecycle, gateway-retrieval, and explicit Workbench non-support state
+legal-hold, access-audit, lifecycle, gateway retrieval, and Gateway-backed Workbench retrieval
 without document, storage, report, render, tenant, trace, or correlation labels.
 
 ## Quick Start

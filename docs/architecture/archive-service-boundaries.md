@@ -10,8 +10,9 @@ RFC-0103 establishes the supported first-wave archive API surface for authorized
 generated-document archival, support-safe metadata lookup, checksum-verified binary download,
 access-audit lookup, retention posture lookup, purge eligibility and execution, and legal-hold
 set/release with purge blocking, lifecycle relationships, current-document resolution, and
-report-to-archive handoff after successful PDF render. Workbench product features are not supported
-yet. Gateway-backed retrieval is supported through `lotus-gateway` as the product-facing boundary.
+report-to-archive handoff after successful PDF render. Gateway-backed retrieval is supported through
+`lotus-gateway` as the product-facing boundary, and Workbench archive retrieval is supported only
+through the Workbench BFF and Gateway route.
 
 ## Authoritative Boundaries
 
@@ -27,7 +28,7 @@ yet. Gateway-backed retrieval is supported through `lotus-gateway` as the produc
 | Legal hold | `lotus-archive` | Implemented for legal-hold set/release, authority reference, active-hold summary, and purge blocking |
 | Lifecycle relationships | `lotus-archive` | Implemented for supersession, correction, reissue, append-only relationship records, historical lookup, and current-document resolution |
 | Product-facing retrieval | `lotus-gateway` | Supported through gateway metadata and controlled download routes |
-| Workbench retrieval surface | `lotus-workbench` | Not supported; any future product surface must consume the existing gateway-backed retrieval boundary |
+| Workbench retrieval surface | `lotus-workbench` | Supported only through the Workbench BFF and existing gateway-backed retrieval boundary; direct Workbench-to-archive calls remain unsupported |
 
 ## Module Families
 
@@ -75,9 +76,9 @@ RFC-0103 Slice 4 adds:
    events.
 
 All archive API routes require caller context. Workbench is intentionally not an authorized direct
-archive caller. Gateway-backed product retrieval is implemented in `lotus-gateway`; any future
-Workbench retrieval surface must consume that gateway boundary and must not call `lotus-archive`
-directly.
+archive caller. Gateway-backed product retrieval is implemented in `lotus-gateway`; Workbench
+retrieval consumes that gateway boundary through the Workbench BFF and must not call
+`lotus-archive` directly.
 
 RFC-0103 Slice 5 adds:
 
@@ -89,9 +90,8 @@ RFC-0103 Slice 5 adds:
 5. `DELETE /documents/{document_id}/legal-holds/{legal_hold_id}` for releasing a legal hold and
    refreshing purge-blocking posture.
 
-These APIs remain internal Lotus service APIs. Workbench retrieval and customer-facing document
-delivery are not supported. Gateway-backed document retrieval is supported only through the gateway
-facade.
+These APIs remain internal Lotus service APIs. Customer-facing document delivery is not supported.
+Workbench retrieval is supported only through the Workbench BFF and gateway facade.
 
 RFC-0103 Slice 6 adds:
 

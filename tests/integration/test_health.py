@@ -90,9 +90,13 @@ def test_metadata_reports_archive_supportability() -> None:
     assert payload["supportability"]["accessAuditSupported"] is True
     assert payload["supportability"]["documentLifecycleSupported"] is True
     assert payload["supportability"]["gatewayRetrievalSupported"] is True
-    assert payload["supportability"]["workbenchRetrievalSupported"] is False
+    assert payload["supportability"]["workbenchRetrievalSupported"] is True
     assert (
         "gateway_backed_document_retrieval" in payload["supportability"]["supportedArchiveFeatures"]
+    )
+    assert (
+        "gateway_backed_workbench_document_retrieval"
+        in payload["supportability"]["supportedArchiveFeatures"]
     )
 
 
