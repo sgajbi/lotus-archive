@@ -18,7 +18,7 @@ Lotus generated-document archive, retrieval, retention, legal hold, and access a
   retrieval, retention, legal hold, access audit, lifecycle, gateway retrieval, and Gateway-backed
   Workbench retrieval.
 - `lotus_archive_supportability_total` is implementation-backed with bounded `state`, `reason`,
-  and `freshness_bucket` labels only.
+  and `freshness_bucket` labels only, with recorder-level fallback for unknown label values.
 - Workbench retrieval is supported only through the Workbench BFF and `lotus-gateway`; Workbench
   must not call `lotus-archive` directly.
 - This service is limited to Lotus-generated document archive scope. It is not a generic file store

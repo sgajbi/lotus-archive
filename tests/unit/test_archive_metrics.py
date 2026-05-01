@@ -157,6 +157,36 @@ def test_record_archive_supportability_bounds_state_reason_and_freshness() -> No
     )
 
 
+def test_record_archive_supportability_sanitizes_labels_before_counter(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    captured: dict[str, str] = {}
+
+    class _Counter:
+        def labels(self, **labels: str) -> "_Counter":
+            captured.update(labels)
+            return self
+
+        def inc(self) -> None:
+            return None
+
+    monkeypatch.setattr(archive_metrics, "_ARCHIVE_SUPPORTABILITY_TOTAL", _Counter())
+
+    record_archive_supportability(
+        state="document:doc-private-client-statement",
+        reason="client_name:private-bank-client",
+        freshness_bucket="trace:1234567890abcdef1234567890abcdef",
+    )
+
+    assert captured == {
+        "state": "unavailable",
+        "reason": "archive_capability_unavailable",
+        "freshness_bucket": "unknown",
+    }
+    assert "doc-private-client-statement" not in captured.values()
+    assert "client_name:private-bank-client" not in captured.values()
+
+
 def test_status_derivation_uses_operation_contracts() -> None:
     metadata = ArchiveDocumentMetadata(
         archive_request_id="arch-1",
