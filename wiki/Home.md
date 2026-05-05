@@ -14,6 +14,9 @@ Lotus generated-document archive, retrieval, retention, legal hold, and access a
 - Lifecycle relationship APIs for supersession, correction, reissue, and current-document
   resolution are available.
 - Report-to-archive handoff after successful PDF render is available through `lotus-report`.
+- RFC-0042 outcome-review report artifacts are governed by the same generated-document archive,
+  retrieval, retention, legal-hold, access-audit, purge, and lifecycle posture when `lotus-report`
+  supplies `report_type=outcome_review` metadata.
 - `/metadata` publishes RFC-0108 `archive.observability.archive_supportability` posture covering
   retrieval, retention, legal hold, access audit, lifecycle, gateway retrieval, and Gateway-backed
   Workbench retrieval.
