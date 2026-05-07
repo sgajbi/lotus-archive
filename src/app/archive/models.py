@@ -36,6 +36,7 @@ class GeneratedReportType(StrEnum):
     PORTFOLIO_REVIEW = "portfolio_review"
     OUTCOME_REVIEW = "outcome_review"
     PROOF_PACK = "proof_pack"
+    REBALANCE_WAVE = "rebalance_wave"
 
 
 class ArchiveDocumentInput(BaseModel):

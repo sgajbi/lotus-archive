@@ -87,6 +87,31 @@ def _proof_pack_payload() -> dict[str, object]:
     return payload
 
 
+def _wave_payload() -> dict[str, object]:
+    payload = _payload(content=b"rebalance wave pdf bytes")
+    payload["metadata"] = valid_metadata_input(
+        archive_request_id="archive-request-wave-001",
+        report_job_id="report-job-wave-001",
+        report_request_id="report-request-wave-001",
+        snapshot_id="snapshot-wave-001",
+        render_job_id="render-job-wave-001",
+        render_attempt_id="render-attempt-wave-001",
+        report_type="rebalance_wave",
+        portfolio_scope="wave:dwv_001",
+        portfolio_id="PB_SG_GLOBAL_BAL_001",
+        as_of_date="2026-05-03",
+        reporting_period_start="2026-05-03",
+        reporting_period_end="2026-05-03",
+        frequency="event",
+        template_id="rebalance-wave",
+        report_data_contract_version="dpm_wave_report_input.v1",
+        classification="restricted",
+        retention_start_date="2026-05-03",
+        retain_until_date="2033-05-03",
+    ).model_dump(mode="json")
+    return payload
+
+
 def test_document_create_lookup_download_and_access_events_api(tmp_path: Path) -> None:
     service = _service(tmp_path)
     app.dependency_overrides[archive_service] = lambda: service
@@ -190,6 +215,50 @@ def test_proof_pack_report_archive_lifecycle_preserves_retention_and_audit(
             "legal_hold_set",
             "legal_hold_release",
             "purge_execution",
+            "access_events_read",
+        ]
+    finally:
+        app.dependency_overrides.clear()
+
+
+def test_rebalance_wave_report_archive_lifecycle_preserves_download_and_audit(
+    tmp_path: Path,
+) -> None:
+    service = _service(tmp_path)
+    app.dependency_overrides[archive_service] = lambda: service
+    client = TestClient(app)
+    try:
+        create_response = client.post("/documents", json=_wave_payload(), headers=_headers())
+        assert create_response.status_code == 201
+        document_id = create_response.json()["document_id"]
+        assert create_response.json()["report_type"] == "rebalance_wave"
+        assert create_response.json()["template_id"] == "rebalance-wave"
+
+        metadata_response = client.get(
+            f"/documents/{document_id}",
+            headers=_headers(caller_service="lotus-gateway"),
+        )
+        assert metadata_response.status_code == 200
+        assert metadata_response.json()["report_data_contract_version"] == (
+            "dpm_wave_report_input.v1"
+        )
+
+        download_response = client.get(
+            f"/documents/{document_id}/download",
+            headers=_headers(caller_service="lotus-gateway"),
+        )
+        assert download_response.status_code == 200
+        assert download_response.content == b"rebalance wave pdf bytes"
+
+        events_response = client.get(
+            f"/documents/{document_id}/access-events",
+            headers=_headers(),
+        )
+        assert events_response.status_code == 200
+        assert [event["event_type"] for event in events_response.json()["events"]] == [
+            "archive_create",
+            "metadata_read",
+            "binary_download",
             "access_events_read",
         ]
     finally:

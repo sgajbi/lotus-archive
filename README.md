@@ -15,7 +15,7 @@ metadata lookup, controlled binary download, access-audit recording for archive 
 retention posture lookup, purge eligibility and execution, legal-hold set/release with purge
 blocking, lifecycle relationship APIs for supersession/correction/reissue, current-document
 resolution, report-to-archive handoff after successful PDF render, governed report-type
-validation for portfolio-review, outcome-review, and proof-pack artifacts, quality gates,
+validation for portfolio-review, outcome-review, proof-pack, and rebalance-wave artifacts, quality gates,
 archive-specific structure, gateway-backed document retrieval, and Gateway-backed Workbench archive
 retrieval. Product retrieval must flow through `lotus-gateway`; Workbench must not call
 `lotus-archive` directly.
@@ -24,6 +24,11 @@ RFC-0040 proof-pack report artifacts are supported when `lotus-report` supplies 
 metadata with `report_type=proof_pack`, the `proof-pack` render template, and
 `dpm_proof_pack_report_input.v1` lineage. `lotus-archive` stores and governs the generated
 artifact; it does not recompute proof-pack evidence, source hashes, or report sections.
+
+RFC-0041 rebalance-wave report artifacts are supported when `lotus-report` supplies source-backed
+metadata with `report_type=rebalance_wave`, the `rebalance-wave` render template, and
+`dpm_wave_report_input.v1` lineage. `lotus-archive` stores and governs the generated artifact; it
+does not recompute wave membership, proof-pack posture, source hashes, or wave events.
 
 RFC-0108 archive supportability posture is published through `/metadata` as
 `archive.observability.archive_supportability` and counted through bounded
