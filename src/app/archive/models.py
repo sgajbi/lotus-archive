@@ -32,6 +32,12 @@ class DocumentClassification(StrEnum):
     RESTRICTED = "restricted"
 
 
+class GeneratedReportType(StrEnum):
+    PORTFOLIO_REVIEW = "portfolio_review"
+    OUTCOME_REVIEW = "outcome_review"
+    PROOF_PACK = "proof_pack"
+
+
 class ArchiveDocumentInput(BaseModel):
     model_config = ConfigDict(str_strip_whitespace=True)
 
@@ -41,7 +47,7 @@ class ArchiveDocumentInput(BaseModel):
     snapshot_id: str = Field(min_length=1)
     render_job_id: str = Field(min_length=1)
     render_attempt_id: str = Field(min_length=1)
-    report_type: str = Field(min_length=1)
+    report_type: GeneratedReportType
     portfolio_scope: str = Field(min_length=1)
     portfolio_id: str = Field(min_length=1)
     client_reference: str | None = Field(default=None, min_length=1)

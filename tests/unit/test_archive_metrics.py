@@ -6,6 +6,7 @@ import app.archive.metrics as archive_metrics
 from app.archive.models import (
     ArchiveDocumentMetadata,
     DocumentClassification,
+    GeneratedReportType,
     LegalHoldRecord,
     LegalHoldStatus,
 )
@@ -195,7 +196,7 @@ def test_status_derivation_uses_operation_contracts() -> None:
         snapshot_id="rsnap-1",
         render_job_id="rdr-1",
         render_attempt_id="rdr-1",
-        report_type="portfolio_review",
+        report_type=GeneratedReportType.PORTFOLIO_REVIEW,
         portfolio_scope='{"portfolio_ids":["PB_SG_GLOBAL_BAL_001"]}',
         portfolio_id="PB_SG_GLOBAL_BAL_001",
         client_reference="client-ref-001",

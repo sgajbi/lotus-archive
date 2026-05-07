@@ -62,6 +62,31 @@ def _purge_eligible_payload() -> dict[str, object]:
     return payload
 
 
+def _proof_pack_payload() -> dict[str, object]:
+    payload = _payload(content=b"proof pack pdf bytes")
+    payload["metadata"] = valid_metadata_input(
+        archive_request_id="archive-request-proof-pack-001",
+        report_job_id="report-job-proof-pack-001",
+        report_request_id="report-request-proof-pack-001",
+        snapshot_id="snapshot-proof-pack-001",
+        render_job_id="render-job-proof-pack-001",
+        render_attempt_id="render-attempt-proof-pack-001",
+        report_type="proof_pack",
+        portfolio_scope="proof_pack:dpp_001",
+        portfolio_id="PB_SG_GLOBAL_BAL_001",
+        as_of_date="2026-05-03",
+        reporting_period_start="2026-05-03",
+        reporting_period_end="2026-05-03",
+        frequency="event",
+        template_id="proof-pack",
+        report_data_contract_version="dpm_proof_pack_report_input.v1",
+        classification="restricted",
+        retention_start_date="2019-01-01",
+        retain_until_date="2020-01-01",
+    ).model_dump(mode="json")
+    return payload
+
+
 def test_document_create_lookup_download_and_access_events_api(tmp_path: Path) -> None:
     service = _service(tmp_path)
     app.dependency_overrides[archive_service] = lambda: service
@@ -100,6 +125,71 @@ def test_document_create_lookup_download_and_access_events_api(tmp_path: Path) -
             "archive_create",
             "metadata_read",
             "binary_download",
+            "access_events_read",
+        ]
+    finally:
+        app.dependency_overrides.clear()
+
+
+def test_proof_pack_report_archive_lifecycle_preserves_retention_and_audit(
+    tmp_path: Path,
+) -> None:
+    service = _service(tmp_path)
+    app.dependency_overrides[archive_service] = lambda: service
+    client = TestClient(app)
+    try:
+        create_response = client.post("/documents", json=_proof_pack_payload(), headers=_headers())
+        assert create_response.status_code == 201
+        document_id = create_response.json()["document_id"]
+        assert create_response.json()["report_type"] == "proof_pack"
+        assert create_response.json()["template_id"] == "proof-pack"
+
+        download_response = client.get(
+            f"/documents/{document_id}/download",
+            headers=_headers(caller_service="lotus-gateway"),
+        )
+        assert download_response.status_code == 200
+        assert download_response.content == b"proof pack pdf bytes"
+
+        hold_response = client.post(
+            f"/documents/{document_id}/legal-holds",
+            json={
+                "hold_reason": "Pre-trade proof-pack compliance review",
+                "authority_reference": "DPM-PROOF-PACK-CASE-001",
+            },
+            headers=_headers(),
+        )
+        assert hold_response.status_code == 201
+        legal_hold_id = hold_response.json()["legal_hold_id"]
+
+        blocked_purge = client.post(f"/documents/{document_id}/purge", headers=_headers())
+        assert blocked_purge.status_code == 409
+        assert blocked_purge.json()["error"]["code"] == "legal_hold_active"
+
+        release_response = client.request(
+            "DELETE",
+            f"/documents/{document_id}/legal-holds/{legal_hold_id}",
+            json={"release_reason": "Compliance review complete"},
+            headers=_headers(),
+        )
+        assert release_response.status_code == 200
+
+        purge_response = client.post(f"/documents/{document_id}/purge", headers=_headers())
+        assert purge_response.status_code == 200
+        assert purge_response.json()["purged"] is True
+
+        events_response = client.get(
+            f"/documents/{document_id}/access-events",
+            headers=_headers(),
+        )
+        assert events_response.status_code == 200
+        event_types = [event["event_type"] for event in events_response.json()["events"]]
+        assert event_types == [
+            "archive_create",
+            "binary_download",
+            "legal_hold_set",
+            "legal_hold_release",
+            "purge_execution",
             "access_events_read",
         ]
     finally:
