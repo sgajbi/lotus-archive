@@ -3,7 +3,7 @@ from datetime import date
 import pytest
 from pydantic import ValidationError
 
-from app.archive.models import ArchiveDocumentInput, DocumentClassification
+from app.archive.models import ArchiveDocumentInput, DocumentClassification, GeneratedReportType
 from app.archive.models import ArchiveDocumentMetadata
 
 
@@ -46,8 +46,25 @@ def test_metadata_input_accepts_source_backed_minimum_contract() -> None:
     metadata = valid_metadata_input()
 
     assert metadata.report_job_id == "report-job-001"
+    assert metadata.report_type == GeneratedReportType.PORTFOLIO_REVIEW
     assert metadata.portfolio_id == "PB_SG_GLOBAL_BAL_001"
     assert metadata.classification == DocumentClassification.CONFIDENTIAL
+
+
+def test_metadata_input_accepts_proof_pack_report_type() -> None:
+    metadata = valid_metadata_input(
+        report_type="proof_pack",
+        template_id="proof-pack",
+        report_data_contract_version="dpm_proof_pack_report_input.v1",
+    )
+
+    assert metadata.report_type == GeneratedReportType.PROOF_PACK
+    assert metadata.template_id == "proof-pack"
+
+
+def test_metadata_input_rejects_unsupported_report_type() -> None:
+    with pytest.raises(ValidationError):
+        valid_metadata_input(report_type="manual_upload")
 
 
 def test_metadata_input_rejects_reversed_reporting_period() -> None:

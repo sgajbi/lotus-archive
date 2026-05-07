@@ -9,6 +9,7 @@ from app.archive.models import (
     ArchiveDocumentInput,
     ArchiveDocumentMetadata,
     DocumentClassification,
+    GeneratedReportType,
     LegalHoldStatus,
     LegalHoldRecord,
     LifecycleRelationshipRecord,
@@ -36,7 +37,7 @@ class ArchiveDocumentResponse(BaseModel):
     snapshot_id: str = Field(description="Report data snapshot identifier.")
     render_job_id: str = Field(description="Render job identifier.")
     render_attempt_id: str = Field(description="Render attempt identifier.")
-    report_type: str = Field(description="Generated report type.")
+    report_type: GeneratedReportType = Field(description="Generated report type.")
     portfolio_scope: str = Field(description="Portfolio scope represented by the document.")
     portfolio_id: str = Field(description="Portfolio identifier represented by the document.")
     client_reference: str | None = Field(
