@@ -62,6 +62,17 @@ def test_metadata_input_accepts_proof_pack_report_type() -> None:
     assert metadata.template_id == "proof-pack"
 
 
+def test_metadata_input_accepts_rebalance_wave_report_type() -> None:
+    metadata = valid_metadata_input(
+        report_type="rebalance_wave",
+        template_id="rebalance-wave",
+        report_data_contract_version="dpm_wave_report_input.v1",
+    )
+
+    assert metadata.report_type == GeneratedReportType.REBALANCE_WAVE
+    assert metadata.template_id == "rebalance-wave"
+
+
 def test_metadata_input_rejects_unsupported_report_type() -> None:
     with pytest.raises(ValidationError):
         valid_metadata_input(report_type="manual_upload")

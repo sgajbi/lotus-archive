@@ -20,10 +20,10 @@ retention posture lookup, purge eligibility and execution, legal-hold set/releas
 blocking, lifecycle relationship APIs, current-document resolution, gateway-backed document
 retrieval through `lotus-gateway`, Gateway-backed Workbench retrieval through the Workbench BFF,
 report-to-archive handoff through `lotus-report`, and
-archive-specific module-family/documentation structure. RFC-0040 proof-pack report artifacts are
-now covered by the generated-document lifecycle when `lotus-report` supplies governed
-`report_type=proof_pack` metadata; arbitrary report types are rejected by the archive metadata
-contract. RFC-0108 archive supportability now
+archive-specific module-family/documentation structure. RFC-0040 proof-pack report artifacts and
+RFC-0041 rebalance-wave report artifacts are now covered by the generated-document lifecycle when
+`lotus-report` supplies governed `report_type=proof_pack` or `report_type=rebalance_wave`
+metadata; arbitrary report types are rejected by the archive metadata contract. RFC-0108 archive supportability now
 publishes `archive.observability.archive_supportability` through `/metadata` and
 `lotus_archive_supportability_total`, covering retrieval, retention, legal-hold, access-audit,
 lifecycle, gateway retrieval, and Gateway-backed Workbench retrieval with bounded labels only.

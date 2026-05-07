@@ -20,8 +20,11 @@ Lotus generated-document archive, retrieval, retention, legal hold, and access a
 - RFC-0040 proof-pack report artifacts are governed by the same archive lifecycle when
   `lotus-report` supplies `report_type=proof_pack`, the `proof-pack` render template, and
   `dpm_proof_pack_report_input.v1` metadata.
+- RFC-0041 rebalance-wave report artifacts are governed by the same archive lifecycle when
+  `lotus-report` supplies `report_type=rebalance_wave`, the `rebalance-wave` render template, and
+  `dpm_wave_report_input.v1` metadata.
 - Archive metadata accepts only governed generated-report types: `portfolio_review`,
-  `outcome_review`, and `proof_pack`.
+  `outcome_review`, `proof_pack`, and `rebalance_wave`.
 - `/metadata` publishes RFC-0108 `archive.observability.archive_supportability` posture covering
   retrieval, retention, legal hold, access audit, lifecycle, gateway retrieval, and Gateway-backed
   Workbench retrieval.
@@ -48,6 +51,26 @@ sequenceDiagram
     Report->>Render: proof-pack template package
     Render-->>Report: deterministic PDF artifact
     Report->>Archive: POST /documents report_type=proof_pack
+    Archive-->>Report: document_id and checksum
+    Gateway->>Archive: controlled metadata/download
+    Workbench->>Gateway: BFF document retrieval
+```
+
+## Rebalance-Wave Archive Flow
+
+```mermaid
+sequenceDiagram
+    participant Manage as lotus-manage
+    participant Report as lotus-report
+    participant Render as lotus-render
+    participant Archive as lotus-archive
+    participant Gateway as lotus-gateway
+    participant Workbench as lotus-workbench BFF
+
+    Manage->>Report: DpmWaveReportInput
+    Report->>Render: rebalance-wave template package
+    Render-->>Report: deterministic PDF artifact
+    Report->>Archive: POST /documents report_type=rebalance_wave
     Archive-->>Report: document_id and checksum
     Gateway->>Archive: controlled metadata/download
     Workbench->>Gateway: BFF document retrieval

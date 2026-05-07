@@ -13,7 +13,8 @@ set/release with purge blocking, lifecycle relationships, current-document resol
 report-to-archive handoff after successful PDF render. Gateway-backed retrieval is supported through
 `lotus-gateway` as the product-facing boundary, and Workbench archive retrieval is supported only
 through the Workbench BFF and Gateway route. The archive metadata contract now accepts only governed
-generated-report types: `portfolio_review`, `outcome_review`, and `proof_pack`.
+generated-report types: `portfolio_review`, `outcome_review`, `proof_pack`, and
+`rebalance_wave`.
 
 ## Authoritative Boundaries
 
@@ -22,7 +23,7 @@ generated-report types: `portfolio_review`, `outcome_review`, and `proof_pack`.
 | Report request and job identity | `lotus-report` | Implemented as source-backed archive handoff metadata after successful PDF render |
 | Snapshot and lineage reference | `lotus-report` | Implemented as source-backed archive handoff metadata after successful PDF render |
 | Render attempt and artifact metadata | `lotus-render` through `lotus-report` | Implemented as source-backed archive handoff metadata after successful PDF render |
-| Generated report type support | `lotus-archive` | Implemented through explicit metadata validation for `portfolio_review`, `outcome_review`, and `proof_pack` |
+| Generated report type support | `lotus-archive` | Implemented through explicit metadata validation for `portfolio_review`, `outcome_review`, `proof_pack`, and `rebalance_wave` |
 | Archived document identity | `lotus-archive` | Implemented through metadata model and archive API |
 | Binary storage | `lotus-archive` | Implemented through storage adapter and controlled download API |
 | Access audit | `lotus-archive` | Implemented for archive create, metadata read, binary download, access-event read, retention read, purge evaluation, purge execution, legal-hold set/release, and authorization denial |
@@ -125,6 +126,13 @@ rendered proof-pack PDF and source-backed metadata with `report_type=proof_pack`
 `lotus-archive` preserves document identity, storage, retention, legal-hold, purge, lifecycle, and
 access-audit truth; it does not reconstruct proof-pack sections, source hashes, or manage-owned
 evidence.
+
+RFC-0041 rebalance-wave report artifacts use the same archive lifecycle once `lotus-report`
+supplies a rendered wave PDF and source-backed metadata with `report_type=rebalance_wave`,
+`template_id=rebalance-wave`, and `report_data_contract_version=dpm_wave_report_input.v1`.
+`lotus-archive` preserves document identity, storage, retention, legal-hold, purge, lifecycle, and
+access-audit truth; it does not reconstruct wave membership, proof-pack posture, source hashes, or
+wave events.
 
 ## Documentation Ownership
 
