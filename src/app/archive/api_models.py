@@ -16,6 +16,7 @@ from app.archive.models import (
     LifecycleTransitionType,
     PurgeStatus,
 )
+from app.archive.source_events import SOURCE_EVENT_FAMILY
 
 
 class ArchiveDocumentCreateRequest(BaseModel):
@@ -240,3 +241,82 @@ class LifecycleRelationshipResponse(BaseModel):
             **record.model_dump(),
             current_document_id=current_document_id,
         )
+
+
+class ArchiveArtifactRef(BaseModel):
+    artifact_type: str = Field(description="Support-safe artifact reference type.")
+    artifact_id: str = Field(description="Stable artifact identifier.")
+    content_hash: str | None = Field(
+        default=None,
+        description="Artifact content hash when available without exposing raw payloads.",
+    )
+
+
+class ArchiveDocumentSourceEvent(BaseModel):
+    event_id: str = Field(description="Stable archive-owned source-event identifier.")
+    event_type: str = Field(
+        description=(
+            "Archive-owned source-event type for generated-document lifecycle or client-delivery "
+            "lineage."
+        )
+    )
+    occurred_at: datetime = Field(description="UTC timestamp for the source event.")
+    source_system: str = Field(description="Source system emitting the event.")
+    source_event_family: str = Field(description="Governed source-event family identifier.")
+    source_type: str = Field(description="Archive source record type behind this event.")
+    source_id: str = Field(description="Archive source record identifier behind this event.")
+    portfolio_id: str = Field(description="Portfolio represented by the archived document.")
+    report_type: GeneratedReportType = Field(description="Generated report type.")
+    report_job_id: str = Field(description="Source report job identifier.")
+    snapshot_id: str = Field(description="Source report snapshot identifier.")
+    render_job_id: str = Field(description="Source render job identifier.")
+    render_attempt_id: str = Field(description="Source render attempt identifier.")
+    document_id: str = Field(description="Archived document represented by this source event.")
+    current_document_id: str = Field(
+        description="Current archived document in the lifecycle chain."
+    )
+    related_document_id: str | None = Field(
+        default=None,
+        description="Related historical or current document for lifecycle events.",
+    )
+    transition_reason: str | None = Field(
+        default=None,
+        description="Support-safe lifecycle transition reason when the event is a transition.",
+    )
+    content_hash: str = Field(description="Checksum-backed content hash for the archived artifact.")
+    supportability_state: str = Field(description="Source-event supportability state.")
+    reason_codes: list[str] = Field(description="Stable reason codes for downstream consumers.")
+    retention_policy: str = Field(description="Retention policy for the source event projection.")
+    redaction_policy: str = Field(description="Redaction policy for the source event projection.")
+    audit_policy: str = Field(description="Audit policy covering the source event projection.")
+    access_classification: str = Field(
+        description="Access classification for downstream source-event consumers."
+    )
+    artifact_refs: list[ArchiveArtifactRef] = Field(
+        description="Bounded artifact references without raw document bytes or storage keys."
+    )
+
+
+class ArchiveDocumentSourceEventsResponse(BaseModel):
+    service: str = Field(description="Service emitting archive source events.")
+    source_event_family: str = Field(
+        default=SOURCE_EVENT_FAMILY,
+        description="Governed archive source-event family identifier.",
+    )
+    document_id: str = Field(description="Archived document used as the source-event anchor.")
+    current_document_id: str = Field(
+        description="Current archived document in the lifecycle chain."
+    )
+    portfolio_id: str = Field(description="Portfolio represented by the archived document.")
+    report_type: GeneratedReportType = Field(description="Generated report type.")
+    event_count: int = Field(description="Number of returned source events.")
+    no_raw_payloads: bool = Field(
+        description="Whether raw document bytes, storage keys, and client references are omitted."
+    )
+    latest_event_at: datetime | None = Field(
+        default=None,
+        description="UTC timestamp for the latest returned source event.",
+    )
+    events: list[ArchiveDocumentSourceEvent] = Field(
+        description="Archive-owned generated-document source events ordered by event time."
+    )

@@ -30,6 +30,7 @@ def test_supported_features_baseline_blocks_direct_workbench_overclaim() -> None
     assert "Workbench-facing archive retrieval is supported only through" in (supported_features)
     assert "| Generated-document archival | `ready` |" in supported_features
     assert "| Controlled document binary download | `ready` |" in supported_features
+    assert "| Archive document source events | `ready` |" in supported_features
     assert "| Report-to-archive handoff | `ready` |" in supported_features
     assert "| Gateway-backed document retrieval | `ready` |" in supported_features
     assert "| Gateway-backed Workbench document retrieval | `ready` |" in supported_features
@@ -50,6 +51,7 @@ def test_operator_docs_match_report_handoff_and_gateway_retrieval_support() -> N
 
     assert "report-to-archive handoff through `lotus-report`" in docs
     assert "Gateway-backed product retrieval is implemented in `lotus-gateway`" in docs
+    assert "lotus-archive.generated_document_client_communication.v1" in docs
     assert "Gateway-backed product retrieval remains future work" not in docs
     assert "Do not use this service for report handoff" not in docs
 

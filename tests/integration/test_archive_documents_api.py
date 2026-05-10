@@ -692,6 +692,74 @@ def test_document_lifecycle_api_reissue_and_unsupported_transition_errors(
     assert unsupported_response.json()["error"]["code"] == "unsupported_lifecycle_transition"
 
 
+def test_document_source_events_are_support_safe_for_portfolio_memory_consumers(
+    tmp_path: Path,
+) -> None:
+    service = _service(tmp_path)
+    app.dependency_overrides[archive_service] = lambda: service
+    client = TestClient(app)
+    try:
+        source = client.post(
+            "/documents",
+            json=_payload_with_id("archive-request-source-events-source", b"source"),
+            headers=_headers(),
+        ).json()["document_id"]
+        target = client.post(
+            "/documents",
+            json=_payload_with_id("archive-request-source-events-target", b"target"),
+            headers=_headers(),
+        ).json()["document_id"]
+        reissue = client.post(
+            f"/documents/{source}/reissue",
+            json={
+                "target_document_id": target,
+                "transition_reason": "Client delivery reissue",
+            },
+            headers=_headers(),
+        )
+        response = client.get(
+            f"/documents/{source}/source-events",
+            headers=_headers(caller_service="lotus-gateway"),
+        )
+        access_events = client.get(
+            f"/documents/{source}/access-events",
+            headers=_headers(),
+        )
+    finally:
+        app.dependency_overrides.clear()
+
+    assert reissue.status_code == 201
+    assert response.status_code == 200
+    body = response.json()
+    assert body["source_event_family"] == (
+        "lotus-archive.generated_document_client_communication.v1"
+    )
+    assert body["document_id"] == source
+    assert body["current_document_id"] == target
+    assert body["portfolio_id"] == "PB_SG_GLOBAL_BAL_001"
+    assert body["event_count"] == 2
+    assert body["no_raw_payloads"] is True
+    assert [event["event_type"] for event in body["events"]] == [
+        "generated_document_archived",
+        "client_delivery_document_reissued",
+    ]
+    for event in body["events"]:
+        assert event["content_hash"].startswith("sha256:")
+        assert event["redaction_policy"] == (
+            "NO_RAW_DOCUMENT_BYTES_NO_STORAGE_KEYS_NO_CLIENT_REFERENCE"
+        )
+        assert event["supportability_state"] == "READY"
+        assert "storage_key" not in str(event)
+        assert "client-ref-001" not in str(event)
+    reissue_event = body["events"][1]
+    assert reissue_event["related_document_id"] == target
+    assert reissue_event["transition_reason"] == "Client delivery reissue"
+    assert "client_delivery_reissue_evidence" in reissue_event["reason_codes"]
+
+    event_types = [event["event_type"] for event in access_events.json()["events"]]
+    assert "source_events_read" in event_types
+
+
 def test_purge_api_reports_not_eligible_before_retention_elapsed(tmp_path: Path) -> None:
     service = _service(tmp_path)
     app.dependency_overrides[archive_service] = lambda: service

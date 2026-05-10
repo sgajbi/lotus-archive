@@ -29,6 +29,7 @@ from app.archive.exceptions import (
 from app.archive.models import LegalHoldStatus, LifecycleTransitionType, PurgeStatus
 from app.archive.repository import InMemoryArchiveDocumentRepository
 from app.archive.service import ArchiveDocumentService
+from app.archive.source_events import latest_event_time
 from app.archive.storage import FilesystemObjectStorage
 from app.security.caller_context import CallerContext
 from tests.unit.test_archive_writer import valid_metadata_input
@@ -462,6 +463,113 @@ def test_correction_and_reissue_set_explicit_lifecycle_semantics(tmp_path: Path)
     assert reissue_relationship.transition_type == LifecycleTransitionType.REISSUE
     assert corrected.correction_of_document_id == source.document_id
     assert reissued.reissue_of_document_id == reissue_source.document_id
+
+
+def test_document_source_events_project_archive_and_reissue_lineage(tmp_path: Path) -> None:
+    service = _service(tmp_path)
+    source = service.create_document(
+        request=_create_request_with_id("archive-request-source-event-source"),
+        caller_context=_caller(),
+        trace_id="trace-source-event-source",
+    )
+    target = service.create_document(
+        request=_create_request_with_id("archive-request-source-event-target"),
+        caller_context=_caller(),
+        trace_id="trace-source-event-target",
+    )
+
+    service.reissue_document(
+        document_id=source.document_id,
+        request=LifecycleTransitionRequest(
+            target_document_id=target.document_id,
+            transition_reason="Client delivery reissue",
+        ),
+        caller_context=_caller(),
+        trace_id="trace-source-event-reissue",
+    )
+
+    metadata, current, events = service.list_document_source_events(
+        document_id=source.document_id,
+        caller_context=_caller(caller_service="lotus-gateway"),
+        trace_id="trace-source-events-read",
+    )
+
+    assert metadata.document_id == source.document_id
+    assert current.document_id == target.document_id
+    assert [event["event_type"] for event in events] == [
+        "generated_document_archived",
+        "client_delivery_document_reissued",
+    ]
+    assert events[0]["source_event_family"] == (
+        "lotus-archive.generated_document_client_communication.v1"
+    )
+    artifact_refs = cast(list[dict[str, object]], events[0]["artifact_refs"])
+    assert artifact_refs[0]["artifact_type"] == "archive_document_metadata"
+    assert events[1]["related_document_id"] == target.document_id
+    assert events[1]["transition_reason"] == "Client delivery reissue"
+    assert events[1]["redaction_policy"] == (
+        "NO_RAW_DOCUMENT_BYTES_NO_STORAGE_KEYS_NO_CLIENT_REFERENCE"
+    )
+
+
+def test_document_source_events_project_supersede_and_correction_lineage(
+    tmp_path: Path,
+) -> None:
+    service = _service(tmp_path)
+    supersede_source = service.create_document(
+        request=_create_request_with_id("archive-request-source-event-supersede-source"),
+        caller_context=_caller(),
+        trace_id="trace-source-event-supersede-source",
+    )
+    supersede_target = service.create_document(
+        request=_create_request_with_id("archive-request-source-event-supersede-target"),
+        caller_context=_caller(),
+        trace_id="trace-source-event-supersede-target",
+    )
+    correction_source = service.create_document(
+        request=_create_request_with_id("archive-request-source-event-correction-source"),
+        caller_context=_caller(),
+        trace_id="trace-source-event-correction-source",
+    )
+    correction_target = service.create_document(
+        request=_create_request_with_id("archive-request-source-event-correction-target"),
+        caller_context=_caller(),
+        trace_id="trace-source-event-correction-target",
+    )
+
+    service.supersede_document(
+        document_id=supersede_source.document_id,
+        request=LifecycleTransitionRequest(
+            target_document_id=supersede_target.document_id,
+            transition_reason="Annual report supersession",
+        ),
+        caller_context=_caller(),
+        trace_id="trace-source-event-supersede",
+    )
+    service.correct_document(
+        document_id=correction_source.document_id,
+        request=LifecycleTransitionRequest(
+            target_document_id=correction_target.document_id,
+            transition_reason="Corrected portfolio period",
+        ),
+        caller_context=_caller(),
+        trace_id="trace-source-event-correction",
+    )
+
+    _, _, supersede_events = service.list_document_source_events(
+        document_id=supersede_source.document_id,
+        caller_context=_caller(caller_service="lotus-gateway"),
+        trace_id="trace-source-events-supersede-read",
+    )
+    _, _, correction_events = service.list_document_source_events(
+        document_id=correction_source.document_id,
+        caller_context=_caller(caller_service="lotus-gateway"),
+        trace_id="trace-source-events-correction-read",
+    )
+
+    assert supersede_events[1]["event_type"] == "generated_document_superseded"
+    assert correction_events[1]["event_type"] == "generated_document_corrected"
+    assert latest_event_time([]) is None
 
 
 def test_lifecycle_transition_rejects_non_current_source(tmp_path: Path) -> None:

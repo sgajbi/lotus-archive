@@ -40,6 +40,7 @@ from app.archive.models import (
     PurgeStatus,
 )
 from app.archive.repository import ArchiveDocumentRepository
+from app.archive.source_events import build_archive_document_source_events
 from app.archive.storage import ObjectStorage
 from app.security.caller_context import CallerContext
 
@@ -355,6 +356,37 @@ class ArchiveDocumentService:
             document_id=document_id,
         )
         return current
+
+    @archive_metric("metadata_lookup")
+    def list_document_source_events(
+        self,
+        *,
+        document_id: str,
+        caller_context: CallerContext,
+        trace_id: str,
+    ) -> tuple[ArchiveDocumentMetadata, ArchiveDocumentMetadata, list[dict[str, object]]]:
+        self.authorization_policy.authorize(
+            permission=ArchivePermission.READ_METADATA,
+            caller_context=caller_context,
+            audit_repository=self.audit_repository,
+            trace_id=trace_id,
+            document_id=document_id,
+        )
+        metadata = self._get_existing_metadata(document_id)
+        current = self._resolve_current_document(metadata)
+        relationships = self.repository.list_lifecycle_relationships(document_id)
+        events = build_archive_document_source_events(
+            metadata=metadata,
+            current_document_id=current.document_id,
+            lifecycle_relationships=relationships,
+        )
+        self._record_allowed(
+            event_type=AccessEventType.SOURCE_EVENTS_READ,
+            caller_context=caller_context,
+            trace_id=trace_id,
+            document_id=document_id,
+        )
+        return metadata, current, events
 
     @archive_metric("lifecycle_supersede")
     def supersede_document(
