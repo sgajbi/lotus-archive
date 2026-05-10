@@ -13,6 +13,9 @@ Lotus generated-document archive, retrieval, retention, legal hold, and access a
   are available.
 - Lifecycle relationship APIs for supersession, correction, reissue, and current-document
   resolution are available.
+- `GET /documents/{document_id}/source-events` projects archive-owned generated-document and
+  client-delivery reissue lineage for downstream portfolio-memory consumers without raw document
+  bytes, storage keys, raw report payloads, or raw client references.
 - Report-to-archive handoff after successful PDF render is available through `lotus-report`.
 - RFC-0042 outcome-review report artifacts are governed by the same generated-document archive,
   retrieval, retention, legal-hold, access-audit, purge, and lifecycle posture when `lotus-report`
@@ -52,6 +55,7 @@ sequenceDiagram
     Render-->>Report: deterministic PDF artifact
     Report->>Archive: POST /documents report_type=proof_pack
     Archive-->>Report: document_id and checksum
+    Archive-->>Manage: source-event refs for portfolio memory
     Gateway->>Archive: controlled metadata/download
     Workbench->>Gateway: BFF document retrieval
 ```
@@ -72,6 +76,7 @@ sequenceDiagram
     Render-->>Report: deterministic PDF artifact
     Report->>Archive: POST /documents report_type=rebalance_wave
     Archive-->>Report: document_id and checksum
+    Archive-->>Manage: source-event refs for portfolio memory
     Gateway->>Archive: controlled metadata/download
     Workbench->>Gateway: BFF document retrieval
 ```

@@ -9,6 +9,8 @@ from app.archive.api_models import (
     AccessEventListResponse,
     ArchiveDocumentCreateRequest,
     ArchiveDocumentResponse,
+    ArchiveDocumentSourceEvent,
+    ArchiveDocumentSourceEventsResponse,
     LegalHoldCreateRequest,
     LegalHoldReleaseRequest,
     LegalHoldResponse,
@@ -22,6 +24,7 @@ from app.archive.archive_writer import ArchiveWriter
 from app.archive.audit import InMemoryAccessAuditRepository
 from app.archive.repository import InMemoryArchiveDocumentRepository
 from app.archive.service import ArchiveDocumentService
+from app.archive.source_events import SOURCE_EVENT_FAMILY, latest_event_time
 from app.archive.storage import FilesystemObjectStorage
 from app.security.caller_context import CallerContext, caller_context_from_headers
 
@@ -156,6 +159,49 @@ async def get_current_document(
         trace_id=request_trace_id,
     )
     return ArchiveDocumentResponse.from_metadata(metadata)
+
+
+@router.get(
+    "/{document_id}/source-events",
+    response_model=ArchiveDocumentSourceEventsResponse,
+    summary="List archived document source events",
+    description=(
+        "Returns archive-owned generated-document source events for downstream portfolio-memory "
+        "consumers. The response preserves document lifecycle, correction, supersession, and "
+        "client-delivery reissue lineage without exposing raw document bytes, storage keys, raw "
+        "client references, or report payloads."
+    ),
+    responses={
+        200: {"description": "Archive-owned generated-document source events."},
+        401: {"description": "Required caller context is missing."},
+        403: {"description": "The caller is not authorized to read document source events."},
+        404: {"description": "The document does not exist."},
+        409: {"description": "The lifecycle relationship chain is inconsistent."},
+    },
+)
+async def list_document_source_events(
+    document_id: str,
+    service: ArchiveDocumentService = Depends(archive_service),
+    context: CallerContext = Depends(caller_context),
+    request_trace_id: str = Depends(trace_id),
+) -> ArchiveDocumentSourceEventsResponse:
+    metadata, current, events = service.list_document_source_events(
+        document_id=document_id,
+        caller_context=context,
+        trace_id=request_trace_id,
+    )
+    return ArchiveDocumentSourceEventsResponse(
+        service="lotus-archive",
+        source_event_family=SOURCE_EVENT_FAMILY,
+        document_id=metadata.document_id,
+        current_document_id=current.document_id,
+        portfolio_id=metadata.portfolio_id,
+        report_type=metadata.report_type,
+        event_count=len(events),
+        no_raw_payloads=True,
+        latest_event_at=latest_event_time(events),
+        events=[ArchiveDocumentSourceEvent.model_validate(event) for event in events],
+    )
 
 
 @router.get(

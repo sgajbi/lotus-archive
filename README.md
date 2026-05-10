@@ -14,7 +14,8 @@ checksum validation, idempotent archive-write domain service, archive create API
 metadata lookup, controlled binary download, access-audit recording for archive API actions,
 retention posture lookup, purge eligibility and execution, legal-hold set/release with purge
 blocking, lifecycle relationship APIs for supersession/correction/reissue, current-document
-resolution, report-to-archive handoff after successful PDF render, governed report-type
+resolution, archive-owned generated-document source events for downstream portfolio-memory
+consumers, report-to-archive handoff after successful PDF render, governed report-type
 validation for portfolio-review, outcome-review, proof-pack, and rebalance-wave artifacts, quality gates,
 archive-specific structure, gateway-backed document retrieval, and Gateway-backed Workbench archive
 retrieval. Product retrieval must flow through `lotus-gateway`; Workbench must not call
@@ -35,6 +36,12 @@ RFC-0108 archive supportability posture is published through `/metadata` as
 `lotus_archive_supportability_total` observations. The posture covers retrieval, retention,
 legal-hold, access-audit, lifecycle, gateway retrieval, and Gateway-backed Workbench retrieval
 without document, storage, report, render, tenant, trace, or correlation labels.
+
+`GET /documents/{document_id}/source-events` exposes the archive-owned
+`lotus-archive.generated_document_client_communication.v1` source-event family for downstream
+portfolio-memory consumers. It projects generated-document archive, supersession, correction, and
+client-delivery reissue lineage with portfolio/report/render/archive refs and checksum-backed
+hashes, but never raw document bytes, storage keys, raw report payloads, or raw client references.
 
 ## Quick Start
 

@@ -1,3 +1,6 @@
+import pytest
+
+from app.archive import service_profile
 from app.archive.service_profile import (
     ARCHIVE_MODULE_FAMILIES,
     SUPPORTED_ARCHIVE_FEATURES,
@@ -17,6 +20,7 @@ def test_archive_module_families_are_explicit_and_unique() -> None:
         "retention",
         "legal_hold",
         "lifecycle",
+        "source_events",
     ]
     assert len(module_names) == len(set(module_names))
 
@@ -26,7 +30,7 @@ def test_service_posture_does_not_overclaim_archive_features() -> None:
 
     assert (
         posture["implementedScope"]
-        == "retention_purge_legal_hold_lifecycle_report_handoff_gateway_workbench_retrieval"
+        == "retention_purge_legal_hold_lifecycle_source_events_report_handoff_gateway_workbench_retrieval"
     )
     assert posture["supportedArchiveFeatures"] == list(SUPPORTED_ARCHIVE_FEATURES)
 
@@ -66,6 +70,7 @@ def test_archive_supportability_reports_ready_gateway_backed_workbench_posture()
     assert isinstance(supported_archive_features, list)
     assert supported_archive_features == list(SUPPORTED_ARCHIVE_FEATURES)
     assert "gateway_backed_workbench_document_retrieval" in supported_archive_features
+    assert "archive_document_source_events" in supported_archive_features
 
 
 def test_archive_supportability_reports_draining_degradation() -> None:
@@ -75,3 +80,15 @@ def test_archive_supportability_reports_draining_degradation() -> None:
     assert supportability["reason"] == "archive_supportability_draining"
     assert supportability["freshnessBucket"] == "current"
     assert supportability["draining"] is True
+
+
+def test_archive_supportability_reports_unavailable_when_no_features(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(service_profile, "SUPPORTED_ARCHIVE_FEATURES", ())
+
+    supportability = archive_supportability(is_draining=False)
+
+    assert supportability["state"] == "unavailable"
+    assert supportability["reason"] == "archive_capability_unavailable"
+    assert supportability["freshnessBucket"] == "unknown"

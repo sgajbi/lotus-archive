@@ -18,7 +18,8 @@ checksum validation, idempotent archive-write domain service, internal archive c
 controlled metadata lookup, checksum-verified binary download, access-audit recording, and
 retention posture lookup, purge eligibility and execution, legal-hold set/release with purge
 blocking, lifecycle relationship APIs, current-document resolution, gateway-backed document
-retrieval through `lotus-gateway`, Gateway-backed Workbench retrieval through the Workbench BFF,
+resolution, archive-owned generated-document source events for downstream portfolio-memory
+consumers, gateway-backed document retrieval through `lotus-gateway`, Gateway-backed Workbench retrieval through the Workbench BFF,
 report-to-archive handoff through `lotus-report`, and
 archive-specific module-family/documentation structure. RFC-0040 proof-pack report artifacts and
 RFC-0041 rebalance-wave report artifacts are now covered by the generated-document lifecycle when
@@ -51,14 +52,16 @@ not call `lotus-archive` directly.
 13. `src/app/archive/service.py`: archive API orchestration, retrieval-time checksum
    verification, retention posture, purge eligibility/execution, legal-hold state changes,
    lifecycle relationship mutation, and current-document resolution.
-14. `migrations/`: PostgreSQL metadata contract migrations.
-15. `src/app/contracts/`: API and contract models.
-16. `src/app/middleware/`: shared request middleware.
-17. `tests/unit`, `tests/integration`, `tests/e2e`: test pyramid baseline.
-18. `docs/architecture/`: archive service boundaries and structure.
-19. `docs/supported-features.md`: implementation-backed support posture.
-20. `docs/standards/`: repository standards placeholders to be replaced with service truth.
-21. `src/app/archive/metrics.py`: bounded archive operation, size, and supportability metrics.
+14. `src/app/archive/source_events.py`: archive-owned generated-document and client-delivery
+   lifecycle source-event projection for portfolio-memory consumers.
+15. `migrations/`: PostgreSQL metadata contract migrations.
+16. `src/app/contracts/`: API and contract models.
+17. `src/app/middleware/`: shared request middleware.
+18. `tests/unit`, `tests/integration`, `tests/e2e`: test pyramid baseline.
+19. `docs/architecture/`: archive service boundaries and structure.
+20. `docs/supported-features.md`: implementation-backed support posture.
+21. `docs/standards/`: repository standards placeholders to be replaced with service truth.
+22. `src/app/archive/metrics.py`: bounded archive operation, size, and supportability metrics.
 
 ## Runtime And Integration Boundaries
 

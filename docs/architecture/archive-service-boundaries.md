@@ -10,6 +10,7 @@ RFC-0103 establishes the supported first-wave archive API surface for authorized
 generated-document archival, support-safe metadata lookup, checksum-verified binary download,
 access-audit lookup, retention posture lookup, purge eligibility and execution, and legal-hold
 set/release with purge blocking, lifecycle relationships, current-document resolution, and
+archive-owned generated-document source events for downstream portfolio-memory consumers, and
 report-to-archive handoff after successful PDF render. Gateway-backed retrieval is supported through
 `lotus-gateway` as the product-facing boundary, and Workbench archive retrieval is supported only
 through the Workbench BFF and Gateway route. The archive metadata contract now accepts only governed
@@ -30,6 +31,7 @@ generated-report types: `portfolio_review`, `outcome_review`, `proof_pack`, and
 | Retention and purge | `lotus-archive` | Implemented for retention posture, purge eligibility, governed purge execution, and post-purge support-safe metadata |
 | Legal hold | `lotus-archive` | Implemented for legal-hold set/release, authority reference, active-hold summary, and purge blocking |
 | Lifecycle relationships | `lotus-archive` | Implemented for supersession, correction, reissue, append-only relationship records, historical lookup, and current-document resolution |
+| Generated-document source events | `lotus-archive` | Implemented through `GET /documents/{document_id}/source-events` over metadata and lifecycle relationships, with raw document bytes, storage keys, report payloads, and client references omitted |
 | Product-facing retrieval | `lotus-gateway` | Supported through gateway metadata and controlled download routes |
 | Workbench retrieval surface | `lotus-workbench` | Supported only through the Workbench BFF and existing gateway-backed retrieval boundary; direct Workbench-to-archive calls remain unsupported |
 
@@ -43,6 +45,8 @@ The implementation should remain organized around these module families:
 4. `retention`: retention policy assignment, purge eligibility, and support-safe purge evidence.
 5. `legal_hold`: legal hold set, release, authority reference, and purge blocking.
 6. `lifecycle`: supersession, correction, reissue, and historical document relationships.
+7. `source_events`: support-safe generated-document and client-delivery lifecycle source events for
+   downstream portfolio-memory consumers.
 
 These boundaries should be preserved as the service grows. Avoid placing storage behavior in API
 routers, retention policy logic in report handoff code, or gateway/product assumptions in the
@@ -109,6 +113,17 @@ RFC-0103 Slice 6 adds:
 
 Lifecycle relationships are append-only audit-backed archive history. They do not delete,
 overwrite, or hide historical document metadata.
+
+RFC40-WTBD-010 adds an archive-owned source-event family:
+
+1. `GET /documents/{document_id}/source-events` for generated-document archive, supersession,
+   correction, and client-delivery reissue lineage.
+2. the source-event family is `lotus-archive.generated_document_client_communication.v1`.
+3. events preserve portfolio, report, render, archive document, lifecycle, checksum, retention,
+   redaction, access, audit, and bounded artifact references.
+4. the response deliberately omits raw document bytes, storage keys, raw report payloads, and raw
+   client references, so downstream portfolio-memory consumers can cite archive truth without
+   becoming document-delivery or archive-storage authorities.
 
 RFC-0103 Slice 7 adds report-to-archive handoff in `lotus-report`:
 
