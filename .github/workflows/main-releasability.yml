@@ -134,7 +134,7 @@ jobs:
       - name: Generate dependency SBOM
         run: |
           ./.venv/bin/python -m pip install cyclonedx-bom
-          python -m cyclonedx_py environment --output-format JSON --output-file sbom.cdx.json
+          ./.venv/bin/python -m cyclonedx_py environment --output-format JSON --output-file sbom.cdx.json
       - name: Generate release metadata manifest
         shell: python
         run: |
