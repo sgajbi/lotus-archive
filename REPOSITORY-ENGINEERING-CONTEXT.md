@@ -24,8 +24,11 @@ report-to-archive handoff through `lotus-report`, and
 archive-specific module-family/documentation structure. RFC-0040 proof-pack report artifacts and
 RFC-0041 rebalance-wave report artifacts are now covered by the generated-document lifecycle when
 `lotus-report` supplies governed `report_type=proof_pack` or `report_type=rebalance_wave`
-metadata; arbitrary report types are rejected by the archive metadata contract. RFC-0108 archive supportability now
-publishes `archive.observability.archive_supportability` through `/metadata` and
+metadata; arbitrary report types are rejected by the archive metadata contract. RFC-0023 reviewed
+advisory narrative portfolio-review artifacts can now preserve a support-safe
+`reviewed_advisory_narrative` archive summary when the PDF includes the rendered advisor-use
+narrative page; raw narrative sections and client-ready promotion remain out of scope. RFC-0108
+archive supportability now publishes `archive.observability.archive_supportability` through `/metadata` and
 `lotus_archive_supportability_total`, covering retrieval, retention, legal-hold, access-audit,
 lifecycle, gateway retrieval, and Gateway-backed Workbench retrieval with bounded labels only.
 

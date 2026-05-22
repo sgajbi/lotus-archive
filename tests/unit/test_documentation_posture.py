@@ -34,8 +34,10 @@ def test_supported_features_baseline_blocks_direct_workbench_overclaim() -> None
     assert "| Report-to-archive handoff | `ready` |" in supported_features
     assert "| Gateway-backed document retrieval | `ready` |" in supported_features
     assert "| Gateway-backed Workbench document retrieval | `ready` |" in supported_features
+    assert "| Reviewed advisory narrative archive summary | `ready` |" in supported_features
     assert "| Report-to-archive handoff | `not_supported` |" not in supported_features
     assert "| Direct Workbench archive calls | `not_supported` |" in supported_features
+    assert "| Client-ready advisory narrative publication | `not_supported` |" in supported_features
     assert "| Arbitrary file storage | `not_supported` |" in supported_features
 
 

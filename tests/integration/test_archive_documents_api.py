@@ -11,6 +11,7 @@ from app.archive.service import ArchiveDocumentService
 from app.archive.storage import FilesystemObjectStorage
 from app.main import app
 from tests.unit.test_archive_writer import valid_metadata_input
+from tests.unit.test_archive_metadata_model import reviewed_advisory_narrative_summary
 
 
 def _service(tmp_path: Path) -> ArchiveDocumentService:
@@ -108,6 +109,20 @@ def _wave_payload() -> dict[str, object]:
         classification="restricted",
         retention_start_date="2026-05-03",
         retain_until_date="2033-05-03",
+    ).model_dump(mode="json")
+    return payload
+
+
+def _reviewed_narrative_payload() -> dict[str, object]:
+    payload = _payload(content=b"portfolio review pdf bytes with advisory narrative")
+    payload["metadata"] = valid_metadata_input(
+        archive_request_id="archive-request-reviewed-narrative-001",
+        report_job_id="report-job-reviewed-narrative-001",
+        report_request_id="report-request-reviewed-narrative-001",
+        snapshot_id="snapshot-reviewed-narrative-001",
+        render_job_id="render-job-reviewed-narrative-001",
+        render_attempt_id="render-attempt-reviewed-narrative-001",
+        reviewed_advisory_narrative=reviewed_advisory_narrative_summary(),
     ).model_dump(mode="json")
     return payload
 
@@ -773,3 +788,51 @@ def test_purge_api_reports_not_eligible_before_retention_elapsed(tmp_path: Path)
 
     assert response.status_code == 409
     assert response.json()["error"]["code"] == "purge_not_eligible"
+
+
+def test_reviewed_advisory_narrative_archive_summary_is_preserved_and_source_safe(
+    tmp_path: Path,
+) -> None:
+    service = _service(tmp_path)
+    app.dependency_overrides[archive_service] = lambda: service
+    client = TestClient(app)
+    try:
+        create_response = client.post(
+            "/documents",
+            json=_reviewed_narrative_payload(),
+            headers=_headers(),
+        )
+        assert create_response.status_code == 201
+        document_id = create_response.json()["document_id"]
+        narrative_summary = create_response.json()["reviewed_advisory_narrative"]
+        assert narrative_summary["package_id"] == "reviewed-narrative-package-001"
+        assert narrative_summary["review_state"] == "APPROVED_FOR_ADVISOR_USE"
+        assert narrative_summary["client_ready_status"] == "NOT_CLIENT_READY"
+        assert "sections" not in narrative_summary
+
+        lookup_response = client.get(
+            f"/documents/{document_id}",
+            headers=_headers(caller_service="lotus-gateway"),
+        )
+        source_events_response = client.get(
+            f"/documents/{document_id}/source-events",
+            headers=_headers(caller_service="lotus-gateway"),
+        )
+    finally:
+        app.dependency_overrides.clear()
+
+    assert lookup_response.status_code == 200
+    assert lookup_response.json()["reviewed_advisory_narrative"] == narrative_summary
+    assert "storage_key" not in lookup_response.json()
+
+    assert source_events_response.status_code == 200
+    created_event = source_events_response.json()["events"][0]
+    assert (
+        "reviewed_advisory_narrative_archive_summary_preserved" in (created_event["reason_codes"])
+    )
+    assert {
+        "artifact_type": "reviewed_advisory_narrative_package",
+        "artifact_id": "reviewed-narrative-package-001",
+        "content_hash": "sha256:" + "a" * 64,
+    } in created_event["artifact_refs"]
+    assert "portfolio review pdf bytes with advisory narrative" not in str(created_event)

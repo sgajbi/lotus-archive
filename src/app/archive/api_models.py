@@ -15,6 +15,7 @@ from app.archive.models import (
     LifecycleRelationshipRecord,
     LifecycleTransitionType,
     PurgeStatus,
+    ReviewedAdvisoryNarrativeArchiveSummary,
 )
 from app.archive.source_events import SOURCE_EVENT_FAMILY
 
@@ -72,6 +73,14 @@ class ArchiveDocumentResponse(BaseModel):
     retain_until_date: date | None = Field(
         default=None,
         description="Date until which the document must be retained.",
+    )
+    reviewed_advisory_narrative: ReviewedAdvisoryNarrativeArchiveSummary | None = Field(
+        default=None,
+        description=(
+            "Support-safe reviewed advisory narrative archive summary when the portfolio-review "
+            "document includes the RFC-0023 advisor-use narrative page. This does not expose raw "
+            "narrative sections and does not promote client-ready status."
+        ),
     )
     purge_status: PurgeStatus = Field(description="Current purge eligibility status.")
     legal_hold_status: LegalHoldStatus = Field(description="Current legal-hold status.")

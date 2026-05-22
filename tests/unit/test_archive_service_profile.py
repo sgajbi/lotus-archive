@@ -30,7 +30,7 @@ def test_service_posture_does_not_overclaim_archive_features() -> None:
 
     assert (
         posture["implementedScope"]
-        == "retention_purge_legal_hold_lifecycle_source_events_report_handoff_gateway_workbench_retrieval"
+        == "retention_purge_legal_hold_lifecycle_source_events_report_handoff_reviewed_narrative_gateway_workbench_retrieval"
     )
     assert posture["supportedArchiveFeatures"] == list(SUPPORTED_ARCHIVE_FEATURES)
 
@@ -71,6 +71,7 @@ def test_archive_supportability_reports_ready_gateway_backed_workbench_posture()
     assert supported_archive_features == list(SUPPORTED_ARCHIVE_FEATURES)
     assert "gateway_backed_workbench_document_retrieval" in supported_archive_features
     assert "archive_document_source_events" in supported_archive_features
+    assert "reviewed_advisory_narrative_archive_summary" in supported_archive_features
 
 
 def test_archive_supportability_reports_draining_degradation() -> None:

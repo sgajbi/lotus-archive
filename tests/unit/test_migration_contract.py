@@ -29,6 +29,15 @@ def test_initial_migration_contains_required_archive_document_fields() -> None:
     assert "storage_key TEXT NOT NULL UNIQUE" in migration
 
 
+def test_reviewed_advisory_narrative_migration_contains_required_field() -> None:
+    migration = (
+        ROOT / "migrations" / "004_add_reviewed_advisory_narrative_to_archive_documents.sql"
+    ).read_text(encoding="utf-8")
+
+    assert "reviewed_advisory_narrative JSONB" in migration
+    assert "ADD COLUMN IF NOT EXISTS" in migration
+
+
 def test_legal_hold_migration_contains_required_fields() -> None:
     migration = (ROOT / "migrations" / "002_create_archive_legal_holds.sql").read_text(
         encoding="utf-8"

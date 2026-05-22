@@ -26,6 +26,10 @@ Lotus generated-document archive, retrieval, retention, legal hold, and access a
 - RFC-0041 rebalance-wave report artifacts are governed by the same archive lifecycle when
   `lotus-report` supplies `report_type=rebalance_wave`, the `rebalance-wave` render template, and
   `dpm_wave_report_input.v1` metadata.
+- RFC-0023 advisor-review narrative portfolio-review artifacts can preserve a support-safe
+  `reviewed_advisory_narrative` archive summary after `lotus-report` and `lotus-render` include the
+  rendered advisor-use narrative page. The archive summary stores lineage and posture, not raw
+  narrative sections, and does not promote client-ready commentary.
 - Archive metadata accepts only governed generated-report types: `portfolio_review`,
   `outcome_review`, `proof_pack`, and `rebalance_wave`.
 - `/metadata` publishes RFC-0108 `archive.observability.archive_supportability` posture covering
@@ -79,6 +83,24 @@ sequenceDiagram
     Archive-->>Manage: source-event refs for portfolio memory
     Gateway->>Archive: controlled metadata/download
     Workbench->>Gateway: BFF document retrieval
+```
+
+## Reviewed Advisory Narrative Archive Flow
+
+```mermaid
+sequenceDiagram
+    participant Advise as lotus-advise
+    participant Report as lotus-report
+    participant Render as lotus-render
+    participant Archive as lotus-archive
+    participant Gateway as lotus-gateway
+
+    Advise->>Report: reviewed advisory narrative package
+    Report->>Render: portfolio-review data with reviewed narrative payload
+    Render-->>Report: PDF with advisor-use narrative page
+    Report->>Archive: POST /documents reviewed_advisory_narrative summary
+    Archive-->>Report: document_id and checksum
+    Gateway->>Archive: controlled metadata/download
 ```
 
 ## Operator links

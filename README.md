@@ -16,10 +16,11 @@ retention posture lookup, purge eligibility and execution, legal-hold set/releas
 blocking, lifecycle relationship APIs for supersession/correction/reissue, current-document
 resolution, archive-owned generated-document source events for downstream portfolio-memory
 consumers, report-to-archive handoff after successful PDF render, governed report-type
-validation for portfolio-review, outcome-review, proof-pack, and rebalance-wave artifacts, quality gates,
-archive-specific structure, gateway-backed document retrieval, and Gateway-backed Workbench archive
-retrieval. Product retrieval must flow through `lotus-gateway`; Workbench must not call
-`lotus-archive` directly.
+validation for portfolio-review, outcome-review, proof-pack, and rebalance-wave artifacts,
+support-safe RFC-0023 reviewed advisory narrative archive summaries for rendered portfolio-review
+documents, quality gates, archive-specific structure, gateway-backed document retrieval, and
+Gateway-backed Workbench archive retrieval. Product retrieval must flow through `lotus-gateway`;
+Workbench must not call `lotus-archive` directly.
 
 RFC-0040 proof-pack report artifacts are supported when `lotus-report` supplies source-backed
 metadata with `report_type=proof_pack`, the `proof-pack` render template, and
@@ -30,6 +31,12 @@ RFC-0041 rebalance-wave report artifacts are supported when `lotus-report` suppl
 metadata with `report_type=rebalance_wave`, the `rebalance-wave` render template, and
 `dpm_wave_report_input.v1` lineage. `lotus-archive` stores and governs the generated artifact; it
 does not recompute wave membership, proof-pack posture, source hashes, or wave events.
+
+RFC-0023 advisor-review narrative report artifacts are supported when `lotus-report` supplies a
+portfolio-review archive request with a rendered reviewed advisory narrative summary. The archive
+record preserves package id, review id, approved advisor-use state, policy version, source hashes,
+guardrail posture, and rendered-page evidence without storing raw narrative sections separately or
+promoting client-ready commentary.
 
 RFC-0108 archive supportability posture is published through `/metadata` as
 `archive.observability.archive_supportability` and counted through bounded
