@@ -62,6 +62,20 @@ def main() -> None:
         raise SystemExit("Migration gate failed: archive_request_id must be unique")
     if "storage_key TEXT NOT NULL UNIQUE" not in ddl:
         raise SystemExit("Migration gate failed: storage_key must be unique")
+    reviewed_narrative_migration = (
+        MIGRATIONS_DIR / "004_add_reviewed_advisory_narrative_to_archive_documents.sql"
+    )
+    if not reviewed_narrative_migration.exists():
+        raise SystemExit("Migration gate failed: reviewed advisory narrative migration is missing")
+    reviewed_narrative_ddl = reviewed_narrative_migration.read_text(encoding="utf-8")
+    if "reviewed_advisory_narrative JSONB" not in reviewed_narrative_ddl:
+        raise SystemExit(
+            "Migration gate failed: reviewed_advisory_narrative must be stored as JSONB"
+        )
+    if "ADD COLUMN IF NOT EXISTS" not in reviewed_narrative_ddl:
+        raise SystemExit(
+            "Migration gate failed: reviewed_advisory_narrative migration must be additive"
+        )
 
     legal_hold_migration = MIGRATIONS_DIR / "002_create_archive_legal_holds.sql"
     if not legal_hold_migration.exists():

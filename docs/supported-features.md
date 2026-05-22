@@ -38,6 +38,8 @@ archive API surface:
     `reason`, and `freshness_bucket` labels.
 26. Governed generated-report type validation for `portfolio_review`, `outcome_review`,
     `proof_pack`, and `rebalance_wave` archive records.
+27. RFC-0023 reviewed advisory narrative archive summaries for rendered portfolio-review
+    documents, preserving support-safe package lineage without raw narrative text.
 
 Workbench-facing archive retrieval is supported only through the `lotus-workbench` BFF and
 `lotus-gateway`. Workbench must not call `lotus-archive` directly.
@@ -57,6 +59,7 @@ Workbench-facing archive retrieval is supported only through the `lotus-workbenc
 | Current document resolution | `ready` | `GET /documents/{document_id}/current` resolves supersession, correction, and reissue chains while preserving historical metadata lookup through `GET /documents/{document_id}`. |
 | Archive document source events | `ready` | `GET /documents/{document_id}/source-events` projects archive-owned generated-document archive, supersession, correction, and client-delivery reissue lineage for downstream portfolio-memory consumers. The response includes stable event ids, portfolio/report/render/archive refs, checksum-backed content hashes, retention/redaction/access/audit policy, and bounded artifact refs without raw document bytes, storage keys, raw report payloads, or raw client references. |
 | Report-to-archive handoff | `ready` | `lotus-report` hands successful PDF render artifacts and source-backed metadata to `POST /documents`, records `archiving` and `archived` ledger events, and maps archive validation, conflict, storage, and execution failures truthfully. This generic handoff supports portfolio-review, RFC-0042 outcome-review, RFC-0040 proof-pack, and RFC-0041 rebalance-wave report artifacts when `report_type` and source hashes are supplied by `lotus-report`. |
+| Reviewed advisory narrative archive summary | `ready` | RFC-0023 portfolio-review artifacts may carry `reviewed_advisory_narrative` metadata when `lotus-report` archived a PDF that includes the rendered advisor-use narrative page. `lotus-archive` preserves package id, review id, approved advisor-use state, policy version, source hashes, guardrail posture, rendered-page evidence, and source-event artifact refs without raw narrative sections or client-ready promotion. |
 | Outcome-review report artifact archive lifecycle | `ready` | RFC-0042 outcome-review artifacts use the same generated-document metadata, checksum, retention, legal-hold, access-audit, purge, lifecycle, current-document, Gateway retrieval, and Workbench BFF retrieval posture as other Lotus-generated report documents. `lotus-archive` does not recompute outcome evidence; it stores and governs the artifact metadata supplied by `lotus-report`. |
 | Proof-pack report artifact archive lifecycle | `ready` | RFC-0040 proof-pack report artifacts are accepted only as governed generated reports with `report_type=proof_pack`. They use the same checksum, retention, legal-hold, access-audit, purge, lifecycle, current-document, Gateway retrieval, and Workbench BFF retrieval posture as other Lotus-generated report documents. `lotus-archive` does not recompute proof-pack evidence; it stores and governs the artifact metadata supplied by `lotus-report`. |
 | Rebalance-wave report artifact archive lifecycle | `ready` | RFC-0041 rebalance-wave artifacts are accepted only as governed generated reports with `report_type=rebalance_wave`. They use the same checksum, retention, legal-hold, access-audit, purge, lifecycle, current-document, Gateway retrieval, and Workbench BFF retrieval posture as other Lotus-generated report documents. `lotus-archive` does not recompute wave membership, proof-pack posture, source hashes, or wave events; it stores and governs the artifact metadata supplied by `lotus-report`. |
@@ -70,6 +73,7 @@ Workbench-facing archive retrieval is supported only through the `lotus-workbenc
 | --- | --- | --- |
 | Direct Workbench archive calls | `not_supported` | Workbench retrieval must remain routed through the BFF and `lotus-gateway`; direct `lotus-archive` calls are outside the product boundary. |
 | Unsupported report types | `not_supported` | Archive records are limited to governed Lotus-generated report types. Arbitrary `report_type` values are rejected instead of becoming undeclared product support. |
+| Client-ready advisory narrative publication | `not_supported` | RFC-0023 archive support is advisor-use only. Client-ready commentary remains gated until Advise, Report, Render, Archive, Gateway, and Workbench client-ready controls are implemented and certified. |
 | Arbitrary file storage | `not_supported` | Out of RFC-0103 scope. |
 | Manual customer document upload | `not_supported` | Out of RFC-0103 first-wave scope. |
 

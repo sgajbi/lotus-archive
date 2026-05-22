@@ -51,7 +51,15 @@ def test_archive_document_api_openapi_contract_is_certification_ready() -> None:
     metadata_schema = spec["components"]["schemas"]["ArchiveDocumentResponse"]["properties"]
     assert metadata_schema["document_id"]["description"]
     assert metadata_schema["checksum"]["description"]
+    assert metadata_schema["reviewed_advisory_narrative"]["description"]
     assert "storage_key" not in metadata_schema
+
+    narrative_schema = spec["components"]["schemas"]["ReviewedAdvisoryNarrativeArchiveSummary"][
+        "properties"
+    ]
+    assert narrative_schema["package_id"]["minLength"] == 1
+    assert narrative_schema["source_narrative_hash"]["description"].startswith("SHA-256")
+    assert "PDF render" in narrative_schema["included_in_render"]["description"]
 
     retention_schema = spec["components"]["schemas"]["RetentionResponse"]["properties"]
     assert retention_schema["purge_status"]["description"]

@@ -42,6 +42,26 @@ def valid_metadata_input(**overrides: object) -> ArchiveDocumentInput:
     return ArchiveDocumentInput.model_validate(values)
 
 
+def reviewed_advisory_narrative_summary(**overrides: object) -> dict[str, object]:
+    values: dict[str, object] = {
+        "package_id": "reviewed-narrative-package-001",
+        "review_id": "narrative-review-001",
+        "review_state": "APPROVED_FOR_ADVISOR_USE",
+        "audience": "ADVISOR_REVIEW",
+        "client_ready_status": "NOT_CLIENT_READY",
+        "policy_version": "proposal-narrative-policy.v1",
+        "source_narrative_hash": "sha256:" + "a" * 64,
+        "report_data_narrative_hash": "sha256:" + "b" * 64,
+        "guardrail_status": "PASSED",
+        "section_count": 4,
+        "disclosure_ref_count": 2,
+        "limitation_count": 1,
+        "included_in_render": True,
+    }
+    values.update(overrides)
+    return values
+
+
 def test_metadata_input_accepts_source_backed_minimum_contract() -> None:
     metadata = valid_metadata_input()
 
@@ -49,6 +69,59 @@ def test_metadata_input_accepts_source_backed_minimum_contract() -> None:
     assert metadata.report_type == GeneratedReportType.PORTFOLIO_REVIEW
     assert metadata.portfolio_id == "PB_SG_GLOBAL_BAL_001"
     assert metadata.classification == DocumentClassification.CONFIDENTIAL
+
+
+def test_metadata_input_accepts_reviewed_advisory_narrative_archive_summary() -> None:
+    metadata = valid_metadata_input(
+        reviewed_advisory_narrative=reviewed_advisory_narrative_summary()
+    )
+
+    assert metadata.reviewed_advisory_narrative is not None
+    assert metadata.reviewed_advisory_narrative.package_id == "reviewed-narrative-package-001"
+    assert metadata.reviewed_advisory_narrative.review_state == "APPROVED_FOR_ADVISOR_USE"
+
+
+def test_metadata_input_rejects_reviewed_narrative_for_non_portfolio_review() -> None:
+    with pytest.raises(ValidationError):
+        valid_metadata_input(
+            report_type="proof_pack",
+            reviewed_advisory_narrative=reviewed_advisory_narrative_summary(),
+        )
+
+
+def test_metadata_input_rejects_reviewed_narrative_for_non_portfolio_template() -> None:
+    with pytest.raises(ValidationError):
+        valid_metadata_input(
+            template_id="proof-pack",
+            reviewed_advisory_narrative=reviewed_advisory_narrative_summary(),
+        )
+
+
+def test_metadata_input_rejects_unrendered_reviewed_narrative_summary() -> None:
+    with pytest.raises(ValidationError):
+        valid_metadata_input(
+            reviewed_advisory_narrative=reviewed_advisory_narrative_summary(
+                included_in_render=False
+            ),
+        )
+
+
+def test_metadata_input_rejects_client_ready_reviewed_narrative_summary() -> None:
+    with pytest.raises(ValidationError):
+        valid_metadata_input(
+            reviewed_advisory_narrative=reviewed_advisory_narrative_summary(
+                client_ready_status="CLIENT_READY"
+            ),
+        )
+
+
+def test_metadata_input_rejects_reviewed_narrative_hash_without_sha256_lineage() -> None:
+    with pytest.raises(ValidationError):
+        valid_metadata_input(
+            reviewed_advisory_narrative=reviewed_advisory_narrative_summary(
+                source_narrative_hash="not-a-sha256-hash"
+            ),
+        )
 
 
 def test_metadata_input_accepts_proof_pack_report_type() -> None:

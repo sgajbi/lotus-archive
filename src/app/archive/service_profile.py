@@ -72,6 +72,7 @@ SUPPORTED_ARCHIVE_FEATURES = (
     "current_document_resolution",
     "archive_document_source_events",
     "report_to_archive_handoff",
+    "reviewed_advisory_narrative_archive_summary",
     "gateway_backed_document_retrieval",
     "gateway_backed_workbench_document_retrieval",
 )
@@ -136,7 +137,7 @@ def archive_supportability(*, is_draining: bool) -> dict[str, object]:
 
 def service_posture() -> dict[str, object]:
     return {
-        "implementedScope": "retention_purge_legal_hold_lifecycle_source_events_report_handoff_gateway_workbench_retrieval",
+        "implementedScope": "retention_purge_legal_hold_lifecycle_source_events_report_handoff_reviewed_narrative_gateway_workbench_retrieval",
         "supportedArchiveFeatures": list(SUPPORTED_ARCHIVE_FEATURES),
         "moduleFamilies": [
             {

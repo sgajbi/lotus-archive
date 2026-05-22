@@ -15,7 +15,10 @@ report-to-archive handoff after successful PDF render. Gateway-backed retrieval 
 `lotus-gateway` as the product-facing boundary, and Workbench archive retrieval is supported only
 through the Workbench BFF and Gateway route. The archive metadata contract now accepts only governed
 generated-report types: `portfolio_review`, `outcome_review`, `proof_pack`, and
-`rebalance_wave`.
+`rebalance_wave`. RFC-0023 portfolio-review artifacts may also preserve a support-safe
+`reviewed_advisory_narrative` summary when `lotus-report` archives a PDF that includes the
+rendered advisor-use narrative page; `lotus-archive` stores lineage and posture, not raw narrative
+sections, and does not promote client-ready commentary.
 
 ## Authoritative Boundaries
 
@@ -25,6 +28,7 @@ generated-report types: `portfolio_review`, `outcome_review`, `proof_pack`, and
 | Snapshot and lineage reference | `lotus-report` | Implemented as source-backed archive handoff metadata after successful PDF render |
 | Render attempt and artifact metadata | `lotus-render` through `lotus-report` | Implemented as source-backed archive handoff metadata after successful PDF render |
 | Generated report type support | `lotus-archive` | Implemented through explicit metadata validation for `portfolio_review`, `outcome_review`, `proof_pack`, and `rebalance_wave` |
+| Reviewed advisory narrative archive summary | `lotus-report` supplies, `lotus-archive` preserves | Implemented for portfolio-review artifacts as support-safe package, review, policy, source-hash, guardrail, and rendered-page posture without raw narrative sections |
 | Archived document identity | `lotus-archive` | Implemented through metadata model and archive API |
 | Binary storage | `lotus-archive` | Implemented through storage adapter and controlled download API |
 | Access audit | `lotus-archive` | Implemented for archive create, metadata read, binary download, access-event read, retention read, purge evaluation, purge execution, legal-hold set/release, and authorization denial |

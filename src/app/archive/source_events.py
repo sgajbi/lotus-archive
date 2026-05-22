@@ -42,6 +42,9 @@ def _archive_created_event(
     metadata: ArchiveDocumentMetadata,
     current_document_id: str,
 ) -> dict[str, object]:
+    reason_codes = ["archive_metadata_persisted", "generated_document_checksum_preserved"]
+    if metadata.reviewed_advisory_narrative is not None:
+        reason_codes.append("reviewed_advisory_narrative_archive_summary_preserved")
     return {
         **_base_event(metadata=metadata, current_document_id=current_document_id),
         "event_id": f"archive:{metadata.document_id}:created",
@@ -50,7 +53,7 @@ def _archive_created_event(
         "source_type": "archive_document",
         "source_id": metadata.document_id,
         "related_document_id": None,
-        "reason_codes": ["archive_metadata_persisted", "generated_document_checksum_preserved"],
+        "reason_codes": reason_codes,
     }
 
 
@@ -105,22 +108,35 @@ def _base_event(
         "redaction_policy": REDACTION_POLICY,
         "audit_policy": AUDIT_POLICY,
         "access_classification": ACCESS_CLASSIFICATION,
-        "artifact_refs": [
-            {
-                "artifact_type": "archive_document_metadata",
-                "artifact_id": metadata.document_id,
-                "content_hash": f"{metadata.checksum_algorithm}:{metadata.checksum}",
-            },
-            {
-                "artifact_type": "report_job",
-                "artifact_id": metadata.report_job_id,
-            },
-            {
-                "artifact_type": "render_attempt",
-                "artifact_id": metadata.render_attempt_id,
-            },
-        ],
+        "artifact_refs": _artifact_refs(metadata),
     }
+
+
+def _artifact_refs(metadata: ArchiveDocumentMetadata) -> list[dict[str, str]]:
+    artifact_refs = [
+        {
+            "artifact_type": "archive_document_metadata",
+            "artifact_id": metadata.document_id,
+            "content_hash": f"{metadata.checksum_algorithm}:{metadata.checksum}",
+        },
+        {
+            "artifact_type": "report_job",
+            "artifact_id": metadata.report_job_id,
+        },
+        {
+            "artifact_type": "render_attempt",
+            "artifact_id": metadata.render_attempt_id,
+        },
+    ]
+    if metadata.reviewed_advisory_narrative is not None:
+        artifact_refs.append(
+            {
+                "artifact_type": "reviewed_advisory_narrative_package",
+                "artifact_id": metadata.reviewed_advisory_narrative.package_id,
+                "content_hash": metadata.reviewed_advisory_narrative.source_narrative_hash,
+            }
+        )
+    return artifact_refs
 
 
 def _event_type_for_lifecycle(transition_type: LifecycleTransitionType) -> str:
