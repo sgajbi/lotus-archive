@@ -96,9 +96,12 @@ sequenceDiagram
     participant Gateway as lotus-gateway
 
     Advise->>Report: reviewed advisory narrative package
+    Advise->>Report: advisor proposal memo package
     Report->>Render: portfolio-review data with reviewed narrative payload
+    Report->>Render: portfolio-review data with advisor memo payload
     Render-->>Report: PDF with advisor-use narrative page
-    Report->>Archive: POST /documents reviewed_advisory_narrative summary
+    Render-->>Report: PDF with advisor-use memo page
+    Report->>Archive: POST /documents reviewed_advisory_narrative / advisor_proposal_memo summary
     Archive-->>Report: document_id and checksum
     Gateway->>Archive: controlled metadata/download
 ```
