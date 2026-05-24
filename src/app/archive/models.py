@@ -116,6 +116,39 @@ class ReviewedAdvisoryNarrativeArchiveSummary(BaseModel):
         return self
 
 
+class AdvisorProposalMemoArchiveSummary(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True)
+
+    memo_id: str = Field(min_length=1)
+    proposal_id: str = Field(min_length=1)
+    proposal_version_no: int = Field(ge=1)
+    review_event_id: str = Field(min_length=1)
+    review_action: str = Field(min_length=1)
+    client_ready_status: str = Field(min_length=1)
+    memo_hash: str = Field(min_length=1)
+    source_input_hash: str = Field(min_length=1)
+    section_count: int = Field(ge=1)
+    blocked_section_count: int = Field(ge=0)
+    included_in_render: bool
+
+    @field_validator("memo_hash", "source_input_hash")
+    @classmethod
+    def _hash_must_be_sha256_lineage(cls, value: str) -> str:
+        if not value.startswith("sha256:"):
+            raise ValueError("advisor proposal memo hashes must use sha256 lineage")
+        return value
+
+    @model_validator(mode="after")
+    def _summary_must_be_advisor_use_only(self) -> Self:
+        if self.review_action != "APPROVE_FOR_ADVISOR_USE":
+            raise ValueError("advisor proposal memo archive summary requires advisor-use review")
+        if not self.included_in_render:
+            raise ValueError("advisor proposal memo archive summary must be rendered")
+        if self.client_ready_status.upper() in {"CLIENT_READY", "READY_FOR_CLIENT"}:
+            raise ValueError("client-ready advisor proposal memo archive status is not supported")
+        return self
+
+
 class ArchiveDocumentInput(BaseModel):
     model_config = ConfigDict(str_strip_whitespace=True)
 
@@ -146,6 +179,7 @@ class ArchiveDocumentInput(BaseModel):
     retention_start_date: date | None = None
     retain_until_date: date | None = None
     reviewed_advisory_narrative: ReviewedAdvisoryNarrativeArchiveSummary | None = None
+    advisor_proposal_memo: AdvisorProposalMemoArchiveSummary | None = None
     created_by_service: str = Field(min_length=1)
     created_by_actor: str = Field(min_length=1)
 
@@ -172,6 +206,16 @@ class ArchiveDocumentInput(BaseModel):
             if self.template_id != "portfolio-review":
                 raise ValueError(
                     "reviewed advisory narrative archive summary requires portfolio-review template"
+                )
+        if self.advisor_proposal_memo is not None:
+            if self.report_type is not GeneratedReportType.PORTFOLIO_REVIEW:
+                raise ValueError(
+                    "advisor proposal memo archive summary is only supported for "
+                    "portfolio_review reports"
+                )
+            if self.template_id != "portfolio-review":
+                raise ValueError(
+                    "advisor proposal memo archive summary requires portfolio-review template"
                 )
         return self
 

@@ -17,8 +17,9 @@ blocking, lifecycle relationship APIs for supersession/correction/reissue, curre
 resolution, archive-owned generated-document source events for downstream portfolio-memory
 consumers, report-to-archive handoff after successful PDF render, governed report-type
 validation for portfolio-review, outcome-review, proof-pack, and rebalance-wave artifacts,
-support-safe RFC-0023 reviewed advisory narrative archive summaries for rendered portfolio-review
-documents, quality gates, archive-specific structure, gateway-backed document retrieval, and
+support-safe RFC-0023 reviewed advisory narrative archive summaries and RFC-0024 advisor proposal
+memo archive summaries for rendered portfolio-review documents, quality gates, archive-specific
+structure, gateway-backed document retrieval, and
 Gateway-backed Workbench archive retrieval. Product retrieval must flow through `lotus-gateway`;
 Workbench must not call `lotus-archive` directly.
 
@@ -37,6 +38,12 @@ portfolio-review archive request with a rendered reviewed advisory narrative sum
 record preserves package id, review id, approved advisor-use state, policy version, source hashes,
 guardrail posture, and rendered-page evidence without storing raw narrative sections separately or
 promoting client-ready commentary.
+
+RFC-0024 advisor proposal memo report artifacts are supported when `lotus-report` supplies a
+portfolio-review archive request with rendered advisor proposal memo metadata. The archive record
+preserves memo id, proposal/version id, review event, approved advisor-use posture, memo/source
+hashes, section counts, and source-event artifact refs without raw memo reconstruction or
+client-ready promotion.
 
 RFC-0108 archive supportability posture is published through `/metadata` as
 `archive.observability.archive_supportability` and counted through bounded

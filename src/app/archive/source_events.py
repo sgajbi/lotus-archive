@@ -45,6 +45,8 @@ def _archive_created_event(
     reason_codes = ["archive_metadata_persisted", "generated_document_checksum_preserved"]
     if metadata.reviewed_advisory_narrative is not None:
         reason_codes.append("reviewed_advisory_narrative_archive_summary_preserved")
+    if metadata.advisor_proposal_memo is not None:
+        reason_codes.append("advisor_proposal_memo_archive_summary_preserved")
     return {
         **_base_event(metadata=metadata, current_document_id=current_document_id),
         "event_id": f"archive:{metadata.document_id}:created",
@@ -134,6 +136,14 @@ def _artifact_refs(metadata: ArchiveDocumentMetadata) -> list[dict[str, str]]:
                 "artifact_type": "reviewed_advisory_narrative_package",
                 "artifact_id": metadata.reviewed_advisory_narrative.package_id,
                 "content_hash": metadata.reviewed_advisory_narrative.source_narrative_hash,
+            }
+        )
+    if metadata.advisor_proposal_memo is not None:
+        artifact_refs.append(
+            {
+                "artifact_type": "advisor_proposal_memo_package",
+                "artifact_id": metadata.advisor_proposal_memo.memo_id,
+                "content_hash": metadata.advisor_proposal_memo.memo_hash,
             }
         )
     return artifact_refs

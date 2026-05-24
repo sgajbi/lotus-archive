@@ -8,6 +8,7 @@ from app.archive.audit import AccessAuditEvent
 from app.archive.models import (
     ArchiveDocumentInput,
     ArchiveDocumentMetadata,
+    AdvisorProposalMemoArchiveSummary,
     DocumentClassification,
     GeneratedReportType,
     LegalHoldStatus,
@@ -80,6 +81,14 @@ class ArchiveDocumentResponse(BaseModel):
             "Support-safe reviewed advisory narrative archive summary when the portfolio-review "
             "document includes the RFC-0023 advisor-use narrative page. This does not expose raw "
             "narrative sections and does not promote client-ready status."
+        ),
+    )
+    advisor_proposal_memo: AdvisorProposalMemoArchiveSummary | None = Field(
+        default=None,
+        description=(
+            "Support-safe advisor proposal memo archive summary when the portfolio-review "
+            "document includes an RFC-0024 advisor-use memo package. Client-ready memo document "
+            "publication remains blocked."
         ),
     )
     purge_status: PurgeStatus = Field(description="Current purge eligibility status.")

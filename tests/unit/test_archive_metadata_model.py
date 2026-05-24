@@ -62,6 +62,24 @@ def reviewed_advisory_narrative_summary(**overrides: object) -> dict[str, object
     return values
 
 
+def advisor_proposal_memo_summary(**overrides: object) -> dict[str, object]:
+    values: dict[str, object] = {
+        "memo_id": "memo-001",
+        "proposal_id": "proposal-001",
+        "proposal_version_no": 1,
+        "review_event_id": "memo-review-001",
+        "review_action": "APPROVE_FOR_ADVISOR_USE",
+        "client_ready_status": "BLOCKED",
+        "memo_hash": "sha256:" + "c" * 64,
+        "source_input_hash": "sha256:" + "d" * 64,
+        "section_count": 8,
+        "blocked_section_count": 2,
+        "included_in_render": True,
+    }
+    values.update(overrides)
+    return values
+
+
 def test_metadata_input_accepts_source_backed_minimum_contract() -> None:
     metadata = valid_metadata_input()
 
@@ -121,6 +139,36 @@ def test_metadata_input_rejects_reviewed_narrative_hash_without_sha256_lineage()
             reviewed_advisory_narrative=reviewed_advisory_narrative_summary(
                 source_narrative_hash="not-a-sha256-hash"
             ),
+        )
+
+
+def test_metadata_input_accepts_advisor_proposal_memo_archive_summary() -> None:
+    metadata = valid_metadata_input(advisor_proposal_memo=advisor_proposal_memo_summary())
+
+    assert metadata.advisor_proposal_memo is not None
+    assert metadata.advisor_proposal_memo.memo_id == "memo-001"
+    assert metadata.advisor_proposal_memo.review_action == "APPROVE_FOR_ADVISOR_USE"
+
+
+def test_metadata_input_rejects_client_ready_advisor_proposal_memo_summary() -> None:
+    with pytest.raises(ValidationError):
+        valid_metadata_input(
+            advisor_proposal_memo=advisor_proposal_memo_summary(client_ready_status="CLIENT_READY"),
+        )
+
+
+def test_metadata_input_rejects_unreviewed_advisor_proposal_memo_summary() -> None:
+    with pytest.raises(ValidationError):
+        valid_metadata_input(
+            advisor_proposal_memo=advisor_proposal_memo_summary(review_action="REQUEST_CHANGES"),
+        )
+
+
+def test_metadata_input_rejects_advisor_proposal_memo_for_non_portfolio_review() -> None:
+    with pytest.raises(ValidationError):
+        valid_metadata_input(
+            report_type="proof_pack",
+            advisor_proposal_memo=advisor_proposal_memo_summary(),
         )
 
 
