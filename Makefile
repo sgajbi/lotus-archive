@@ -52,10 +52,11 @@ coverage-gate:
 	$(VENV_PYTHON) scripts/coverage_gate.py
 
 security-audit:
-	# PYSEC-2026-161 is tracked as a governed temporary exception: FastAPI still
-	# constrains Starlette below the fixed 1.0.1 line, so no compatible upgrade is
-	# available for this service yet. Remove this ignore when FastAPI supports it.
-	$(VENV_PYTHON) -m pip_audit --ignore-vuln PYSEC-2026-161 -r requirements/shared-runtime.lock.txt -r requirements/ci-tooling.lock.txt
+	# Starlette CVE exceptions are temporary: prometheus-fastapi-instrumentator 7.1.0
+	# still constrains Starlette below 1.0.0, so the audited fixed line is not
+	# compatible with the current instrumentation stack. Remove these ignores when
+	# the instrumentation dependency supports Starlette 1.x.
+	$(VENV_PYTHON) -m pip_audit --ignore-vuln PYSEC-2026-161 --ignore-vuln CVE-2026-48818 --ignore-vuln CVE-2026-48817 --ignore-vuln CVE-2026-54283 --ignore-vuln CVE-2026-54282 -r requirements/shared-runtime.lock.txt -r requirements/ci-tooling.lock.txt
 
 check: lint typecheck openapi-gate migration-gate test
 
