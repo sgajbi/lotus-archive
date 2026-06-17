@@ -4,7 +4,8 @@ services:
     ports:
       - "8150:8150"
     env_file:
-      - .env.example
+      - path: .env
+        required: false
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8150/health/ready')"]
       interval: 15s
