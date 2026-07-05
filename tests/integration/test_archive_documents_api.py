@@ -228,10 +228,16 @@ def test_proof_pack_report_archive_lifecycle_preserves_retention_and_audit(
             "archive_create",
             "binary_download",
             "legal_hold_set",
+            "purge_execution",
             "legal_hold_release",
             "purge_execution",
             "access_events_read",
         ]
+        reason_codes = [
+            event["operation_reason_code"] for event in events_response.json()["events"]
+        ]
+        assert "legal_hold_active" in reason_codes
+        assert "purged" in reason_codes
     finally:
         app.dependency_overrides.clear()
 
@@ -270,14 +276,52 @@ def test_rebalance_wave_report_archive_lifecycle_preserves_download_and_audit(
             headers=_headers(),
         )
         assert events_response.status_code == 200
-        assert [event["event_type"] for event in events_response.json()["events"]] == [
-            "archive_create",
-            "metadata_read",
-            "binary_download",
-            "access_events_read",
-        ]
     finally:
         app.dependency_overrides.clear()
+
+    assert [event["event_type"] for event in events_response.json()["events"]] == [
+        "archive_create",
+        "metadata_read",
+        "binary_download",
+        "access_events_read",
+    ]
+
+
+def test_proof_pack_and_wave_source_events_preserve_report_input_provenance(
+    tmp_path: Path,
+) -> None:
+    service = _service(tmp_path)
+    app.dependency_overrides[archive_service] = lambda: service
+    client = TestClient(app)
+    try:
+        proof_response = client.post("/documents", json=_proof_pack_payload(), headers=_headers())
+        wave_response = client.post("/documents", json=_wave_payload(), headers=_headers())
+        proof_events = client.get(
+            f"/documents/{proof_response.json()['document_id']}/source-events",
+            headers=_headers(caller_service="lotus-gateway"),
+        )
+        wave_events = client.get(
+            f"/documents/{wave_response.json()['document_id']}/source-events",
+            headers=_headers(caller_service="lotus-gateway"),
+        )
+    finally:
+        app.dependency_overrides.clear()
+
+    assert proof_events.status_code == 200
+    proof_event = proof_events.json()["events"][0]
+    assert proof_event["report_type"] == "proof_pack"
+    assert proof_event["report_data_contract_version"] == "dpm_proof_pack_report_input.v1"
+    assert proof_event["template_id"] == "proof-pack"
+    assert proof_event["source_owner"] == "lotus-report"
+    assert proof_event["document_evidence_authority"] == "lotus-archive_document_evidence_only"
+
+    assert wave_events.status_code == 200
+    wave_event = wave_events.json()["events"][0]
+    assert wave_event["report_type"] == "rebalance_wave"
+    assert wave_event["report_data_contract_version"] == "dpm_wave_report_input.v1"
+    assert wave_event["template_id"] == "rebalance-wave"
+    assert wave_event["source_owner"] == "lotus-report"
+    assert wave_event["document_evidence_authority"] == "lotus-archive_document_evidence_only"
 
 
 def test_archive_metrics_expose_bounded_operation_status_and_size_labels(tmp_path: Path) -> None:
@@ -784,6 +828,14 @@ def test_document_source_events_are_support_safe_for_portfolio_memory_consumers(
             f"/documents/{source}/source-events",
             headers=_headers(caller_service="lotus-gateway"),
         )
+        first_page = client.get(
+            f"/documents/{source}/source-events?limit=1&offset=0",
+            headers=_headers(caller_service="lotus-gateway"),
+        )
+        second_page = client.get(
+            f"/documents/{source}/source-events?limit=1&offset=1",
+            headers=_headers(caller_service="lotus-gateway"),
+        )
         access_events = client.get(
             f"/documents/{source}/access-events",
             headers=_headers(),
@@ -801,6 +853,13 @@ def test_document_source_events_are_support_safe_for_portfolio_memory_consumers(
     assert body["current_document_id"] == target
     assert body["portfolio_id"] == "PB_SG_GLOBAL_BAL_001"
     assert body["event_count"] == 2
+    assert body["returned_count"] == 2
+    assert body["total_count"] == 2
+    assert body["limit"] == 50
+    assert body["offset"] == 0
+    assert body["next_offset"] is None
+    assert body["delivery_mode"] == "pull_only"
+    assert body["replay_contract"] == "deterministic_limit_offset_replay_by_event_time_and_id"
     assert body["no_raw_payloads"] is True
     assert [event["event_type"] for event in body["events"]] == [
         "generated_document_archived",
@@ -812,15 +871,100 @@ def test_document_source_events_are_support_safe_for_portfolio_memory_consumers(
             "NO_RAW_DOCUMENT_BYTES_NO_STORAGE_KEYS_NO_CLIENT_REFERENCE"
         )
         assert event["supportability_state"] == "READY"
+        assert event["delivery_mode"] == "pull_only"
+        assert event["source_owner"] == "lotus-report"
+        assert event["document_evidence_authority"] == "lotus-archive_document_evidence_only"
+        assert event["report_data_contract_version"] == "rfc-0101-v1"
+        assert event["template_id"] == "portfolio-review"
         assert "storage_key" not in str(event)
         assert "client-ref-001" not in str(event)
+        assert "transition_reason" not in event
     reissue_event = body["events"][1]
     assert reissue_event["related_document_id"] == target
-    assert reissue_event["transition_reason"] == "Client delivery reissue"
+    assert reissue_event["transition_reason_code"] == "client_delivery_reissue_requested"
     assert "client_delivery_reissue_evidence" in reissue_event["reason_codes"]
+
+    assert first_page.status_code == 200
+    assert first_page.json()["returned_count"] == 1
+    assert first_page.json()["total_count"] == 2
+    assert first_page.json()["next_offset"] == 1
+    assert first_page.json()["events"][0]["event_type"] == "generated_document_archived"
+    assert second_page.status_code == 200
+    assert second_page.json()["returned_count"] == 1
+    assert second_page.json()["next_offset"] is None
+    assert second_page.json()["events"][0]["event_type"] == "client_delivery_document_reissued"
 
     event_types = [event["event_type"] for event in access_events.json()["events"]]
     assert "source_events_read" in event_types
+
+
+def test_access_events_api_is_bounded_and_pageable(tmp_path: Path) -> None:
+    service = _service(tmp_path)
+    app.dependency_overrides[archive_service] = lambda: service
+    client = TestClient(app)
+    try:
+        create_response = client.post("/documents", json=_payload(), headers=_headers())
+        document_id = create_response.json()["document_id"]
+        assert (
+            client.get(
+                f"/documents/{document_id}", headers=_headers(caller_service="lotus-gateway")
+            ).status_code
+            == 200
+        )
+        assert (
+            client.get(f"/documents/{document_id}/retention", headers=_headers()).status_code == 200
+        )
+        page = client.get(
+            f"/documents/{document_id}/access-events?limit=2&offset=0",
+            headers=_headers(),
+        )
+        next_page = client.get(
+            f"/documents/{document_id}/access-events?limit=2&offset=2",
+            headers=_headers(),
+        )
+    finally:
+        app.dependency_overrides.clear()
+
+    assert page.status_code == 200
+    assert page.json()["returned_count"] == 2
+    assert page.json()["total_count"] >= 4
+    assert page.json()["limit"] == 2
+    assert page.json()["offset"] == 0
+    assert page.json()["next_offset"] == 2
+    assert next_page.status_code == 200
+    assert next_page.json()["returned_count"] >= 1
+    assert next_page.json()["offset"] == 2
+
+
+def test_lifecycle_transition_rejects_sensitive_reason_text(tmp_path: Path) -> None:
+    service = _service(tmp_path)
+    app.dependency_overrides[archive_service] = lambda: service
+    client = TestClient(app)
+    try:
+        source = client.post(
+            "/documents",
+            json=_payload_with_id("archive-request-sensitive-reason-source", b"source"),
+            headers=_headers(),
+        ).json()["document_id"]
+        target = client.post(
+            "/documents",
+            json=_payload_with_id("archive-request-sensitive-reason-target", b"target"),
+            headers=_headers(),
+        ).json()["document_id"]
+        response = client.post(
+            f"/documents/{source}/reissue",
+            json={
+                "target_document_id": target,
+                "transition_reason": (
+                    "Client delivery reissue for client-ref-001 after advisor call"
+                ),
+            },
+            headers=_headers(),
+        )
+    finally:
+        app.dependency_overrides.clear()
+
+    assert response.status_code == 422
 
 
 def test_purge_api_reports_not_eligible_before_retention_elapsed(tmp_path: Path) -> None:

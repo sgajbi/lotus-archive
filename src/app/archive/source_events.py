@@ -14,6 +14,10 @@ RETENTION_POLICY = "archive_document_retention_policy"
 REDACTION_POLICY = "NO_RAW_DOCUMENT_BYTES_NO_STORAGE_KEYS_NO_CLIENT_REFERENCE"
 AUDIT_POLICY = "archive_access_and_lifecycle_audit"
 ACCESS_CLASSIFICATION = "restricted"
+DELIVERY_MODE = "pull_only"
+REPLAY_CONTRACT = "deterministic_limit_offset_replay_by_event_time_and_id"
+SOURCE_OWNER = "lotus-report"
+DOCUMENT_EVIDENCE_AUTHORITY = "lotus-archive_document_evidence_only"
 
 
 def build_archive_document_source_events(
@@ -78,9 +82,10 @@ def _lifecycle_event(
             if relationship.source_document_id == metadata.document_id
             else relationship.source_document_id
         ),
-        "transition_reason": relationship.transition_reason,
+        "transition_reason_code": relationship.transition_reason_code,
         "reason_codes": [
             f"archive_lifecycle_{relationship.transition_type.value}",
+            relationship.transition_reason_code,
             "client_delivery_reissue_evidence"
             if relationship.transition_type is LifecycleTransitionType.REISSUE
             else "archive_document_lifecycle_evidence",
@@ -102,10 +107,17 @@ def _base_event(
         "snapshot_id": metadata.snapshot_id,
         "render_job_id": metadata.render_job_id,
         "render_attempt_id": metadata.render_attempt_id,
+        "report_data_contract_version": metadata.report_data_contract_version,
+        "template_id": metadata.template_id,
+        "template_version": metadata.template_version,
         "document_id": metadata.document_id,
         "current_document_id": current_document_id,
         "content_hash": f"{metadata.checksum_algorithm}:{metadata.checksum}",
         "supportability_state": "READY",
+        "delivery_mode": DELIVERY_MODE,
+        "replay_contract": REPLAY_CONTRACT,
+        "source_owner": SOURCE_OWNER,
+        "document_evidence_authority": DOCUMENT_EVIDENCE_AUTHORITY,
         "retention_policy": metadata.retention_policy_id or RETENTION_POLICY,
         "redaction_policy": REDACTION_POLICY,
         "audit_policy": AUDIT_POLICY,

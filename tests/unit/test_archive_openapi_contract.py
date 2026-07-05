@@ -74,3 +74,28 @@ def test_archive_document_api_openapi_contract_is_certification_ready() -> None:
     ]
     assert source_events_schema["no_raw_payloads"]["description"]
     assert source_events_schema["events"]["description"]
+    assert source_events_schema["returned_count"]["description"]
+    assert source_events_schema["total_count"]["description"]
+    assert source_events_schema["next_offset"]["description"]
+    assert source_events_schema["delivery_mode"]["description"]
+    assert source_events_schema["replay_contract"]["description"]
+
+    source_event_schema = spec["components"]["schemas"]["ArchiveDocumentSourceEvent"]["properties"]
+    assert "transition_reason" not in source_event_schema
+    assert source_event_schema["transition_reason_code"]["description"]
+    assert source_event_schema["report_data_contract_version"]["description"]
+    assert source_event_schema["template_id"]["description"]
+    assert source_event_schema["source_owner"]["description"]
+
+    access_events_schema = spec["components"]["schemas"]["AccessEventListResponse"]["properties"]
+    assert access_events_schema["returned_count"]["description"]
+    assert access_events_schema["total_count"]["description"]
+    assert access_events_schema["next_offset"]["description"]
+
+    for path in [
+        "/documents/{document_id}/source-events",
+        "/documents/{document_id}/access-events",
+    ]:
+        parameters = spec["paths"][path]["get"]["parameters"]
+        names = {parameter["name"] for parameter in parameters}
+        assert {"limit", "offset"} <= names

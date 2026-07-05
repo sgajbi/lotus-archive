@@ -61,7 +61,10 @@ fails or reports unavailable instead of silently publishing non-durable archive 
 `lotus-archive.generated_document_client_communication.v1` source-event family for downstream
 portfolio-memory consumers. It projects generated-document archive, supersession, correction, and
 client-delivery reissue lineage with portfolio/report/render/archive refs and checksum-backed
-hashes, but never raw document bytes, storage keys, raw report payloads, or raw client references.
+hashes, but never raw document bytes, storage keys, raw report payloads, raw lifecycle reason text,
+or raw client references. The first-wave contract is pull-only through bounded `limit`/`offset`
+queries with deterministic event ordering, stable event ids, stable lifecycle reason codes, and
+report-input provenance such as `template_id` and `report_data_contract_version`.
 
 ## Quick Start
 

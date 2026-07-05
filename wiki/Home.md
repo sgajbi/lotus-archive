@@ -19,7 +19,10 @@ Lotus generated-document archive, retrieval, retention, legal hold, and access a
   resolution are available.
 - `GET /documents/{document_id}/source-events` projects archive-owned generated-document and
   client-delivery reissue lineage for downstream portfolio-memory consumers without raw document
-  bytes, storage keys, raw report payloads, or raw client references.
+  bytes, storage keys, raw report payloads, raw lifecycle reason text, or raw client references.
+  The contract is pull-only with bounded `limit`/`offset` replay, stable reason codes, and
+  report-input provenance so consumers can cite archive document evidence without treating archive
+  as transaction, position, calculation, or methodology authority.
 - Report-to-archive handoff after successful PDF render is available through `lotus-report`.
 - RFC-0042 outcome-review report artifacts are governed by the same generated-document archive,
   retrieval, retention, legal-hold, access-audit, purge, and lifecycle posture when `lotus-report`

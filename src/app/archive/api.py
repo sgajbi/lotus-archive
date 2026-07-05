@@ -1,6 +1,8 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, Request, Response, status
+from typing import TypeVar
+
+from fastapi import APIRouter, Depends, Query, Request, Response, status
 
 from app.archive.api_models import (
     AccessEventListResponse,
@@ -17,13 +19,26 @@ from app.archive.api_models import (
     PurgeExecutionResponse,
     RetentionResponse,
 )
+from app.archive.commands import (
+    ArchiveDocumentCreateCommand,
+    LegalHoldCreateCommand,
+    LifecycleTransitionCommand,
+)
 from app.archive.runtime import build_archive_service
 from app.archive.service import ArchiveDocumentService
 from app.archive.settings import ArchiveRuntimeSettings
-from app.archive.source_events import SOURCE_EVENT_FAMILY, latest_event_time
+from app.archive.source_events import (
+    DELIVERY_MODE,
+    REPLAY_CONTRACT,
+    SOURCE_EVENT_FAMILY,
+    latest_event_time,
+)
 from app.security.caller_context import CallerContext, caller_context_from_headers
 
 ARCHIVE_API_TAG = "Archive Documents"
+DEFAULT_EVENT_LIMIT = 50
+MAX_EVENT_LIMIT = 100
+T = TypeVar("T")
 
 router = APIRouter(prefix="/documents", tags=[ARCHIVE_API_TAG])
 
@@ -49,6 +64,12 @@ def caller_context(request: Request) -> CallerContext:
 
 def trace_id(request: Request) -> str:
     return str(getattr(request.state, "trace_id", getattr(request.state, "correlation_id", "")))
+
+
+def _page(items: list[T], *, limit: int, offset: int) -> tuple[list[T], int | None]:
+    page = items[offset : offset + limit]
+    next_offset = offset + limit if offset + limit < len(items) else None
+    return page, next_offset
 
 
 @router.post(
@@ -81,7 +102,10 @@ async def create_document(
     request_trace_id: str = Depends(trace_id),
 ) -> ArchiveDocumentResponse:
     metadata = service.create_document(
-        request=request_body,
+        command=ArchiveDocumentCreateCommand(
+            metadata=request_body.metadata,
+            content_base64=request_body.content_base64,
+        ),
         caller_context=context,
         trace_id=request_trace_id,
     )
@@ -169,6 +193,13 @@ async def get_current_document(
 )
 async def list_document_source_events(
     document_id: str,
+    limit: int = Query(
+        default=DEFAULT_EVENT_LIMIT,
+        ge=1,
+        le=MAX_EVENT_LIMIT,
+        description="Maximum source events to return.",
+    ),
+    offset: int = Query(default=0, ge=0, description="Zero-based source-event offset."),
     service: ArchiveDocumentService = Depends(archive_service),
     context: CallerContext = Depends(caller_context),
     request_trace_id: str = Depends(trace_id),
@@ -178,6 +209,7 @@ async def list_document_source_events(
         caller_context=context,
         trace_id=request_trace_id,
     )
+    page, next_offset = _page(events, limit=limit, offset=offset)
     return ArchiveDocumentSourceEventsResponse(
         service="lotus-archive",
         source_event_family=SOURCE_EVENT_FAMILY,
@@ -185,10 +217,17 @@ async def list_document_source_events(
         current_document_id=current.document_id,
         portfolio_id=metadata.portfolio_id,
         report_type=metadata.report_type,
-        event_count=len(events),
+        event_count=len(page),
+        returned_count=len(page),
+        total_count=len(events),
+        limit=limit,
+        offset=offset,
+        next_offset=next_offset,
+        delivery_mode=DELIVERY_MODE,
+        replay_contract=REPLAY_CONTRACT,
         no_raw_payloads=True,
-        latest_event_at=latest_event_time(events),
-        events=[ArchiveDocumentSourceEvent.model_validate(event) for event in events],
+        latest_event_at=latest_event_time(page),
+        events=[ArchiveDocumentSourceEvent.model_validate(event) for event in page],
     )
 
 
@@ -246,6 +285,13 @@ async def download_document(
 )
 async def list_access_events(
     document_id: str,
+    limit: int = Query(
+        default=DEFAULT_EVENT_LIMIT,
+        ge=1,
+        le=MAX_EVENT_LIMIT,
+        description="Maximum access events to return.",
+    ),
+    offset: int = Query(default=0, ge=0, description="Zero-based access-event offset."),
     service: ArchiveDocumentService = Depends(archive_service),
     context: CallerContext = Depends(caller_context),
     request_trace_id: str = Depends(trace_id),
@@ -255,7 +301,16 @@ async def list_access_events(
         caller_context=context,
         trace_id=request_trace_id,
     )
-    return AccessEventListResponse(document_id=document_id, events=events)
+    page, next_offset = _page(events, limit=limit, offset=offset)
+    return AccessEventListResponse(
+        document_id=document_id,
+        returned_count=len(page),
+        total_count=len(events),
+        limit=limit,
+        offset=offset,
+        next_offset=next_offset,
+        events=page,
+    )
 
 
 @router.get(
@@ -380,7 +435,10 @@ async def set_legal_hold(
 ) -> LegalHoldResponse:
     legal_hold = service.set_legal_hold(
         document_id=document_id,
-        request=request_body,
+        command=LegalHoldCreateCommand(
+            hold_reason=request_body.hold_reason,
+            authority_reference=request_body.authority_reference,
+        ),
         caller_context=context,
         trace_id=request_trace_id,
     )
@@ -447,7 +505,10 @@ async def supersede_document(
 ) -> LifecycleRelationshipResponse:
     relationship, current = service.supersede_document(
         document_id=document_id,
-        request=request_body,
+        command=LifecycleTransitionCommand(
+            target_document_id=request_body.target_document_id,
+            transition_reason=request_body.transition_reason,
+        ),
         caller_context=context,
         trace_id=request_trace_id,
     )
@@ -484,7 +545,10 @@ async def correct_document(
 ) -> LifecycleRelationshipResponse:
     relationship, current = service.correct_document(
         document_id=document_id,
-        request=request_body,
+        command=LifecycleTransitionCommand(
+            target_document_id=request_body.target_document_id,
+            transition_reason=request_body.transition_reason,
+        ),
         caller_context=context,
         trace_id=request_trace_id,
     )
@@ -521,7 +585,10 @@ async def reissue_document(
 ) -> LifecycleRelationshipResponse:
     relationship, current = service.reissue_document(
         document_id=document_id,
-        request=request_body,
+        command=LifecycleTransitionCommand(
+            target_document_id=request_body.target_document_id,
+            transition_reason=request_body.transition_reason,
+        ),
         caller_context=context,
         trace_id=request_trace_id,
     )

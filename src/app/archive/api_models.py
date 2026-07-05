@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import date, datetime
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 from app.archive.audit import AccessAuditEvent
 from app.archive.models import (
@@ -132,6 +132,14 @@ class ArchiveDocumentResponse(BaseModel):
 
 class AccessEventListResponse(BaseModel):
     document_id: str = Field(description="Archived document identifier.")
+    returned_count: int = Field(description="Number of access events returned in this page.")
+    total_count: int = Field(description="Total available access events before pagination.")
+    limit: int = Field(description="Requested page limit after server-side validation.")
+    offset: int = Field(description="Zero-based event offset for this page.")
+    next_offset: int | None = Field(
+        default=None,
+        description="Next offset when more access events are available.",
+    )
     events: list[AccessAuditEvent] = Field(description="Access-audit events for this document.")
 
 
@@ -230,8 +238,26 @@ class LifecycleTransitionRequest(BaseModel):
     )
     transition_reason: str = Field(
         min_length=1,
+        max_length=200,
         description="Business reason for the lifecycle transition.",
     )
+
+    @field_validator("transition_reason")
+    @classmethod
+    def _transition_reason_must_be_support_safe(cls, value: str) -> str:
+        lowered = value.lower()
+        blocked_tokens = (
+            "client-ref",
+            "client_reference",
+            "storage_key",
+            "s3://",
+            "raw_payload",
+            "trace_id",
+            "correlation_id",
+        )
+        if any(token in lowered for token in blocked_tokens):
+            raise ValueError("transition_reason must not contain sensitive support identifiers")
+        return value
 
 
 class LifecycleRelationshipResponse(BaseModel):
@@ -240,6 +266,9 @@ class LifecycleRelationshipResponse(BaseModel):
     target_document_id: str = Field(description="Current archived document identifier.")
     transition_type: LifecycleTransitionType = Field(description="Lifecycle transition type.")
     transition_reason: str = Field(description="Business reason for the lifecycle transition.")
+    transition_reason_code: str = Field(
+        description="Stable support-safe lifecycle reason code for downstream consumers."
+    )
     requested_by: str = Field(description="Actor that requested the lifecycle transition.")
     requested_at: datetime = Field(
         description="UTC timestamp when the lifecycle transition was requested."
@@ -297,10 +326,21 @@ class ArchiveDocumentSourceEvent(BaseModel):
         default=None,
         description="Related historical or current document for lifecycle events.",
     )
-    transition_reason: str | None = Field(
+    transition_reason_code: str | None = Field(
         default=None,
-        description="Support-safe lifecycle transition reason when the event is a transition.",
+        description="Stable support-safe lifecycle transition reason code for source events.",
     )
+    delivery_mode: str = Field(description="Source-event publication mode.")
+    replay_contract: str = Field(description="Source-event replay and idempotency contract.")
+    source_owner: str = Field(description="Source owner for generated document facts.")
+    document_evidence_authority: str = Field(
+        description="Archive authority boundary for this source event."
+    )
+    report_data_contract_version: str = Field(
+        description="Report input contract version supplied by lotus-report."
+    )
+    template_id: str = Field(description="Render template identifier supplied by lotus-report.")
+    template_version: str = Field(description="Render template version supplied by lotus-report.")
     content_hash: str = Field(description="Checksum-backed content hash for the archived artifact.")
     supportability_state: str = Field(description="Source-event supportability state.")
     reason_codes: list[str] = Field(description="Stable reason codes for downstream consumers.")
@@ -328,6 +368,16 @@ class ArchiveDocumentSourceEventsResponse(BaseModel):
     portfolio_id: str = Field(description="Portfolio represented by the archived document.")
     report_type: GeneratedReportType = Field(description="Generated report type.")
     event_count: int = Field(description="Number of returned source events.")
+    returned_count: int = Field(description="Number of events returned in this page.")
+    total_count: int = Field(description="Total available source events before pagination.")
+    limit: int = Field(description="Requested page limit after server-side validation.")
+    offset: int = Field(description="Zero-based event offset for this page.")
+    next_offset: int | None = Field(
+        default=None,
+        description="Next offset when more source events are available.",
+    )
+    delivery_mode: str = Field(description="Pull-only source-event delivery mode.")
+    replay_contract: str = Field(description="Deterministic replay and idempotency contract.")
     no_raw_payloads: bool = Field(
         description="Whether raw document bytes, storage keys, and client references are omitted."
     )

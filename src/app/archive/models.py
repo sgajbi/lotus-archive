@@ -272,5 +272,6 @@ class LifecycleRelationshipRecord(BaseModel):
     target_document_id: str = Field(min_length=1)
     transition_type: LifecycleTransitionType
     transition_reason: str = Field(min_length=1)
+    transition_reason_code: str = Field(min_length=1)
     requested_by: str = Field(min_length=1)
     requested_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))

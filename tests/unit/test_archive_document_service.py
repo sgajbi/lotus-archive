@@ -7,10 +7,10 @@ from fastapi import Request
 import pytest
 
 from app.archive.api import archive_service
-from app.archive.api_models import (
-    ArchiveDocumentCreateRequest,
-    LegalHoldCreateRequest,
-    LifecycleTransitionRequest,
+from app.archive.commands import (
+    ArchiveDocumentCreateCommand,
+    LegalHoldCreateCommand,
+    LifecycleTransitionCommand,
 )
 from app.archive.archive_writer import ArchiveWriter
 from app.archive.audit import (
@@ -54,8 +54,8 @@ def _service(tmp_path: Path) -> ArchiveDocumentService:
     )
 
 
-def _create_request(content: bytes = b"portfolio review pdf bytes") -> ArchiveDocumentCreateRequest:
-    return ArchiveDocumentCreateRequest(
+def _create_request(content: bytes = b"portfolio review pdf bytes") -> ArchiveDocumentCreateCommand:
+    return ArchiveDocumentCreateCommand(
         metadata=valid_metadata_input(),
         content_base64=b64encode(content).decode("ascii"),
     )
@@ -65,8 +65,8 @@ def _create_request_with_id(
     archive_request_id: str,
     *,
     content: bytes = b"portfolio review pdf bytes",
-) -> ArchiveDocumentCreateRequest:
-    return ArchiveDocumentCreateRequest(
+) -> ArchiveDocumentCreateCommand:
+    return ArchiveDocumentCreateCommand(
         metadata=valid_metadata_input(
             archive_request_id=archive_request_id,
             report_job_id=f"report-job-{archive_request_id}",
@@ -90,7 +90,7 @@ def test_create_document_records_archive_create_audit_event(tmp_path: Path) -> N
     service = _service(tmp_path)
 
     metadata = service.create_document(
-        request=_create_request(),
+        command=_create_request(),
         caller_context=_caller(),
         trace_id="trace-create",
     )
@@ -105,7 +105,7 @@ def test_create_document_rejects_invalid_base64_content(tmp_path: Path) -> None:
 
     with pytest.raises(MetadataValidationError):
         service.create_document(
-            request=ArchiveDocumentCreateRequest(
+            command=ArchiveDocumentCreateCommand(
                 metadata=valid_metadata_input(),
                 content_base64="not-valid-base64",
             ),
@@ -127,7 +127,7 @@ def test_create_document_rejects_oversized_decoded_content(tmp_path: Path) -> No
 
     with pytest.raises(MetadataValidationError):
         service.create_document(
-            request=_create_request(content=b"12345"),
+            command=_create_request(content=b"12345"),
             caller_context=_caller(),
             trace_id="trace-oversized",
         )
@@ -140,7 +140,7 @@ def test_unauthorized_create_records_denied_audit_event(tmp_path: Path) -> None:
 
     with pytest.raises(AuthorizationFailedError):
         service.create_document(
-            request=_create_request(),
+            command=_create_request(),
             caller_context=_caller(caller_service="lotus-workbench"),
             trace_id="trace-denied",
         )
@@ -153,7 +153,7 @@ def test_unauthorized_create_records_denied_audit_event(tmp_path: Path) -> None:
 def test_metadata_lookup_records_access_audit_event(tmp_path: Path) -> None:
     service = _service(tmp_path)
     metadata = service.create_document(
-        request=_create_request(),
+        command=_create_request(),
         caller_context=_caller(),
         trace_id="trace-create",
     )
@@ -175,7 +175,7 @@ def test_metadata_lookup_records_access_audit_event(tmp_path: Path) -> None:
 def test_download_detects_missing_binary(tmp_path: Path) -> None:
     service = _service(tmp_path)
     metadata = service.create_document(
-        request=_create_request(),
+        command=_create_request(),
         caller_context=_caller(),
         trace_id="trace-create",
     )
@@ -198,7 +198,7 @@ def test_download_detects_missing_binary(tmp_path: Path) -> None:
 def test_download_detects_checksum_mismatch(tmp_path: Path) -> None:
     service = _service(tmp_path)
     metadata = service.create_document(
-        request=_create_request(),
+        command=_create_request(),
         caller_context=_caller(),
         trace_id="trace-create",
     )
@@ -280,7 +280,7 @@ def test_production_runtime_rejects_in_memory_repository() -> None:
 def test_purge_evaluation_marks_document_eligible_after_retention_date(tmp_path: Path) -> None:
     service = _service(tmp_path)
     metadata = service.create_document(
-        request=_create_request(),
+        command=_create_request(),
         caller_context=_caller(),
         trace_id="trace-create",
     )
@@ -302,7 +302,7 @@ def test_purge_evaluation_marks_document_eligible_after_retention_date(tmp_path:
 def test_purge_evaluation_blocks_active_retention_period(tmp_path: Path) -> None:
     service = _service(tmp_path)
     metadata = service.create_document(
-        request=_create_request(),
+        command=_create_request(),
         caller_context=_caller(),
         trace_id="trace-create",
     )
@@ -322,13 +322,13 @@ def test_purge_evaluation_blocks_active_retention_period(tmp_path: Path) -> None
 def test_legal_hold_blocks_purge_until_released(tmp_path: Path) -> None:
     service = _service(tmp_path)
     metadata = service.create_document(
-        request=_create_request(),
+        command=_create_request(),
         caller_context=_caller(),
         trace_id="trace-create",
     )
     legal_hold = service.set_legal_hold(
         document_id=metadata.document_id,
-        request=LegalHoldCreateRequest(
+        command=LegalHoldCreateCommand(
             hold_reason="Regulatory review",
             authority_reference="CASE-001",
         ),
@@ -380,7 +380,7 @@ def test_legal_hold_blocks_purge_until_released(tmp_path: Path) -> None:
 def test_purge_is_idempotent_after_first_execution(tmp_path: Path) -> None:
     service = _service(tmp_path)
     metadata = service.create_document(
-        request=_create_request(),
+        command=_create_request(),
         caller_context=_caller(),
         trace_id="trace-create",
     )
@@ -406,7 +406,7 @@ def test_purge_is_idempotent_after_first_execution(tmp_path: Path) -> None:
 def test_purge_rejects_document_still_under_retention(tmp_path: Path) -> None:
     service = _service(tmp_path)
     metadata = service.create_document(
-        request=_create_request(),
+        command=_create_request(),
         caller_context=_caller(),
         trace_id="trace-create",
     )
@@ -426,7 +426,7 @@ def test_purge_rejects_document_still_under_retention(tmp_path: Path) -> None:
 def test_release_unknown_legal_hold_reports_not_found(tmp_path: Path) -> None:
     service = _service(tmp_path)
     metadata = service.create_document(
-        request=_create_request(),
+        command=_create_request(),
         caller_context=_caller(),
         trace_id="trace-create",
     )
@@ -444,19 +444,19 @@ def test_release_unknown_legal_hold_reports_not_found(tmp_path: Path) -> None:
 def test_supersession_preserves_history_and_resolves_current_document(tmp_path: Path) -> None:
     service = _service(tmp_path)
     historical = service.create_document(
-        request=_create_request_with_id("archive-request-historical"),
+        command=_create_request_with_id("archive-request-historical"),
         caller_context=_caller(),
         trace_id="trace-create-old",
     )
     current = service.create_document(
-        request=_create_request_with_id("archive-request-current"),
+        command=_create_request_with_id("archive-request-current"),
         caller_context=_caller(),
         trace_id="trace-create-new",
     )
 
     relationship, resolved = service.supersede_document(
         document_id=historical.document_id,
-        request=LifecycleTransitionRequest(
+        command=LifecycleTransitionCommand(
             target_document_id=current.document_id,
             transition_reason="Quarterly report replaced by approved version",
         ),
@@ -512,12 +512,12 @@ def test_lifecycle_transition_rolls_back_when_relationship_save_fails(tmp_path: 
         audit_repository=InMemoryAccessAuditRepository(),
     )
     historical = service.create_document(
-        request=_create_request_with_id("archive-request-atomic-source"),
+        command=_create_request_with_id("archive-request-atomic-source"),
         caller_context=_caller(),
         trace_id="trace-atomic-source",
     )
     current = service.create_document(
-        request=_create_request_with_id("archive-request-atomic-current"),
+        command=_create_request_with_id("archive-request-atomic-current"),
         caller_context=_caller(),
         trace_id="trace-atomic-current",
     )
@@ -525,7 +525,7 @@ def test_lifecycle_transition_rolls_back_when_relationship_save_fails(tmp_path: 
     with pytest.raises(RuntimeError, match="relationship store unavailable"):
         service.supersede_document(
             document_id=historical.document_id,
-            request=LifecycleTransitionRequest(
+            command=LifecycleTransitionCommand(
                 target_document_id=current.document_id,
                 transition_reason="Approved replacement",
             ),
@@ -556,12 +556,12 @@ def test_lifecycle_transition_rolls_back_when_audit_record_fails(tmp_path: Path)
         audit_repository=FailingAuditRepository(),
     )
     historical = service.create_document(
-        request=_create_request_with_id("archive-request-audit-source"),
+        command=_create_request_with_id("archive-request-audit-source"),
         caller_context=_caller(),
         trace_id="trace-audit-source",
     )
     current = service.create_document(
-        request=_create_request_with_id("archive-request-audit-current"),
+        command=_create_request_with_id("archive-request-audit-current"),
         caller_context=_caller(),
         trace_id="trace-audit-current",
     )
@@ -569,7 +569,7 @@ def test_lifecycle_transition_rolls_back_when_audit_record_fails(tmp_path: Path)
     with pytest.raises(RuntimeError, match="audit store unavailable"):
         service.supersede_document(
             document_id=historical.document_id,
-            request=LifecycleTransitionRequest(
+            command=LifecycleTransitionCommand(
                 target_document_id=current.document_id,
                 transition_reason="Approved replacement",
             ),
@@ -585,29 +585,29 @@ def test_lifecycle_transition_rolls_back_when_audit_record_fails(tmp_path: Path)
 def test_correction_and_reissue_set_explicit_lifecycle_semantics(tmp_path: Path) -> None:
     service = _service(tmp_path)
     source = service.create_document(
-        request=_create_request_with_id("archive-request-source"),
+        command=_create_request_with_id("archive-request-source"),
         caller_context=_caller(),
         trace_id="trace-source",
     )
     correction = service.create_document(
-        request=_create_request_with_id("archive-request-correction"),
+        command=_create_request_with_id("archive-request-correction"),
         caller_context=_caller(),
         trace_id="trace-correction",
     )
     reissue_source = service.create_document(
-        request=_create_request_with_id("archive-request-reissue-source"),
+        command=_create_request_with_id("archive-request-reissue-source"),
         caller_context=_caller(),
         trace_id="trace-reissue-source",
     )
     reissue = service.create_document(
-        request=_create_request_with_id("archive-request-reissue"),
+        command=_create_request_with_id("archive-request-reissue"),
         caller_context=_caller(),
         trace_id="trace-reissue",
     )
 
     correction_relationship, _ = service.correct_document(
         document_id=source.document_id,
-        request=LifecycleTransitionRequest(
+        command=LifecycleTransitionCommand(
             target_document_id=correction.document_id,
             transition_reason="Corrected valuation date",
         ),
@@ -616,7 +616,7 @@ def test_correction_and_reissue_set_explicit_lifecycle_semantics(tmp_path: Path)
     )
     reissue_relationship, _ = service.reissue_document(
         document_id=reissue_source.document_id,
-        request=LifecycleTransitionRequest(
+        command=LifecycleTransitionCommand(
             target_document_id=reissue.document_id,
             transition_reason="Client delivery reissue",
         ),
@@ -644,19 +644,19 @@ def test_correction_and_reissue_set_explicit_lifecycle_semantics(tmp_path: Path)
 def test_document_source_events_project_archive_and_reissue_lineage(tmp_path: Path) -> None:
     service = _service(tmp_path)
     source = service.create_document(
-        request=_create_request_with_id("archive-request-source-event-source"),
+        command=_create_request_with_id("archive-request-source-event-source"),
         caller_context=_caller(),
         trace_id="trace-source-event-source",
     )
     target = service.create_document(
-        request=_create_request_with_id("archive-request-source-event-target"),
+        command=_create_request_with_id("archive-request-source-event-target"),
         caller_context=_caller(),
         trace_id="trace-source-event-target",
     )
 
     service.reissue_document(
         document_id=source.document_id,
-        request=LifecycleTransitionRequest(
+        command=LifecycleTransitionCommand(
             target_document_id=target.document_id,
             transition_reason="Client delivery reissue",
         ),
@@ -682,7 +682,14 @@ def test_document_source_events_project_archive_and_reissue_lineage(tmp_path: Pa
     artifact_refs = cast(list[dict[str, object]], events[0]["artifact_refs"])
     assert artifact_refs[0]["artifact_type"] == "archive_document_metadata"
     assert events[1]["related_document_id"] == target.document_id
-    assert events[1]["transition_reason"] == "Client delivery reissue"
+    assert events[1]["transition_reason_code"] == "client_delivery_reissue_requested"
+    assert "transition_reason" not in events[1]
+    assert events[1]["delivery_mode"] == "pull_only"
+    assert events[1]["replay_contract"] == "deterministic_limit_offset_replay_by_event_time_and_id"
+    assert events[1]["source_owner"] == "lotus-report"
+    assert events[1]["document_evidence_authority"] == "lotus-archive_document_evidence_only"
+    assert events[1]["report_data_contract_version"] == "rfc-0101-v1"
+    assert events[1]["template_id"] == "portfolio-review"
     assert events[1]["redaction_policy"] == (
         "NO_RAW_DOCUMENT_BYTES_NO_STORAGE_KEYS_NO_CLIENT_REFERENCE"
     )
@@ -693,29 +700,29 @@ def test_document_source_events_project_supersede_and_correction_lineage(
 ) -> None:
     service = _service(tmp_path)
     supersede_source = service.create_document(
-        request=_create_request_with_id("archive-request-source-event-supersede-source"),
+        command=_create_request_with_id("archive-request-source-event-supersede-source"),
         caller_context=_caller(),
         trace_id="trace-source-event-supersede-source",
     )
     supersede_target = service.create_document(
-        request=_create_request_with_id("archive-request-source-event-supersede-target"),
+        command=_create_request_with_id("archive-request-source-event-supersede-target"),
         caller_context=_caller(),
         trace_id="trace-source-event-supersede-target",
     )
     correction_source = service.create_document(
-        request=_create_request_with_id("archive-request-source-event-correction-source"),
+        command=_create_request_with_id("archive-request-source-event-correction-source"),
         caller_context=_caller(),
         trace_id="trace-source-event-correction-source",
     )
     correction_target = service.create_document(
-        request=_create_request_with_id("archive-request-source-event-correction-target"),
+        command=_create_request_with_id("archive-request-source-event-correction-target"),
         caller_context=_caller(),
         trace_id="trace-source-event-correction-target",
     )
 
     service.supersede_document(
         document_id=supersede_source.document_id,
-        request=LifecycleTransitionRequest(
+        command=LifecycleTransitionCommand(
             target_document_id=supersede_target.document_id,
             transition_reason="Annual report supersession",
         ),
@@ -724,7 +731,7 @@ def test_document_source_events_project_supersede_and_correction_lineage(
     )
     service.correct_document(
         document_id=correction_source.document_id,
-        request=LifecycleTransitionRequest(
+        command=LifecycleTransitionCommand(
             target_document_id=correction_target.document_id,
             transition_reason="Corrected portfolio period",
         ),
@@ -744,30 +751,36 @@ def test_document_source_events_project_supersede_and_correction_lineage(
     )
 
     assert supersede_events[1]["event_type"] == "generated_document_superseded"
+    assert supersede_events[1]["transition_reason_code"] == (
+        "archive_document_supersession_requested"
+    )
     assert correction_events[1]["event_type"] == "generated_document_corrected"
+    assert correction_events[1]["transition_reason_code"] == (
+        "archive_document_correction_requested"
+    )
     assert latest_event_time([]) is None
 
 
 def test_lifecycle_transition_rejects_non_current_source(tmp_path: Path) -> None:
     service = _service(tmp_path)
     first = service.create_document(
-        request=_create_request_with_id("archive-request-first"),
+        command=_create_request_with_id("archive-request-first"),
         caller_context=_caller(),
         trace_id="trace-first",
     )
     second = service.create_document(
-        request=_create_request_with_id("archive-request-second"),
+        command=_create_request_with_id("archive-request-second"),
         caller_context=_caller(),
         trace_id="trace-second",
     )
     third = service.create_document(
-        request=_create_request_with_id("archive-request-third"),
+        command=_create_request_with_id("archive-request-third"),
         caller_context=_caller(),
         trace_id="trace-third",
     )
     service.supersede_document(
         document_id=first.document_id,
-        request=LifecycleTransitionRequest(
+        command=LifecycleTransitionCommand(
             target_document_id=second.document_id,
             transition_reason="First replacement",
         ),
@@ -778,7 +791,7 @@ def test_lifecycle_transition_rejects_non_current_source(tmp_path: Path) -> None
     with pytest.raises(SupersessionConflictError):
         service.supersede_document(
             document_id=first.document_id,
-            request=LifecycleTransitionRequest(
+            command=LifecycleTransitionCommand(
                 target_document_id=third.document_id,
                 transition_reason="Invalid replacement",
             ),
@@ -790,7 +803,7 @@ def test_lifecycle_transition_rejects_non_current_source(tmp_path: Path) -> None
 def test_lifecycle_transition_rejects_self_reference(tmp_path: Path) -> None:
     service = _service(tmp_path)
     metadata = service.create_document(
-        request=_create_request_with_id("archive-request-self"),
+        command=_create_request_with_id("archive-request-self"),
         caller_context=_caller(),
         trace_id="trace-create",
     )
@@ -798,7 +811,7 @@ def test_lifecycle_transition_rejects_self_reference(tmp_path: Path) -> None:
     with pytest.raises(UnsupportedLifecycleTransitionError):
         service.reissue_document(
             document_id=metadata.document_id,
-            request=LifecycleTransitionRequest(
+            command=LifecycleTransitionCommand(
                 target_document_id=metadata.document_id,
                 transition_reason="Invalid self reissue",
             ),
@@ -810,12 +823,12 @@ def test_lifecycle_transition_rejects_self_reference(tmp_path: Path) -> None:
 def test_lifecycle_transition_rejects_purged_documents(tmp_path: Path) -> None:
     service = _service(tmp_path)
     purged = service.create_document(
-        request=_create_request_with_id("archive-request-purged"),
+        command=_create_request_with_id("archive-request-purged"),
         caller_context=_caller(),
         trace_id="trace-purged",
     )
     target = service.create_document(
-        request=_create_request_with_id("archive-request-target"),
+        command=_create_request_with_id("archive-request-target"),
         caller_context=_caller(),
         trace_id="trace-target",
     )
@@ -829,7 +842,7 @@ def test_lifecycle_transition_rejects_purged_documents(tmp_path: Path) -> None:
     with pytest.raises(UnsupportedLifecycleTransitionError):
         service.supersede_document(
             document_id=purged.document_id,
-            request=LifecycleTransitionRequest(
+            command=LifecycleTransitionCommand(
                 target_document_id=target.document_id,
                 transition_reason="Invalid purged source",
             ),
@@ -841,23 +854,23 @@ def test_lifecycle_transition_rejects_purged_documents(tmp_path: Path) -> None:
 def test_lifecycle_transition_rejects_historical_target(tmp_path: Path) -> None:
     service = _service(tmp_path)
     first = service.create_document(
-        request=_create_request_with_id("archive-request-target-first"),
+        command=_create_request_with_id("archive-request-target-first"),
         caller_context=_caller(),
         trace_id="trace-first",
     )
     second = service.create_document(
-        request=_create_request_with_id("archive-request-target-second"),
+        command=_create_request_with_id("archive-request-target-second"),
         caller_context=_caller(),
         trace_id="trace-second",
     )
     third = service.create_document(
-        request=_create_request_with_id("archive-request-target-third"),
+        command=_create_request_with_id("archive-request-target-third"),
         caller_context=_caller(),
         trace_id="trace-third",
     )
     service.supersede_document(
         document_id=first.document_id,
-        request=LifecycleTransitionRequest(
+        command=LifecycleTransitionCommand(
             target_document_id=second.document_id,
             transition_reason="First transition",
         ),
@@ -868,7 +881,7 @@ def test_lifecycle_transition_rejects_historical_target(tmp_path: Path) -> None:
     with pytest.raises(SupersessionConflictError):
         service.correct_document(
             document_id=third.document_id,
-            request=LifecycleTransitionRequest(
+            command=LifecycleTransitionCommand(
                 target_document_id=first.document_id,
                 transition_reason="Historical target is invalid",
             ),
@@ -880,23 +893,23 @@ def test_lifecycle_transition_rejects_historical_target(tmp_path: Path) -> None:
 def test_lifecycle_transition_rejects_target_with_existing_origin(tmp_path: Path) -> None:
     service = _service(tmp_path)
     first = service.create_document(
-        request=_create_request_with_id("archive-request-origin-first"),
+        command=_create_request_with_id("archive-request-origin-first"),
         caller_context=_caller(),
         trace_id="trace-first",
     )
     second = service.create_document(
-        request=_create_request_with_id("archive-request-origin-second"),
+        command=_create_request_with_id("archive-request-origin-second"),
         caller_context=_caller(),
         trace_id="trace-second",
     )
     third = service.create_document(
-        request=_create_request_with_id("archive-request-origin-third"),
+        command=_create_request_with_id("archive-request-origin-third"),
         caller_context=_caller(),
         trace_id="trace-third",
     )
     service.reissue_document(
         document_id=first.document_id,
-        request=LifecycleTransitionRequest(
+        command=LifecycleTransitionCommand(
             target_document_id=second.document_id,
             transition_reason="First reissue",
         ),
@@ -907,7 +920,7 @@ def test_lifecycle_transition_rejects_target_with_existing_origin(tmp_path: Path
     with pytest.raises(SupersessionConflictError):
         service.supersede_document(
             document_id=third.document_id,
-            request=LifecycleTransitionRequest(
+            command=LifecycleTransitionCommand(
                 target_document_id=second.document_id,
                 transition_reason="Target already has an origin",
             ),
@@ -919,12 +932,12 @@ def test_lifecycle_transition_rejects_target_with_existing_origin(tmp_path: Path
 def test_current_document_resolution_detects_cycle(tmp_path: Path) -> None:
     service = _service(tmp_path)
     first = service.create_document(
-        request=_create_request_with_id("archive-request-cycle-first"),
+        command=_create_request_with_id("archive-request-cycle-first"),
         caller_context=_caller(),
         trace_id="trace-first",
     )
     second = service.create_document(
-        request=_create_request_with_id("archive-request-cycle-second"),
+        command=_create_request_with_id("archive-request-cycle-second"),
         caller_context=_caller(),
         trace_id="trace-second",
     )
@@ -946,7 +959,7 @@ def test_current_document_resolution_detects_cycle(tmp_path: Path) -> None:
 def test_purge_evaluation_reports_missing_retention_date(tmp_path: Path) -> None:
     service = _service(tmp_path)
     metadata = service.create_document(
-        request=ArchiveDocumentCreateRequest(
+        command=ArchiveDocumentCreateCommand(
             metadata=valid_metadata_input(
                 archive_request_id="archive-request-no-retention",
                 retain_until_date=None,
