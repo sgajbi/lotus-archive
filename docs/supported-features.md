@@ -37,11 +37,13 @@ archive API surface:
     `archive.observability.archive_supportability`.
 25. Bounded archive supportability metric `lotus_archive_supportability_total` with only `state`,
     `reason`, and `freshness_bucket` labels.
-26. Governed generated-report type validation for `portfolio_review`, `outcome_review`,
+26. Governed `pip-audit` exception policy with owner, review date, rationale, dependency
+    constraint, removal condition, and CI-backed validation.
+27. Governed generated-report type validation for `portfolio_review`, `outcome_review`,
     `proof_pack`, and `rebalance_wave` archive records.
-27. RFC-0023 reviewed advisory narrative archive summaries for rendered portfolio-review
+28. RFC-0023 reviewed advisory narrative archive summaries for rendered portfolio-review
     documents, preserving support-safe package lineage without raw narrative text.
-28. RFC-0024 advisor proposal memo archive summaries for rendered portfolio-review documents,
+29. RFC-0024 advisor proposal memo archive summaries for rendered portfolio-review documents,
     preserving support-safe memo lineage without raw memo reconstruction or client-ready promotion.
 
 The current local runtime is intentionally non-durable unless a future production adapter is
@@ -76,6 +78,7 @@ Workbench-facing archive retrieval is supported only through the `lotus-workbenc
 | Gateway-backed Workbench document retrieval | `ready` | `lotus-workbench` PR #126 retrieves archive metadata and binary downloads through `/api/bff/api/v1/documents/{document_id}` and `/api/bff/api/v1/documents/{document_id}/download`, preserving the Gateway boundary and binary response headers. |
 | Archive supportability posture | `ready` | `/metadata` publishes `archive.observability.archive_supportability`, sourced from supported archive feature posture and drain state, with bounded `lotus_archive_supportability_total` metric observations. |
 | Production durable archive runtime | `limited` | Runtime settings now prevent silent in-memory/filesystem use in production-like profiles. PostgreSQL metadata/audit and S3-compatible storage adapters remain future implementation work before production durable support can be claimed. |
+| Temporary dependency vulnerability exceptions | `limited` | `make security-audit` validates `security/pip-audit-exceptions.json` before invoking `pip-audit`. Starlette advisory ignores must carry owner, review date, rationale, dependency constraint, removal condition, and compensating controls. |
 
 ## Not Yet Supported
 
