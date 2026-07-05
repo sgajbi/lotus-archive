@@ -35,6 +35,7 @@ def test_supported_features_baseline_blocks_direct_workbench_overclaim() -> None
     assert "| Gateway-backed document retrieval | `ready` |" in supported_features
     assert "| Gateway-backed Workbench document retrieval | `ready` |" in supported_features
     assert "| Reviewed advisory narrative archive summary | `ready` |" in supported_features
+    assert "| Production durable archive runtime | `limited` |" in supported_features
     assert "| Report-to-archive handoff | `not_supported` |" not in supported_features
     assert "| Direct Workbench archive calls | `not_supported` |" in supported_features
     assert "| Client-ready advisory narrative publication | `not_supported` |" in supported_features
@@ -66,3 +67,15 @@ def test_archive_boundary_doc_rejects_local_output_directory_architecture() -> N
     assert "general-purpose file store" in boundary_doc
     assert "postgresql metadata plus s3-compatible object storage" in boundary_doc
     assert "local filesystem storage must not become product architecture" in boundary_doc
+
+
+def test_local_enterprise_refactor_playbook_is_only_canonical_pointer() -> None:
+    local_playbook = _read("docs/architecture/ENTERPRISE_BACKEND_REFACTORING_INSTRUCTIONS.md")
+    repo_docs = "\n".join([_read("README.md"), _read("REPOSITORY-ENGINEERING-CONTEXT.md")])
+
+    assert "lotus-platform/context/playbooks/ENTERPRISE-BACKEND-REFACTORING-INSTRUCTIONS.md" in (
+        local_playbook
+    )
+    assert "stale local copy" in " ".join(local_playbook.split())
+    assert "# 6. Layer Responsibilities" not in local_playbook
+    assert "runtime composition settings" in repo_docs

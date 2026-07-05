@@ -5,8 +5,12 @@ Lotus generated-document archive, retrieval, retention, legal hold, and access a
 ## Current posture
 
 - Governed service boundary scaffold is in place.
+- Runtime composition is explicit. The local profile uses in-memory metadata/audit repositories and
+  filesystem object storage; production-like profiles must configure durable persistence/storage or
+  fail closed instead of silently publishing non-durable archive state.
 - Health, readiness, metadata, metrics, correlation/trace headers, safe error envelopes, structured
-  request logging, metadata model, migration contract, filesystem-backed development storage,
+  route-template request logging, metadata model, migration contract, filesystem-backed
+  local-development storage,
   checksum validation, idempotent archive-write domain behavior, internal archive create API,
   controlled metadata lookup, checksum-verified binary download, access-audit recording, retention
   posture lookup, purge eligibility and execution, and legal-hold set/release with purge blocking

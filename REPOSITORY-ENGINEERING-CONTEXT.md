@@ -13,7 +13,8 @@
 `lotus-archive` is scaffolded from platform automation and starts with the governed backend baseline:
 FastAPI service shell, CI workflows, repo-native quality commands, Docker baseline, AGENTS
 contract, repository engineering context, safe service-level error envelope, caller-context parsing
-helper, structured request logging, archive metadata model, migration contract, storage adapter,
+helper, structured route-template request logging, archive metadata model, migration contract,
+explicit runtime composition settings, storage adapter,
 checksum validation, idempotent archive-write domain service, internal archive create API,
 controlled metadata lookup, checksum-verified binary download, access-audit recording, and
 retention posture lookup, purge eligibility and execution, legal-hold set/release with purge
@@ -68,6 +69,9 @@ not call `lotus-archive` directly.
 20. `docs/supported-features.md`: implementation-backed support posture.
 21. `docs/standards/`: repository standards placeholders to be replaced with service truth.
 22. `src/app/archive/metrics.py`: bounded archive operation, size, and supportability metrics.
+23. `src/app/archive/settings.py`: typed runtime profile, repository, storage, namespace, database,
+    and upload-size configuration.
+24. `src/app/archive/runtime.py`: process-local archive dependency composition and runtime posture.
 
 ## Runtime And Integration Boundaries
 
@@ -114,6 +118,10 @@ build validation.
 4. do not claim archive product support until code, tests, documentation, and PR evidence exist.
 5. supportability metrics must remain bounded to state, reason, and freshness bucket only; do not
    add document, report, render, storage, tenant, trace, or correlation labels.
+6. in-memory metadata/audit repositories and filesystem object storage are allowed only for
+   explicit local-development or test profiles. Production-like profiles must fail closed or report
+   unavailable until durable metadata/audit and object-storage adapters exist.
+7. request logs must use route templates rather than raw document or legal-hold paths.
 
 ## Context Maintenance Rule
 

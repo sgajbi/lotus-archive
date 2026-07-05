@@ -6,7 +6,7 @@ from typing import cast
 from fastapi import Request
 import pytest
 
-from app.archive.api import archive_service, build_default_archive_service
+from app.archive.api import archive_service
 from app.archive.api_models import (
     ArchiveDocumentCreateRequest,
     LegalHoldCreateRequest,
@@ -28,7 +28,9 @@ from app.archive.exceptions import (
 )
 from app.archive.models import LegalHoldStatus, LifecycleTransitionType, PurgeStatus
 from app.archive.repository import InMemoryArchiveDocumentRepository
+from app.archive.runtime import build_archive_service, runtime_posture
 from app.archive.service import ArchiveDocumentService
+from app.archive.settings import ArchiveRuntimeSettings
 from app.archive.source_events import latest_event_time
 from app.archive.storage import FilesystemObjectStorage
 from app.security.caller_context import CallerContext
@@ -104,6 +106,27 @@ def test_create_document_rejects_invalid_base64_content(tmp_path: Path) -> None:
             caller_context=_caller(),
             trace_id="trace-invalid",
         )
+
+
+def test_create_document_rejects_oversized_decoded_content(tmp_path: Path) -> None:
+    repository = InMemoryArchiveDocumentRepository()
+    storage = FilesystemObjectStorage(tmp_path / "objects")
+    service = ArchiveDocumentService(
+        writer=ArchiveWriter(repository=repository, storage=storage),
+        repository=repository,
+        storage=storage,
+        audit_repository=InMemoryAccessAuditRepository(),
+        max_decoded_document_bytes=4,
+    )
+
+    with pytest.raises(MetadataValidationError):
+        service.create_document(
+            request=_create_request(content=b"12345"),
+            caller_context=_caller(),
+            trace_id="trace-oversized",
+        )
+
+    assert not list((tmp_path / "objects").rglob("*.pdf"))
 
 
 def test_unauthorized_create_records_denied_audit_event(tmp_path: Path) -> None:
@@ -188,19 +211,52 @@ def test_unknown_document_raises_not_found(tmp_path: Path) -> None:
         )
 
 
-def test_default_archive_service_factory_builds_service() -> None:
-    service = build_default_archive_service()
+def test_explicit_local_archive_runtime_builds_service(tmp_path: Path) -> None:
+    settings = ArchiveRuntimeSettings(
+        runtime_profile="local-development",
+        repository_mode="in-memory",
+        storage_mode="filesystem",
+        storage_root=tmp_path / "runtime-objects",
+    )
+
+    service = build_archive_service(settings)
+    posture = runtime_posture(settings)
 
     assert isinstance(service, ArchiveDocumentService)
+    assert posture.state == "degraded"
+    assert posture.reason == "explicit_local_development_runtime"
 
 
-def test_archive_service_dependency_caches_default_service() -> None:
-    request = cast(Request, SimpleNamespace(app=SimpleNamespace(state=SimpleNamespace())))
+def test_archive_service_dependency_caches_composed_service(tmp_path: Path) -> None:
+    request = cast(
+        Request,
+        SimpleNamespace(
+            app=SimpleNamespace(
+                state=SimpleNamespace(
+                    archive_runtime_settings=ArchiveRuntimeSettings(
+                        runtime_profile="test",
+                        repository_mode="in-memory",
+                        storage_mode="filesystem",
+                        storage_root=tmp_path / "dependency-objects",
+                    )
+                )
+            )
+        ),
+    )
 
     first = archive_service(request)
     second = archive_service(request)
 
     assert second is first
+
+
+def test_production_runtime_rejects_in_memory_repository() -> None:
+    with pytest.raises(Exception, match="in-memory archive repository"):
+        ArchiveRuntimeSettings(
+            runtime_profile="production",
+            repository_mode="in-memory",
+            storage_mode="s3",
+        )
 
 
 def test_purge_evaluation_marks_document_eligible_after_retention_date(tmp_path: Path) -> None:

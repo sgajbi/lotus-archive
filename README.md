@@ -8,8 +8,9 @@ Lotus generated-document archive, retrieval, retention, legal hold, and access a
 a generic file store, manual upload service, customer delivery channel, or report-rendering service.
 
 The current implementation supports the service scaffold, health/readiness, metadata, metrics,
-correlation, trace, and `traceparent` headers, structured request logging, safe error envelopes, caller-context
-parsing, archive metadata model, migration contract, filesystem-backed development storage adapter,
+correlation, trace, and `traceparent` headers, structured route-template request logging, safe
+error envelopes, caller-context parsing, archive metadata model, migration contract, explicit
+runtime composition settings, filesystem-backed local-development storage adapter,
 checksum validation, idempotent archive-write domain service, archive create API, controlled
 metadata lookup, controlled binary download, access-audit recording for archive API actions,
 retention posture lookup, purge eligibility and execution, legal-hold set/release with purge
@@ -50,6 +51,11 @@ RFC-0108 archive supportability posture is published through `/metadata` as
 `lotus_archive_supportability_total` observations. The posture covers retrieval, retention,
 legal-hold, access-audit, lifecycle, gateway retrieval, and Gateway-backed Workbench retrieval
 without document, storage, report, render, tenant, trace, or correlation labels.
+
+The default local runtime is explicit `local-development`: in-memory metadata/audit repositories
+plus filesystem object storage under the configured archive storage root. Production-like profiles
+must configure durable metadata/audit persistence and object storage; otherwise startup/readiness
+fails or reports unavailable instead of silently publishing non-durable archive support.
 
 `GET /documents/{document_id}/source-events` exposes the archive-owned
 `lotus-archive.generated_document_client_communication.v1` source-event family for downstream
@@ -96,4 +102,5 @@ docker compose up --build
 - Engineering commands: Makefile
 - Platform standards docs: docs/standards/
 - Archive boundaries: docs/architecture/archive-service-boundaries.md
+- Canonical enterprise refactor playbook: ../lotus-platform/context/playbooks/ENTERPRISE-BACKEND-REFACTORING-INSTRUCTIONS.md
 - Supported feature posture: docs/supported-features.md

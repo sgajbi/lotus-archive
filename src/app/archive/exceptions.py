@@ -47,3 +47,7 @@ class StorageWriteFailedError(ArchiveError):
 
 class StorageReadFailedError(ArchiveError):
     pass
+
+
+class RuntimeConfigurationError(ArchiveError):
+    pass
