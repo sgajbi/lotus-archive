@@ -45,3 +45,32 @@ def test_request_log_is_structured_and_support_safe(caplog: pytest.LogCaptureFix
     assert event["path"] == "/health"
     assert "bucket" not in messages[-1].lower()
     assert "storage_key" not in messages[-1].lower()
+
+
+def test_document_request_log_uses_route_template(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    caplog.set_level(logging.INFO, logger="lotus_archive.requests")
+
+    client = TestClient(app)
+    response = client.get(
+        "/documents/doc_sensitive_123/download",
+        headers={
+            "X-Correlation-Id": "corr-log-doc",
+            "X-Trace-Id": "trace-log-doc",
+            "X-Caller-Service": "lotus-gateway",
+            "X-Actor-Type": "service",
+            "X-Actor-Id": "gateway-worker",
+        },
+    )
+
+    assert response.status_code == 404
+    messages = [
+        record.message for record in caplog.records if record.name == "lotus_archive.requests"
+    ]
+    assert messages
+    event = json.loads(messages[-1])
+    assert event["path"] == "/documents/{document_id}/download"
+    assert "doc_sensitive_123" not in messages[-1]
+    assert event["correlation_id"] == "corr-log-doc"
+    assert event["trace_id"] == "trace-log-doc"

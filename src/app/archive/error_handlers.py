@@ -14,6 +14,7 @@ from app.archive.exceptions import (
     LegalHoldNotFoundError,
     MetadataValidationError,
     PurgeNotEligibleError,
+    RuntimeConfigurationError,
     StorageReadFailedError,
     SupersessionConflictError,
     UnsupportedLifecycleTransitionError,
@@ -108,6 +109,18 @@ def register_archive_exception_handlers(
         return error_response(
             code="metadata_validation_failed",
             http_status=status.HTTP_400_BAD_REQUEST,
+            correlation_id=correlation_id(request),
+            service=service_name,
+        )
+
+    @app.exception_handler(RuntimeConfigurationError)
+    async def runtime_configuration_exception_handler(
+        request: Request,
+        _exc: RuntimeConfigurationError,
+    ) -> JSONResponse:
+        return error_response(
+            code="archive_runtime_unavailable",
+            http_status=status.HTTP_503_SERVICE_UNAVAILABLE,
             correlation_id=correlation_id(request),
             service=service_name,
         )

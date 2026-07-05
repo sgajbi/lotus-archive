@@ -443,6 +443,35 @@ def test_document_create_reports_metadata_validation_failure(tmp_path: Path) -> 
     assert response.json()["error"]["code"] == "metadata_validation_failed"
 
 
+def test_document_create_rejects_oversized_document_without_side_effects(
+    tmp_path: Path,
+) -> None:
+    repository = InMemoryArchiveDocumentRepository()
+    storage = FilesystemObjectStorage(tmp_path / "objects")
+    service = ArchiveDocumentService(
+        writer=ArchiveWriter(repository=repository, storage=storage),
+        repository=repository,
+        storage=storage,
+        audit_repository=InMemoryAccessAuditRepository(),
+        max_decoded_document_bytes=4,
+    )
+    app.dependency_overrides[archive_service] = lambda: service
+    client = TestClient(app)
+    try:
+        response = client.post(
+            "/documents",
+            json=_payload(content=b"12345"),
+            headers=_headers(),
+        )
+    finally:
+        app.dependency_overrides.clear()
+
+    assert response.status_code == 400
+    assert response.json()["error"]["code"] == "metadata_validation_failed"
+    assert service.repository.get_by_archive_request_id("archive-request-001") is None
+    assert not list((tmp_path / "objects").rglob("*.pdf"))
+
+
 def test_document_create_reports_duplicate_request_conflict(tmp_path: Path) -> None:
     service = _service(tmp_path)
     app.dependency_overrides[archive_service] = lambda: service

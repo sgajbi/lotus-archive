@@ -13,9 +13,10 @@ archive API surface:
 4. Archive-specific module-family and documentation structure.
 5. Safe error envelope for service-level errors.
 6. Caller-context parsing helper for future protected archive APIs.
-7. Structured support-safe request logging.
+7. Structured support-safe route-template request logging.
 8. Archive metadata model and PostgreSQL migration contract.
-9. Filesystem-backed development storage adapter behind the object-storage abstraction.
+9. Explicit local-development runtime composition with in-memory metadata/audit repositories and
+   filesystem-backed development storage behind the object-storage abstraction.
 10. SHA-256 checksum calculation and storage-time validation.
 11. Idempotent archive-write domain service for duplicate archive requests.
 12. Internal generated-document archive API for authorized `lotus-report` callers.
@@ -43,6 +44,11 @@ archive API surface:
 28. RFC-0024 advisor proposal memo archive summaries for rendered portfolio-review documents,
     preserving support-safe memo lineage without raw memo reconstruction or client-ready promotion.
 
+The current local runtime is intentionally non-durable unless a future production adapter is
+configured. Production-like profiles must not silently use in-memory metadata/audit repositories or
+temporary filesystem object storage; readiness and runtime dependency composition fail closed when
+durable archive persistence and object storage are missing.
+
 Workbench-facing archive retrieval is supported only through the `lotus-workbench` BFF and
 `lotus-gateway`. Workbench must not call `lotus-archive` directly.
 
@@ -69,6 +75,7 @@ Workbench-facing archive retrieval is supported only through the `lotus-workbenc
 | Gateway-backed document retrieval | `ready` | `lotus-gateway` PR #150 exposes `/api/v1/documents/{document_id}` and `/api/v1/documents/{document_id}/download`, forwards caller context as `lotus-gateway`, preserves support-safe metadata and checksum headers, and keeps archive storage locations hidden. |
 | Gateway-backed Workbench document retrieval | `ready` | `lotus-workbench` PR #126 retrieves archive metadata and binary downloads through `/api/bff/api/v1/documents/{document_id}` and `/api/bff/api/v1/documents/{document_id}/download`, preserving the Gateway boundary and binary response headers. |
 | Archive supportability posture | `ready` | `/metadata` publishes `archive.observability.archive_supportability`, sourced from supported archive feature posture and drain state, with bounded `lotus_archive_supportability_total` metric observations. |
+| Production durable archive runtime | `limited` | Runtime settings now prevent silent in-memory/filesystem use in production-like profiles. PostgreSQL metadata/audit and S3-compatible storage adapters remain future implementation work before production durable support can be claimed. |
 
 ## Not Yet Supported
 

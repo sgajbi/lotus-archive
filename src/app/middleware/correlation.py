@@ -58,7 +58,7 @@ class CorrelationIdMiddleware(BaseHTTPMiddleware):
                     "event": "request_completed",
                     "service": self._service_name,
                     "method": request.method,
-                    "path": request.url.path,
+                    "path": _route_template(request),
                     "status_code": response.status_code,
                     "correlation_id": correlation_id,
                     "trace_id": trace_id,
@@ -77,6 +77,14 @@ def _resolve_trace_id(request: Request) -> str | None:
         if len(parts) >= 4 and _is_w3c_trace_id(parts[1]):
             return parts[1]
     return request.headers.get("X-Trace-Id") or request.headers.get("X-Trace-ID")
+
+
+def _route_template(request: Request) -> str:
+    route = request.scope.get("route")
+    path = getattr(route, "path", None)
+    if isinstance(path, str) and path:
+        return path
+    return request.url.path
 
 
 def _is_w3c_trace_id(trace_id: str) -> bool:

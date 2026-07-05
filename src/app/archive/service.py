@@ -54,12 +54,14 @@ class ArchiveDocumentService:
         storage: ObjectStorage,
         audit_repository: AccessAuditRepository,
         authorization_policy: ArchiveAuthorizationPolicy | None = None,
+        max_decoded_document_bytes: int = 10 * 1024 * 1024,
     ) -> None:
         self.writer = writer
         self.repository = repository
         self.storage = storage
         self.audit_repository = audit_repository
         self.authorization_policy = authorization_policy or ArchiveAuthorizationPolicy()
+        self.max_decoded_document_bytes = max_decoded_document_bytes
 
     @archive_metric("archive_create")
     def create_document(
@@ -642,6 +644,9 @@ class ArchiveDocumentService:
 
     def _decode_content(self, content_base64: str) -> bytes:
         try:
-            return b64decode(content_base64, validate=True)
+            content = b64decode(content_base64, validate=True)
         except Base64DecodeError as exc:
             raise MetadataValidationError("document content must be valid base64") from exc
+        if len(content) > self.max_decoded_document_bytes:
+            raise MetadataValidationError("document content exceeds configured archive size limit")
+        return content

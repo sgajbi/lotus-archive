@@ -1,8 +1,5 @@
 from __future__ import annotations
 
-from pathlib import Path
-import tempfile
-
 from fastapi import APIRouter, Depends, Request, Response, status
 
 from app.archive.api_models import (
@@ -20,12 +17,10 @@ from app.archive.api_models import (
     PurgeExecutionResponse,
     RetentionResponse,
 )
-from app.archive.archive_writer import ArchiveWriter
-from app.archive.audit import InMemoryAccessAuditRepository
-from app.archive.repository import InMemoryArchiveDocumentRepository
+from app.archive.runtime import build_archive_service
 from app.archive.service import ArchiveDocumentService
+from app.archive.settings import ArchiveRuntimeSettings
 from app.archive.source_events import SOURCE_EVENT_FAMILY, latest_event_time
-from app.archive.storage import FilesystemObjectStorage
 from app.security.caller_context import CallerContext, caller_context_from_headers
 
 ARCHIVE_API_TAG = "Archive Documents"
@@ -33,21 +28,14 @@ ARCHIVE_API_TAG = "Archive Documents"
 router = APIRouter(prefix="/documents", tags=[ARCHIVE_API_TAG])
 
 
-def build_default_archive_service() -> ArchiveDocumentService:
-    repository = InMemoryArchiveDocumentRepository()
-    storage = FilesystemObjectStorage(Path(tempfile.gettempdir()) / "lotus-archive-objects")
-    return ArchiveDocumentService(
-        writer=ArchiveWriter(repository=repository, storage=storage),
-        repository=repository,
-        storage=storage,
-        audit_repository=InMemoryAccessAuditRepository(),
-    )
-
-
 def archive_service(request: Request) -> ArchiveDocumentService:
     service = getattr(request.app.state, "archive_service", None)
     if service is None:
-        service = build_default_archive_service()
+        settings = getattr(request.app.state, "archive_runtime_settings", None)
+        if settings is None:
+            settings = ArchiveRuntimeSettings()
+            request.app.state.archive_runtime_settings = settings
+        service = build_archive_service(settings)
         request.app.state.archive_service = service
     return service
 
