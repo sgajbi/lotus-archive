@@ -103,4 +103,5 @@ docker compose up --build
 - Platform standards docs: docs/standards/
 - Archive boundaries: docs/architecture/archive-service-boundaries.md
 - Canonical enterprise refactor playbook: ../lotus-platform/context/playbooks/ENTERPRISE-BACKEND-REFACTORING-INSTRUCTIONS.md
+- Dependency exception policy: security/pip-audit-exceptions.json and scripts/security_audit.py
 - Supported feature posture: docs/supported-features.md

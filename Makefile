@@ -52,11 +52,7 @@ coverage-gate:
 	$(VENV_PYTHON) scripts/coverage_gate.py
 
 security-audit:
-	# Starlette CVE exceptions are temporary: prometheus-fastapi-instrumentator 7.1.0
-	# still constrains Starlette below 1.0.0, so the audited fixed line is not
-	# compatible with the current instrumentation stack. Remove these ignores when
-	# the instrumentation dependency supports Starlette 1.x.
-	$(VENV_PYTHON) -m pip_audit --ignore-vuln PYSEC-2026-161 --ignore-vuln CVE-2026-48818 --ignore-vuln CVE-2026-48817 --ignore-vuln CVE-2026-54283 --ignore-vuln CVE-2026-54282 -r requirements/shared-runtime.lock.txt -r requirements/ci-tooling.lock.txt
+	$(VENV_PYTHON) scripts/security_audit.py
 
 check: lint typecheck openapi-gate migration-gate test
 
