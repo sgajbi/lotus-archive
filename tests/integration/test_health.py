@@ -1,5 +1,6 @@
 from fastapi.testclient import TestClient
 from app.main import app
+from app.archive.settings import ArchiveRuntimeSettings
 
 
 def test_health_endpoints() -> None:
@@ -69,6 +70,28 @@ def test_readiness_reports_draining_state() -> None:
         assert response.json()["status"] == "draining"
     finally:
         app.state.is_draining = False
+
+
+def test_readiness_reports_unavailable_runtime_state() -> None:
+    client = TestClient(app)
+    original_settings = app.state.archive_runtime_settings
+    app.state.archive_runtime_settings = ArchiveRuntimeSettings.model_construct(
+        runtime_profile="production",
+        repository_mode="postgresql",
+        storage_mode="filesystem",
+        storage_namespace="prod",
+        database_url="postgresql://archive/prod",
+        max_decoded_document_bytes=1024,
+    )
+    try:
+        response = client.get("/health/ready")
+        assert response.status_code == 503
+        assert response.json() == {
+            "status": "unavailable",
+            "reason": "durable_archive_runtime_missing",
+        }
+    finally:
+        app.state.archive_runtime_settings = original_settings
 
 
 def test_metadata_reports_archive_supportability() -> None:
