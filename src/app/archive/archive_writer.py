@@ -58,9 +58,13 @@ class ArchiveWriter:
                 created_at=now,
                 updated_at=now,
             )
+            return self.repository.save(metadata)
         except ValidationError as exc:
+            self.storage.delete(key=stored_object.key)
             raise MetadataValidationError("archive metadata could not be validated") from exc
-        return self.repository.save(metadata)
+        except Exception:
+            self.storage.delete(key=stored_object.key)
+            raise
 
     def _ensure_duplicate_request_is_idempotent(
         self,

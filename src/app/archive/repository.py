@@ -27,6 +27,8 @@ class ArchiveDocumentRepository(Protocol):
         relationship: LifecycleRelationshipRecord,
     ) -> LifecycleRelationshipRecord: ...
 
+    def delete_lifecycle_relationship(self, lifecycle_relationship_id: str) -> None: ...
+
     def list_lifecycle_relationships(
         self,
         document_id: str,
@@ -82,6 +84,9 @@ class InMemoryArchiveDocumentRepository:
     ) -> LifecycleRelationshipRecord:
         self._lifecycle_relationships[relationship.lifecycle_relationship_id] = relationship
         return relationship
+
+    def delete_lifecycle_relationship(self, lifecycle_relationship_id: str) -> None:
+        self._lifecycle_relationships.pop(lifecycle_relationship_id, None)
 
     def list_lifecycle_relationships(
         self,

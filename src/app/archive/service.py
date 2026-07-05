@@ -27,6 +27,7 @@ from app.archive.exceptions import (
     LegalHoldNotFoundError,
     MetadataValidationError,
     PurgeNotEligibleError,
+    StorageReadFailedError,
     SupersessionConflictError,
     UnsupportedLifecycleTransitionError,
 )
@@ -127,14 +128,32 @@ class ArchiveDocumentService:
             document_id=document_id,
         )
         metadata = self._get_existing_metadata(document_id)
-        content = self.storage.get(key=metadata.storage_key)
+        try:
+            content = self.storage.get(key=metadata.storage_key)
+        except StorageReadFailedError:
+            self._record_allowed(
+                event_type=AccessEventType.BINARY_DOWNLOAD,
+                caller_context=caller_context,
+                trace_id=trace_id,
+                document_id=document_id,
+                operation_reason_code="document_binary_missing",
+            )
+            raise
         if calculate_checksum(content, algorithm=metadata.checksum_algorithm) != metadata.checksum:
+            self._record_allowed(
+                event_type=AccessEventType.BINARY_DOWNLOAD,
+                caller_context=caller_context,
+                trace_id=trace_id,
+                document_id=document_id,
+                operation_reason_code="document_checksum_mismatch",
+            )
             raise DocumentChecksumMismatchError("archived document checksum mismatch")
         self._record_allowed(
             event_type=AccessEventType.BINARY_DOWNLOAD,
             caller_context=caller_context,
             trace_id=trace_id,
             document_id=document_id,
+            operation_reason_code="download_succeeded",
         )
         return metadata, content
 
@@ -235,10 +254,18 @@ class ArchiveDocumentService:
                 caller_context=caller_context,
                 trace_id=trace_id,
                 document_id=document_id,
+                operation_reason_code="already_purged",
             )
             return metadata, "already_purged"
         metadata, purge_eligible, reason_code = self._evaluate_purge(metadata, evaluation_date)
         if not purge_eligible:
+            self._record_allowed(
+                event_type=AccessEventType.PURGE_EXECUTION,
+                caller_context=caller_context,
+                trace_id=trace_id,
+                document_id=document_id,
+                operation_reason_code=reason_code,
+            )
             if reason_code == "legal_hold_active":
                 raise LegalHoldActiveError("legal hold blocks purge")
             raise PurgeNotEligibleError("document is not purge eligible")
@@ -258,6 +285,7 @@ class ArchiveDocumentService:
             caller_context=caller_context,
             trace_id=trace_id,
             document_id=document_id,
+            operation_reason_code="purged",
         )
         return metadata, "purged"
 
@@ -467,8 +495,10 @@ class ArchiveDocumentService:
             trace_id=trace_id,
             document_id=source_document_id,
         )
-        source = self._get_existing_metadata(source_document_id)
-        target = self._get_existing_metadata(request.target_document_id)
+        original_source = self._get_existing_metadata(source_document_id)
+        original_target = self._get_existing_metadata(request.target_document_id)
+        source = original_source
+        target = original_target
         self._validate_lifecycle_transition(
             source=source,
             target=target,
@@ -502,16 +532,27 @@ class ArchiveDocumentService:
             requested_by=caller_context.actor_id,
         )
 
-        self.repository.save(source)
-        target = self.repository.save(target)
-        relationship = self.repository.save_lifecycle_relationship(relationship)
-        self._record_allowed(
-            event_type=event_type,
-            caller_context=caller_context,
-            trace_id=trace_id,
-            document_id=source.document_id,
-        )
-        return relationship, self._resolve_current_document(target)
+        saved_relationship: LifecycleRelationshipRecord | None = None
+        try:
+            self.repository.save(source)
+            target = self.repository.save(target)
+            saved_relationship = self.repository.save_lifecycle_relationship(relationship)
+            self._record_allowed(
+                event_type=event_type,
+                caller_context=caller_context,
+                trace_id=trace_id,
+                document_id=source.document_id,
+                operation_reason_code="lifecycle_transition_recorded",
+            )
+        except Exception:
+            self.repository.save(original_source)
+            self.repository.save(original_target)
+            if saved_relationship is not None:
+                self.repository.delete_lifecycle_relationship(
+                    saved_relationship.lifecycle_relationship_id
+                )
+            raise
+        return saved_relationship, self._resolve_current_document(target)
 
     def _validate_lifecycle_transition(
         self,
@@ -630,6 +671,7 @@ class ArchiveDocumentService:
         caller_context: CallerContext,
         trace_id: str,
         document_id: str,
+        operation_reason_code: str | None = None,
     ) -> None:
         self.audit_repository.record(
             access_audit_event(
@@ -639,6 +681,7 @@ class ArchiveDocumentService:
                 authorization_decision=AuthorizationDecision.ALLOWED,
                 authorization_reason_code="allowed",
                 document_id=document_id,
+                operation_reason_code=operation_reason_code,
             )
         )
 

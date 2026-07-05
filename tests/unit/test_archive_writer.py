@@ -5,7 +5,7 @@ import pytest
 
 from app.archive.archive_writer import ArchiveWriter
 from app.archive.exceptions import DuplicateArchiveRequestConflict
-from app.archive.models import ArchiveDocumentInput, DocumentClassification
+from app.archive.models import ArchiveDocumentInput, ArchiveDocumentMetadata, DocumentClassification
 from app.archive.repository import InMemoryArchiveDocumentRepository
 from app.archive.storage import FilesystemObjectStorage
 
@@ -112,3 +112,22 @@ def test_archive_writer_uses_support_safe_unspecified_tenant_segment(tmp_path: P
     metadata = writer.archive_document(metadata_input=metadata_input, content=b"content")
 
     assert "/tenant-unspecified/" in metadata.storage_key
+
+
+def test_archive_writer_removes_new_object_when_metadata_save_fails(tmp_path: Path) -> None:
+    class FailingRepository(InMemoryArchiveDocumentRepository):
+        def save(self, metadata: ArchiveDocumentMetadata) -> ArchiveDocumentMetadata:
+            raise RuntimeError("metadata store unavailable")
+
+    writer = ArchiveWriter(
+        repository=FailingRepository(),
+        storage=FilesystemObjectStorage(tmp_path / "objects"),
+    )
+
+    with pytest.raises(RuntimeError, match="metadata store unavailable"):
+        writer.archive_document(
+            metadata_input=valid_metadata_input(),
+            content=b"new unmanaged object",
+        )
+
+    assert not list((tmp_path / "objects").rglob("*.pdf"))
