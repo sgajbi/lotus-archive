@@ -13,7 +13,12 @@ from app.archive.api_models import (
     LifecycleTransitionRequest,
 )
 from app.archive.archive_writer import ArchiveWriter
-from app.archive.audit import AccessEventType, AuthorizationDecision, InMemoryAccessAuditRepository
+from app.archive.audit import (
+    AccessAuditEvent,
+    AccessEventType,
+    AuthorizationDecision,
+    InMemoryAccessAuditRepository,
+)
 from app.archive.authorization import AuthorizationFailedError
 from app.archive.exceptions import (
     DocumentChecksumMismatchError,
@@ -27,6 +32,7 @@ from app.archive.exceptions import (
     UnsupportedLifecycleTransitionError,
 )
 from app.archive.models import LegalHoldStatus, LifecycleTransitionType, PurgeStatus
+from app.archive.models import LifecycleRelationshipRecord
 from app.archive.repository import InMemoryArchiveDocumentRepository
 from app.archive.runtime import build_archive_service, runtime_posture
 from app.archive.service import ArchiveDocumentService
@@ -181,6 +187,12 @@ def test_download_detects_missing_binary(tmp_path: Path) -> None:
             caller_context=_caller(caller_service="lotus-gateway"),
             trace_id="trace-download",
         )
+    events = service.audit_repository.list_by_document_id(metadata.document_id)
+    assert [event.event_type for event in events] == [
+        AccessEventType.ARCHIVE_CREATE,
+        AccessEventType.BINARY_DOWNLOAD,
+    ]
+    assert events[-1].operation_reason_code == "document_binary_missing"
 
 
 def test_download_detects_checksum_mismatch(tmp_path: Path) -> None:
@@ -198,6 +210,12 @@ def test_download_detects_checksum_mismatch(tmp_path: Path) -> None:
             caller_context=_caller(caller_service="lotus-gateway"),
             trace_id="trace-download",
         )
+    events = service.audit_repository.list_by_document_id(metadata.document_id)
+    assert [event.event_type for event in events] == [
+        AccessEventType.ARCHIVE_CREATE,
+        AccessEventType.BINARY_DOWNLOAD,
+    ]
+    assert events[-1].operation_reason_code == "document_checksum_mismatch"
 
 
 def test_unknown_document_raises_not_found(tmp_path: Path) -> None:
@@ -325,6 +343,9 @@ def test_legal_hold_blocks_purge_until_released(tmp_path: Path) -> None:
             trace_id="trace-purge-blocked",
             evaluation_date=metadata.retain_until_date,
         )
+    blocked_events = service.audit_repository.list_by_document_id(metadata.document_id)
+    assert blocked_events[-1].event_type == AccessEventType.PURGE_EXECUTION
+    assert blocked_events[-1].operation_reason_code == "legal_hold_active"
 
     released = service.release_legal_hold(
         document_id=metadata.document_id,
@@ -345,6 +366,15 @@ def test_legal_hold_blocks_purge_until_released(tmp_path: Path) -> None:
     assert purged.purged_at is not None
     assert reason_code == "purged"
     assert not (tmp_path / "objects" / metadata.storage_key).exists()
+    purge_events = [
+        event
+        for event in service.audit_repository.list_by_document_id(metadata.document_id)
+        if event.event_type == AccessEventType.PURGE_EXECUTION
+    ]
+    assert [event.operation_reason_code for event in purge_events] == [
+        "legal_hold_active",
+        "purged",
+    ]
 
 
 def test_purge_is_idempotent_after_first_execution(tmp_path: Path) -> None:
@@ -388,6 +418,9 @@ def test_purge_rejects_document_still_under_retention(tmp_path: Path) -> None:
             trace_id="trace-purge",
             evaluation_date=metadata.retention_start_date,
         )
+    events = service.audit_repository.list_by_document_id(metadata.document_id)
+    assert events[-1].event_type == AccessEventType.PURGE_EXECUTION
+    assert events[-1].operation_reason_code == "retention_period_active"
 
 
 def test_release_unknown_legal_hold_reports_not_found(tmp_path: Path) -> None:
@@ -460,6 +493,93 @@ def test_supersession_preserves_history_and_resolves_current_document(tmp_path: 
     ]
     assert AccessEventType.LIFECYCLE_SUPERSEDE in event_types
     assert AccessEventType.CURRENT_DOCUMENT_READ in event_types
+
+
+def test_lifecycle_transition_rolls_back_when_relationship_save_fails(tmp_path: Path) -> None:
+    class FailingRelationshipRepository(InMemoryArchiveDocumentRepository):
+        def save_lifecycle_relationship(
+            self,
+            relationship: LifecycleRelationshipRecord,
+        ) -> LifecycleRelationshipRecord:
+            raise RuntimeError("relationship store unavailable")
+
+    repository = FailingRelationshipRepository()
+    storage = FilesystemObjectStorage(tmp_path / "objects")
+    service = ArchiveDocumentService(
+        writer=ArchiveWriter(repository=repository, storage=storage),
+        repository=repository,
+        storage=storage,
+        audit_repository=InMemoryAccessAuditRepository(),
+    )
+    historical = service.create_document(
+        request=_create_request_with_id("archive-request-atomic-source"),
+        caller_context=_caller(),
+        trace_id="trace-atomic-source",
+    )
+    current = service.create_document(
+        request=_create_request_with_id("archive-request-atomic-current"),
+        caller_context=_caller(),
+        trace_id="trace-atomic-current",
+    )
+
+    with pytest.raises(RuntimeError, match="relationship store unavailable"):
+        service.supersede_document(
+            document_id=historical.document_id,
+            request=LifecycleTransitionRequest(
+                target_document_id=current.document_id,
+                transition_reason="Approved replacement",
+            ),
+            caller_context=_caller(),
+            trace_id="trace-atomic-transition",
+        )
+
+    assert repository.get_by_document_id(historical.document_id) == historical
+    assert repository.get_by_document_id(current.document_id) == current
+    assert repository.list_lifecycle_relationships(historical.document_id) == []
+    events = service.audit_repository.list_by_document_id(historical.document_id)
+    assert [event.event_type for event in events] == [AccessEventType.ARCHIVE_CREATE]
+
+
+def test_lifecycle_transition_rolls_back_when_audit_record_fails(tmp_path: Path) -> None:
+    class FailingAuditRepository(InMemoryAccessAuditRepository):
+        def record(self, event: AccessAuditEvent) -> AccessAuditEvent:
+            if event.event_type == AccessEventType.LIFECYCLE_SUPERSEDE:
+                raise RuntimeError("audit store unavailable")
+            return super().record(event)
+
+    repository = InMemoryArchiveDocumentRepository()
+    storage = FilesystemObjectStorage(tmp_path / "objects")
+    service = ArchiveDocumentService(
+        writer=ArchiveWriter(repository=repository, storage=storage),
+        repository=repository,
+        storage=storage,
+        audit_repository=FailingAuditRepository(),
+    )
+    historical = service.create_document(
+        request=_create_request_with_id("archive-request-audit-source"),
+        caller_context=_caller(),
+        trace_id="trace-audit-source",
+    )
+    current = service.create_document(
+        request=_create_request_with_id("archive-request-audit-current"),
+        caller_context=_caller(),
+        trace_id="trace-audit-current",
+    )
+
+    with pytest.raises(RuntimeError, match="audit store unavailable"):
+        service.supersede_document(
+            document_id=historical.document_id,
+            request=LifecycleTransitionRequest(
+                target_document_id=current.document_id,
+                transition_reason="Approved replacement",
+            ),
+            caller_context=_caller(),
+            trace_id="trace-audit-transition",
+        )
+
+    assert repository.get_by_document_id(historical.document_id) == historical
+    assert repository.get_by_document_id(current.document_id) == current
+    assert repository.list_lifecycle_relationships(historical.document_id) == []
 
 
 def test_correction_and_reissue_set_explicit_lifecycle_semantics(tmp_path: Path) -> None:

@@ -49,6 +49,10 @@ class AccessAuditEvent(BaseModel):
     authorization_reason_code: str = Field(
         description="Stable support-safe reason code for the authorization decision."
     )
+    operation_reason_code: str | None = Field(
+        default=None,
+        description="Stable support-safe reason code for the operation outcome when applicable.",
+    )
     correlation_id: str = Field(description="Correlation identifier for support tracing.")
     trace_id: str = Field(description="Trace identifier for cross-service tracing.")
     created_at: datetime = Field(description="UTC timestamp when the audit event was recorded.")
@@ -80,6 +84,7 @@ def access_audit_event(
     authorization_decision: AuthorizationDecision,
     authorization_reason_code: str,
     document_id: str | None = None,
+    operation_reason_code: str | None = None,
 ) -> AccessAuditEvent:
     return AccessAuditEvent(
         audit_event_id=f"audit_{uuid4().hex}",
@@ -90,6 +95,7 @@ def access_audit_event(
         caller_service=caller_context.caller_service,
         authorization_decision=authorization_decision,
         authorization_reason_code=authorization_reason_code,
+        operation_reason_code=operation_reason_code,
         correlation_id=caller_context.correlation_id,
         trace_id=trace_id,
         created_at=datetime.now(timezone.utc),

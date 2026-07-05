@@ -381,11 +381,18 @@ def test_document_download_reports_checksum_mismatch(tmp_path: Path) -> None:
             f"/documents/{document_id}/download",
             headers=_headers(caller_service="lotus-gateway"),
         )
+        events_response = client.get(
+            f"/documents/{document_id}/access-events",
+            headers=_headers(),
+        )
     finally:
         app.dependency_overrides.clear()
 
     assert response.status_code == 409
     assert response.json()["error"]["code"] == "document_checksum_mismatch"
+    events = events_response.json()["events"]
+    assert events[-2]["event_type"] == "binary_download"
+    assert events[-2]["operation_reason_code"] == "document_checksum_mismatch"
 
 
 def test_document_download_reports_missing_binary(tmp_path: Path) -> None:
@@ -405,11 +412,18 @@ def test_document_download_reports_missing_binary(tmp_path: Path) -> None:
             f"/documents/{document_id}/download",
             headers=_headers(caller_service="lotus-gateway"),
         )
+        events_response = client.get(
+            f"/documents/{document_id}/access-events",
+            headers=_headers(),
+        )
     finally:
         app.dependency_overrides.clear()
 
     assert response.status_code == 404
     assert response.json()["error"]["code"] == "document_binary_missing"
+    events = events_response.json()["events"]
+    assert events[-2]["event_type"] == "binary_download"
+    assert events[-2]["operation_reason_code"] == "document_binary_missing"
 
 
 def test_document_metadata_lookup_reports_not_found(tmp_path: Path) -> None:
@@ -540,9 +554,14 @@ def test_retention_legal_hold_and_purge_api_flow(tmp_path: Path) -> None:
         )
         assert events_response.status_code == 200
         event_types = [event["event_type"] for event in events_response.json()["events"]]
+        operation_reason_codes = [
+            event["operation_reason_code"] for event in events_response.json()["events"]
+        ]
         assert "legal_hold_set" in event_types
         assert "legal_hold_release" in event_types
         assert "purge_execution" in event_types
+        assert "legal_hold_active" in operation_reason_codes
+        assert "purged" in operation_reason_codes
     finally:
         app.dependency_overrides.clear()
 
@@ -812,11 +831,18 @@ def test_purge_api_reports_not_eligible_before_retention_elapsed(tmp_path: Path)
         create_response = client.post("/documents", json=_payload(), headers=_headers())
         document_id = create_response.json()["document_id"]
         response = client.post(f"/documents/{document_id}/purge", headers=_headers())
+        events_response = client.get(
+            f"/documents/{document_id}/access-events",
+            headers=_headers(),
+        )
     finally:
         app.dependency_overrides.clear()
 
     assert response.status_code == 409
     assert response.json()["error"]["code"] == "purge_not_eligible"
+    events = events_response.json()["events"]
+    assert events[-2]["event_type"] == "purge_execution"
+    assert events[-2]["operation_reason_code"] == "retention_period_active"
 
 
 def test_reviewed_advisory_narrative_archive_summary_is_preserved_and_source_safe(

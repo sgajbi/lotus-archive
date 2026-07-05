@@ -29,6 +29,29 @@ def test_initial_migration_contains_required_archive_document_fields() -> None:
     assert "storage_key TEXT NOT NULL UNIQUE" in migration
 
 
+def test_initial_migration_enforces_archive_state_invariants() -> None:
+    migration = (ROOT / "migrations" / "001_create_archive_documents.sql").read_text(
+        encoding="utf-8"
+    )
+
+    assert (
+        "report_type IN ('portfolio_review', 'outcome_review', 'proof_pack', 'rebalance_wave')"
+        in (migration)
+    )
+    assert "checksum_algorithm = 'sha256'" in migration
+    assert "classification IN ('internal', 'confidential', 'restricted')" in migration
+    assert "purge_status IN ('not_eligible', 'eligible', 'purged')" in migration
+    assert "legal_hold_status IN ('clear', 'active')" in migration
+    assert "CHECK (reporting_period_start <= reporting_period_end)" in migration
+    assert "retention_start_date <= retain_until_date" in migration
+    assert "purge_status = 'purged' AND purged_at IS NOT NULL" in migration
+    assert (
+        "num_nonnulls(supersedes_document_id, correction_of_document_id, reissue_of_document_id) <= 1"
+        in (migration)
+    )
+    assert "superseded_by_document_id <> document_id" in migration
+
+
 def test_reviewed_advisory_narrative_migration_contains_required_field() -> None:
     migration = (
         ROOT / "migrations" / "004_add_reviewed_advisory_narrative_to_archive_documents.sql"
@@ -66,6 +89,9 @@ def test_legal_hold_migration_contains_required_fields() -> None:
     ]:
         assert field in migration
     assert "REFERENCES archive_documents(document_id)" in migration
+    assert "hold_status IN ('active', 'clear')" in migration
+    assert "hold_status = 'active' AND released_by IS NULL" in migration
+    assert "hold_status = 'clear' AND released_by IS NOT NULL" in migration
 
 
 def test_lifecycle_relationship_migration_contains_required_fields() -> None:
@@ -84,3 +110,7 @@ def test_lifecycle_relationship_migration_contains_required_fields() -> None:
     ]:
         assert field in migration
     assert migration.count("REFERENCES archive_documents(document_id)") == 2
+    assert "transition_type IN ('supersede', 'correct', 'reissue')" in migration
+    assert "CHECK (source_document_id <> target_document_id)" in migration
+    assert "uq_archive_lifecycle_relationships_one_successor" in migration
+    assert "uq_archive_lifecycle_relationships_one_origin" in migration
