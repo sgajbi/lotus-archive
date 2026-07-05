@@ -268,6 +268,19 @@ def test_archive_service_dependency_caches_composed_service(tmp_path: Path) -> N
     assert second is first
 
 
+def test_archive_service_dependency_initializes_missing_runtime_settings() -> None:
+    request = cast(
+        Request,
+        SimpleNamespace(app=SimpleNamespace(state=SimpleNamespace())),
+    )
+
+    service = archive_service(request)
+
+    assert isinstance(service, ArchiveDocumentService)
+    assert isinstance(request.app.state.archive_runtime_settings, ArchiveRuntimeSettings)
+    assert request.app.state.archive_service is service
+
+
 def test_production_runtime_rejects_in_memory_repository() -> None:
     with pytest.raises(Exception, match="in-memory archive repository"):
         ArchiveRuntimeSettings(

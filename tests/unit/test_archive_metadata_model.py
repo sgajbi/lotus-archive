@@ -157,6 +157,20 @@ def test_metadata_input_rejects_client_ready_advisor_proposal_memo_summary() -> 
         )
 
 
+def test_metadata_input_rejects_advisor_proposal_memo_hash_without_sha256_lineage() -> None:
+    with pytest.raises(ValidationError):
+        valid_metadata_input(
+            advisor_proposal_memo=advisor_proposal_memo_summary(memo_hash="not-a-sha256-hash"),
+        )
+
+
+def test_metadata_input_rejects_unrendered_advisor_proposal_memo_summary() -> None:
+    with pytest.raises(ValidationError):
+        valid_metadata_input(
+            advisor_proposal_memo=advisor_proposal_memo_summary(included_in_render=False),
+        )
+
+
 def test_metadata_input_rejects_unreviewed_advisor_proposal_memo_summary() -> None:
     with pytest.raises(ValidationError):
         valid_metadata_input(
@@ -168,6 +182,14 @@ def test_metadata_input_rejects_advisor_proposal_memo_for_non_portfolio_review()
     with pytest.raises(ValidationError):
         valid_metadata_input(
             report_type="proof_pack",
+            advisor_proposal_memo=advisor_proposal_memo_summary(),
+        )
+
+
+def test_metadata_input_rejects_advisor_proposal_memo_for_non_portfolio_template() -> None:
+    with pytest.raises(ValidationError):
+        valid_metadata_input(
+            template_id="proof-pack",
             advisor_proposal_memo=advisor_proposal_memo_summary(),
         )
 
