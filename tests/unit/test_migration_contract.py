@@ -105,12 +105,15 @@ def test_lifecycle_relationship_migration_contains_required_fields() -> None:
         "target_document_id",
         "transition_type",
         "transition_reason",
+        "transition_reason_code",
         "requested_by",
         "requested_at",
     ]:
         assert field in migration
     assert migration.count("REFERENCES archive_documents(document_id)") == 2
     assert "transition_type IN ('supersede', 'correct', 'reissue')" in migration
+    assert "transition_reason_code IN" in migration
+    assert "client_delivery_reissue_requested" in migration
     assert "CHECK (source_document_id <> target_document_id)" in migration
     assert "uq_archive_lifecycle_relationships_one_successor" in migration
     assert "uq_archive_lifecycle_relationships_one_origin" in migration

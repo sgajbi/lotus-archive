@@ -56,6 +56,9 @@ def test_operator_docs_match_report_handoff_and_gateway_retrieval_support() -> N
     assert "report-to-archive handoff through `lotus-report`" in docs
     assert "Gateway-backed product retrieval is implemented in `lotus-gateway`" in docs
     assert "lotus-archive.generated_document_client_communication.v1" in docs
+    assert "pull-only" in docs
+    assert "raw lifecycle reason text" in docs
+    assert "report-input provenance" in docs
     assert "Gateway-backed product retrieval remains future work" not in docs
     assert "Do not use this service for report handoff" not in docs
 

@@ -5,10 +5,10 @@ from binascii import Error as Base64DecodeError
 from datetime import date, datetime, timezone
 from uuid import uuid4
 
-from app.archive.api_models import (
-    ArchiveDocumentCreateRequest,
-    LegalHoldCreateRequest,
-    LifecycleTransitionRequest,
+from app.archive.commands import (
+    ArchiveDocumentCreateCommand,
+    LegalHoldCreateCommand,
+    LifecycleTransitionCommand,
 )
 from app.archive.archive_writer import ArchiveWriter
 from app.archive.audit import (
@@ -68,7 +68,7 @@ class ArchiveDocumentService:
     def create_document(
         self,
         *,
-        request: ArchiveDocumentCreateRequest,
+        command: ArchiveDocumentCreateCommand,
         caller_context: CallerContext,
         trace_id: str,
     ) -> ArchiveDocumentMetadata:
@@ -78,8 +78,8 @@ class ArchiveDocumentService:
             audit_repository=self.audit_repository,
             trace_id=trace_id,
         )
-        content = self._decode_content(request.content_base64)
-        metadata = self.writer.archive_document(metadata_input=request.metadata, content=content)
+        content = self._decode_content(command.content_base64)
+        metadata = self.writer.archive_document(metadata_input=command.metadata, content=content)
         self._record_allowed(
             event_type=AccessEventType.ARCHIVE_CREATE,
             caller_context=caller_context,
@@ -164,6 +164,8 @@ class ArchiveDocumentService:
         document_id: str,
         caller_context: CallerContext,
         trace_id: str,
+        limit: int | None = None,
+        offset: int = 0,
     ) -> list[AccessAuditEvent]:
         self.authorization_policy.authorize(
             permission=ArchivePermission.READ_ACCESS_EVENTS,
@@ -179,7 +181,8 @@ class ArchiveDocumentService:
             trace_id=trace_id,
             document_id=document_id,
         )
-        return self.audit_repository.list_by_document_id(document_id)
+        events = self.audit_repository.list_by_document_id(document_id)
+        return events
 
     @archive_metric("retention_lookup")
     def get_retention(
@@ -294,7 +297,7 @@ class ArchiveDocumentService:
         self,
         *,
         document_id: str,
-        request: LegalHoldCreateRequest,
+        command: LegalHoldCreateCommand,
         caller_context: CallerContext,
         trace_id: str,
     ) -> LegalHoldRecord:
@@ -309,8 +312,8 @@ class ArchiveDocumentService:
         legal_hold = LegalHoldRecord(
             legal_hold_id=f"hold_{uuid4().hex}",
             document_id=document_id,
-            hold_reason=request.hold_reason,
-            authority_reference=request.authority_reference,
+            hold_reason=command.hold_reason,
+            authority_reference=command.authority_reference,
             requested_by=caller_context.actor_id,
         )
         legal_hold = self.repository.save_legal_hold(legal_hold)
@@ -394,6 +397,8 @@ class ArchiveDocumentService:
         document_id: str,
         caller_context: CallerContext,
         trace_id: str,
+        limit: int | None = None,
+        offset: int = 0,
     ) -> tuple[ArchiveDocumentMetadata, ArchiveDocumentMetadata, list[dict[str, object]]]:
         self.authorization_policy.authorize(
             permission=ArchivePermission.READ_METADATA,
@@ -423,13 +428,13 @@ class ArchiveDocumentService:
         self,
         *,
         document_id: str,
-        request: LifecycleTransitionRequest,
+        command: LifecycleTransitionCommand,
         caller_context: CallerContext,
         trace_id: str,
     ) -> tuple[LifecycleRelationshipRecord, ArchiveDocumentMetadata]:
         return self._apply_lifecycle_transition(
             source_document_id=document_id,
-            request=request,
+            command=command,
             transition_type=LifecycleTransitionType.SUPERSEDE,
             event_type=AccessEventType.LIFECYCLE_SUPERSEDE,
             caller_context=caller_context,
@@ -441,13 +446,13 @@ class ArchiveDocumentService:
         self,
         *,
         document_id: str,
-        request: LifecycleTransitionRequest,
+        command: LifecycleTransitionCommand,
         caller_context: CallerContext,
         trace_id: str,
     ) -> tuple[LifecycleRelationshipRecord, ArchiveDocumentMetadata]:
         return self._apply_lifecycle_transition(
             source_document_id=document_id,
-            request=request,
+            command=command,
             transition_type=LifecycleTransitionType.CORRECT,
             event_type=AccessEventType.LIFECYCLE_CORRECT,
             caller_context=caller_context,
@@ -459,13 +464,13 @@ class ArchiveDocumentService:
         self,
         *,
         document_id: str,
-        request: LifecycleTransitionRequest,
+        command: LifecycleTransitionCommand,
         caller_context: CallerContext,
         trace_id: str,
     ) -> tuple[LifecycleRelationshipRecord, ArchiveDocumentMetadata]:
         return self._apply_lifecycle_transition(
             source_document_id=document_id,
-            request=request,
+            command=command,
             transition_type=LifecycleTransitionType.REISSUE,
             event_type=AccessEventType.LIFECYCLE_REISSUE,
             caller_context=caller_context,
@@ -482,7 +487,7 @@ class ArchiveDocumentService:
         self,
         *,
         source_document_id: str,
-        request: LifecycleTransitionRequest,
+        command: LifecycleTransitionCommand,
         transition_type: LifecycleTransitionType,
         event_type: AccessEventType,
         caller_context: CallerContext,
@@ -496,7 +501,7 @@ class ArchiveDocumentService:
             document_id=source_document_id,
         )
         original_source = self._get_existing_metadata(source_document_id)
-        original_target = self._get_existing_metadata(request.target_document_id)
+        original_target = self._get_existing_metadata(command.target_document_id)
         source = original_source
         target = original_target
         self._validate_lifecycle_transition(
@@ -528,7 +533,8 @@ class ArchiveDocumentService:
             source_document_id=source.document_id,
             target_document_id=target.document_id,
             transition_type=transition_type,
-            transition_reason=request.transition_reason,
+            transition_reason=command.transition_reason,
+            transition_reason_code=_transition_reason_code(transition_type),
             requested_by=caller_context.actor_id,
         )
 
@@ -693,3 +699,11 @@ class ArchiveDocumentService:
         if len(content) > self.max_decoded_document_bytes:
             raise MetadataValidationError("document content exceeds configured archive size limit")
         return content
+
+
+def _transition_reason_code(transition_type: LifecycleTransitionType) -> str:
+    if transition_type is LifecycleTransitionType.REISSUE:
+        return "client_delivery_reissue_requested"
+    if transition_type is LifecycleTransitionType.CORRECT:
+        return "archive_document_correction_requested"
+    return "archive_document_supersession_requested"

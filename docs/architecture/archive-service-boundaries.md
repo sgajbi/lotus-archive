@@ -123,11 +123,16 @@ RFC40-WTBD-010 adds an archive-owned source-event family:
 1. `GET /documents/{document_id}/source-events` for generated-document archive, supersession,
    correction, and client-delivery reissue lineage.
 2. the source-event family is `lotus-archive.generated_document_client_communication.v1`.
-3. events preserve portfolio, report, render, archive document, lifecycle, checksum, retention,
-   redaction, access, audit, and bounded artifact references.
-4. the response deliberately omits raw document bytes, storage keys, raw report payloads, and raw
-   client references, so downstream portfolio-memory consumers can cite archive truth without
-   becoming document-delivery or archive-storage authorities.
+3. the first-wave contract is pull-only, ordered by event time and stable event id, and paged with
+   bounded `limit`/`offset` semantics for replay and resume.
+4. events preserve portfolio, report, render, archive document, lifecycle, checksum, retention,
+   redaction, access, audit, report-input contract, template, and bounded artifact references.
+5. lifecycle events publish stable `transition_reason_code` values rather than raw operator
+   transition text.
+6. the response deliberately omits raw document bytes, storage keys, raw report payloads, raw
+   lifecycle reason text, and raw client references, so downstream portfolio-memory consumers can
+   cite archive document-evidence truth without treating `lotus-archive` as transaction, position,
+   performance, risk, methodology, document-delivery, or archive-storage authority.
 
 RFC-0103 Slice 7 adds report-to-archive handoff in `lotus-report`:
 

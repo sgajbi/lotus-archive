@@ -47,31 +47,32 @@ not call `lotus-archive` directly.
 3. `src/app/contracts/errors.py`: support-safe error envelope contract.
 4. `src/app/security/caller_context.py`: caller-context parser for future protected archive APIs.
 5. `src/app/archive/models.py`: archive document metadata contract.
-6. `src/app/archive/storage.py`: object-storage protocol and filesystem development adapter.
-7. `src/app/archive/repository.py`: archive document repository protocol and in-memory test
+6. `src/app/archive/commands.py`: application-layer command inputs mapped from API DTOs.
+7. `src/app/archive/storage.py`: object-storage protocol and filesystem development adapter.
+8. `src/app/archive/repository.py`: archive document repository protocol and in-memory test
    implementation.
-8. `src/app/archive/archive_writer.py`: checksum-backed idempotent archive-write domain service.
-9. `src/app/archive/api.py`: archive create, metadata lookup, binary download, and access-event
+9. `src/app/archive/archive_writer.py`: checksum-backed idempotent archive-write domain service.
+10. `src/app/archive/api.py`: archive create, metadata lookup, binary download, and access-event
    API router.
-10. `src/app/archive/api_models.py`: support-safe archive API request and response models.
-11. `src/app/archive/audit.py`: access-audit event model and repository protocol.
-12. `src/app/archive/authorization.py`: first-wave archive caller authorization policy.
-13. `src/app/archive/service.py`: archive API orchestration, retrieval-time checksum
+11. `src/app/archive/api_models.py`: support-safe archive API request and response models.
+12. `src/app/archive/audit.py`: access-audit event model and repository protocol.
+13. `src/app/archive/authorization.py`: first-wave archive caller authorization policy.
+14. `src/app/archive/service.py`: archive API orchestration, retrieval-time checksum
    verification, retention posture, purge eligibility/execution, legal-hold state changes,
    lifecycle relationship mutation, and current-document resolution.
-14. `src/app/archive/source_events.py`: archive-owned generated-document and client-delivery
-   lifecycle source-event projection for portfolio-memory consumers.
-15. `migrations/`: PostgreSQL metadata contract migrations.
-16. `src/app/contracts/`: API and contract models.
-17. `src/app/middleware/`: shared request middleware.
-18. `tests/unit`, `tests/integration`, `tests/e2e`: test pyramid baseline.
-19. `docs/architecture/`: archive service boundaries and structure.
-20. `docs/supported-features.md`: implementation-backed support posture.
-21. `docs/standards/`: repository standards placeholders to be replaced with service truth.
-22. `src/app/archive/metrics.py`: bounded archive operation, size, and supportability metrics.
-23. `src/app/archive/settings.py`: typed runtime profile, repository, storage, namespace, database,
+15. `src/app/archive/source_events.py`: bounded pull-only archive-owned generated-document and
+   client-delivery lifecycle source-event projection for portfolio-memory consumers.
+16. `migrations/`: PostgreSQL metadata contract migrations.
+17. `src/app/contracts/`: API and contract models.
+18. `src/app/middleware/`: shared request middleware.
+19. `tests/unit`, `tests/integration`, `tests/e2e`: test pyramid baseline.
+20. `docs/architecture/`: archive service boundaries and structure.
+21. `docs/supported-features.md`: implementation-backed support posture.
+22. `docs/standards/`: repository standards placeholders to be replaced with service truth.
+23. `src/app/archive/metrics.py`: bounded archive operation, size, and supportability metrics.
+24. `src/app/archive/settings.py`: typed runtime profile, repository, storage, namespace, database,
     and upload-size configuration.
-24. `src/app/archive/runtime.py`: process-local archive dependency composition and runtime posture.
+25. `src/app/archive/runtime.py`: process-local archive dependency composition and runtime posture.
 
 ## Runtime And Integration Boundaries
 
@@ -122,6 +123,12 @@ build validation.
    explicit local-development or test profiles. Production-like profiles must fail closed or report
    unavailable until durable metadata/audit and object-storage adapters exist.
 7. request logs must use route templates rather than raw document or legal-hold paths.
+8. FastAPI API models must stay at the router boundary. `ArchiveDocumentService` consumes
+   application commands from `src/app/archive/commands.py`, not `api_models.py`.
+9. Source events are bounded pull-only document-evidence projections. They must publish stable
+   reason codes and report-input provenance, never raw lifecycle free text, storage keys, raw
+   payloads, client references, transaction facts, position facts, or calculation/methodology
+   authority.
 
 ## Context Maintenance Rule
 
