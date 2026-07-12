@@ -24,6 +24,12 @@ structure, gateway-backed document retrieval, and
 Gateway-backed Workbench archive retrieval. Product retrieval must flow through `lotus-gateway`;
 Workbench must not call `lotus-archive` directly.
 
+`POST /documents/{document_id}/idea-lifecycle-decisions` provides a limited, not-certified
+Archive-owned proof boundary for Idea-linked proof-pack evidence. It validates caller and document
+tenant scope, derives hold/retention/purge posture from Archive state, persists idempotent decisions
+in a local SQLite ledger, and signs short-lived source-safe projections with Ed25519. Decisions
+never authorize disposal or move hold/purge authority to `lotus-idea`.
+
 RFC-0040 proof-pack report artifacts are supported when `lotus-report` supplies source-backed
 metadata with `report_type=proof_pack`, the `proof-pack` render template, and
 `dpm_proof_pack_report_input.v1` lineage. `lotus-archive` stores and governs the generated

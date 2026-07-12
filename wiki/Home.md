@@ -46,6 +46,11 @@ Lotus generated-document archive, retrieval, retention, legal hold, and access a
   and `freshness_bucket` labels only, with recorder-level fallback for unknown label values.
 - Workbench retrieval is supported only through the Workbench BFF and `lotus-gateway`; Workbench
   must not call `lotus-archive` directly.
+- `POST /documents/{document_id}/idea-lifecycle-decisions` is a limited, not-certified Archive
+  producer boundary for Idea-linked proof-pack evidence. It issues tenant-bound, short-lived
+  Ed25519-signed retention/hold/purge projections with durable local replay protection. Decisions
+  never authorize disposal; managed keys, durable production persistence, consumer trust
+  distribution, legal approval, and live evidence remain blockers.
 - This service is limited to Lotus-generated document archive scope. It is not a generic file store
   or manual upload service.
 - Wiki source lives in-repo and must be published through lotus-platform automation.

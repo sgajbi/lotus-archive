@@ -59,3 +59,17 @@ Incident checks must preserve these boundaries:
 8. verify legal-hold set/release audit events before treating a hold state mismatch as data loss.
 9. verify lifecycle relationship audit events and current-document resolution before treating a
    supersession, correction, or reissue question as missing archive data.
+10. for Idea lifecycle decision failures, verify caller/document tenant equality, idempotency-key
+    reuse, decision expiry, signing key id, and Archive retention/hold/purge state in that order.
+
+## Idea Lifecycle Decision Key Operations
+
+1. Keep the Ed25519 private key in the Archive-managed secret source; never distribute it to Idea,
+   Report, logs, images, manifests, or environment diagnostics.
+2. Publish only approved public keys through the separately governed consumer trust bundle.
+3. Rotate by introducing a new key id, distributing its public key, switching Archive issuance,
+   retaining the old public key until all prior five-minute decisions expire, then retiring it.
+4. Treat unknown key ids, invalid signatures, digest mismatches, and expired decisions as fail-closed
+   consumer outcomes. Do not fall back to unsigned Archive state.
+5. Local ephemeral key material and SQLite ledgers are diagnostic only and must never be used as
+   production evidence.

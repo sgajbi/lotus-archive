@@ -36,6 +36,7 @@ sections, and does not promote client-ready commentary.
 | Legal hold | `lotus-archive` | Implemented for legal-hold set/release, authority reference, active-hold summary, and purge blocking |
 | Lifecycle relationships | `lotus-archive` | Implemented for supersession, correction, reissue, append-only relationship records, historical lookup, and current-document resolution |
 | Generated-document source events | `lotus-archive` | Implemented through `GET /documents/{document_id}/source-events` over metadata and lifecycle relationships, with raw document bytes, storage keys, report payloads, and client references omitted |
+| Idea evidence lifecycle decision | `lotus-archive` supplies, `lotus-idea` projects | Limited authenticated read-only projection of Archive retention, hold, and purge posture; Idea cannot set/release holds or authorize/execute disposal |
 | Product-facing retrieval | `lotus-gateway` | Supported through gateway metadata and controlled download routes |
 | Workbench retrieval surface | `lotus-workbench` | Supported only through the Workbench BFF and existing gateway-backed retrieval boundary; direct Workbench-to-archive calls remain unsupported |
 
@@ -51,6 +52,8 @@ The implementation should remain organized around these module families:
 6. `lifecycle`: supersession, correction, reissue, and historical document relationships.
 7. `source_events`: support-safe generated-document and client-delivery lifecycle source events for
    downstream portfolio-memory consumers.
+8. `idea_lifecycle_decisions`: tenant-bound, authenticated, durable-idempotent Archive posture
+   projections for Idea-linked proof-pack evidence.
 
 These boundaries should be preserved as the service grows. Avoid placing storage behavior in API
 routers, retention policy logic in report handoff code, or gateway/product assumptions in the
