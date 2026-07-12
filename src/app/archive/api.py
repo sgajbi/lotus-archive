@@ -1,8 +1,9 @@
 from __future__ import annotations
 
-from typing import TypeVar
+from base64 import b64decode
+from typing import Annotated, TypeVar, cast
 
-from fastapi import APIRouter, Depends, Query, Request, Response, status
+from fastapi import APIRouter, Depends, Header, Query, Request, Response, status
 
 from app.archive.api_models import (
     AccessEventListResponse,
@@ -24,6 +25,16 @@ from app.archive.commands import (
     LegalHoldCreateCommand,
     LifecycleTransitionCommand,
 )
+from app.archive.idea_lifecycle_decisions.models import (
+    IdeaLifecycleDecision,
+    IdeaLifecycleDecisionRequest,
+)
+from app.archive.idea_lifecycle_decisions.repository import (
+    SqliteIdeaLifecycleDecisionRepository,
+)
+from app.archive.idea_lifecycle_decisions.service import IdeaLifecycleDecisionService
+from app.archive.idea_lifecycle_decisions.signing import Ed25519LifecycleDecisionSigner
+from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from app.archive.runtime import build_archive_service
 from app.archive.service import ArchiveDocumentService
 from app.archive.settings import ArchiveRuntimeSettings
@@ -66,10 +77,77 @@ def trace_id(request: Request) -> str:
     return str(getattr(request.state, "trace_id", getattr(request.state, "correlation_id", "")))
 
 
+def idea_lifecycle_decision_service(request: Request) -> IdeaLifecycleDecisionService:
+    service = getattr(request.app.state, "idea_lifecycle_decision_service", None)
+    if service is not None:
+        return cast(IdeaLifecycleDecisionService, service)
+    archive = archive_service(request)
+    settings = request.app.state.archive_runtime_settings
+    encoded_private_key = settings.idea_lifecycle_decision_private_key_base64.get_secret_value()
+    private_key = (
+        Ed25519PrivateKey.from_private_bytes(b64decode(encoded_private_key, validate=True))
+        if encoded_private_key
+        else Ed25519PrivateKey.generate()
+    )
+    service = IdeaLifecycleDecisionService(
+        posture_reader=archive,
+        repository=SqliteIdeaLifecycleDecisionRepository(
+            settings.idea_lifecycle_decision_ledger_path
+        ),
+        signer=Ed25519LifecycleDecisionSigner(
+            private_key=private_key,
+            key_id=settings.idea_lifecycle_decision_signing_key_id,
+        ),
+        authorization_policy=archive.authorization_policy,
+        audit_repository=archive.audit_repository,
+    )
+    request.app.state.idea_lifecycle_decision_service = service
+    return service
+
+
 def _page(items: list[T], *, limit: int, offset: int) -> tuple[list[T], int | None]:
     page = items[offset : offset + limit]
     next_offset = offset + limit if offset + limit < len(items) else None
     return page, next_offset
+
+
+@router.post(
+    "/{document_id}/idea-lifecycle-decisions",
+    response_model=IdeaLifecycleDecision,
+    status_code=status.HTTP_201_CREATED,
+    summary="Issue an authenticated Idea evidence lifecycle decision",
+    description=(
+        "Issues a short-lived, authenticated Archive-owned projection of retention, legal-hold, "
+        "and purge posture for an Idea-linked proof-pack document. The projection never "
+        "authorizes disposal; purge remains a separate entitled Archive command."
+    ),
+    responses={
+        201: {"description": "Authenticated lifecycle decision issued or replayed."},
+        401: {"description": "Required caller context is missing."},
+        403: {"description": "Caller or tenant scope is not authorized."},
+        404: {"description": "Archived document does not exist."},
+        409: {"description": "Idempotency key was reused with different decision input."},
+        422: {"description": "Document or request is not eligible for Idea lifecycle proof."},
+    },
+)
+async def issue_idea_lifecycle_decision(
+    document_id: str,
+    request_body: IdeaLifecycleDecisionRequest,
+    idempotency_key: Annotated[
+        str,
+        Header(alias="Idempotency-Key", min_length=1),
+    ],
+    service: IdeaLifecycleDecisionService = Depends(idea_lifecycle_decision_service),
+    context: CallerContext = Depends(caller_context),
+    request_trace_id: str = Depends(trace_id),
+) -> IdeaLifecycleDecision:
+    return service.issue(
+        document_id=document_id,
+        request=request_body,
+        idempotency_key=idempotency_key.strip(),
+        caller_context=context,
+        trace_id=request_trace_id,
+    )
 
 
 @router.post(

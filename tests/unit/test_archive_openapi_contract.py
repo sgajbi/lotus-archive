@@ -10,6 +10,9 @@ def test_archive_document_api_openapi_contract_is_certification_ready() -> None:
         ("/documents/{document_id}", "get"): "Get archived document metadata",
         ("/documents/{document_id}/current", "get"): "Get current document in lifecycle",
         ("/documents/{document_id}/source-events", "get"): ("List archived document source events"),
+        ("/documents/{document_id}/idea-lifecycle-decisions", "post"): (
+            "Issue an authenticated Idea evidence lifecycle decision"
+        ),
         ("/documents/{document_id}/download", "get"): "Download an archived document",
         ("/documents/{document_id}/access-events", "get"): "List document access events",
         ("/documents/{document_id}/retention", "get"): "Get document retention posture",

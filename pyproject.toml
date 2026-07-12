@@ -15,6 +15,7 @@ dependencies = [
   "pydantic-settings==2.14.2",
   "prometheus-client==0.25.0",
   "prometheus-fastapi-instrumentator==7.1.0",
+  "cryptography==49.0.0",
 ]
 
 [project.optional-dependencies]

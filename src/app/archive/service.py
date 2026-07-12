@@ -64,6 +64,11 @@ class ArchiveDocumentService:
         self.authorization_policy = authorization_policy or ArchiveAuthorizationPolicy()
         self.max_decoded_document_bytes = max_decoded_document_bytes
 
+    def get_lifecycle_posture(self, document_id: str) -> ArchiveDocumentMetadata:
+        metadata = self._refresh_legal_hold_summary(self._get_existing_metadata(document_id))
+        metadata, _, _ = self._evaluate_purge(metadata, date.today())
+        return metadata
+
     @archive_metric("archive_create")
     def create_document(
         self,

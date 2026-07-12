@@ -25,6 +25,7 @@ class AccessEventType(StrEnum):
     LIFECYCLE_REISSUE = "lifecycle_reissue"
     CURRENT_DOCUMENT_READ = "current_document_read"
     SOURCE_EVENTS_READ = "source_events_read"
+    IDEA_LIFECYCLE_DECISION_READ = "idea_lifecycle_decision_read"
     AUTHORIZATION_DENIED = "authorization_denied"
 
 

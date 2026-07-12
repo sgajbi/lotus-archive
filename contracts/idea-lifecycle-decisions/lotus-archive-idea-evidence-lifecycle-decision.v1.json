@@ -1,0 +1,59 @@
+{
+  "contract_id": "lotus-archive-idea-evidence-lifecycle-decision",
+  "contract_version": "1.0.0",
+  "product_id": "lotus-archive:IdeaEvidenceLifecycleDecision:v1",
+  "owner_repository": "lotus-archive",
+  "approved_consumers": ["lotus-idea", "lotus-report"],
+  "route": "POST /documents/{document_id}/idea-lifecycle-decisions",
+  "authority": {
+    "retention": "lotus-archive",
+    "legal_hold": "lotus-archive",
+    "purge_execution": "lotus-archive",
+    "idea_lifecycle_projection": "lotus-idea"
+  },
+  "authentication": {
+    "algorithm": "Ed25519",
+    "payload_digest": "SHA-256 over canonical JSON excluding payload_digest and signature",
+    "key_selection": "signing_key_id resolved from a separately governed consumer trust bundle",
+    "private_key_boundary": "Archive-only managed secret; never published to consumers",
+    "decision_ttl_seconds": 300
+  },
+  "required_request_fields": [
+    "idea_evidence_pack_id",
+    "idea_candidate_id",
+    "source_correlation_ref"
+  ],
+  "required_headers": [
+    "Idempotency-Key",
+    "X-Caller-Service",
+    "X-Actor-Type",
+    "X-Actor-Id",
+    "X-Tenant-Id",
+    "X-Correlation-Id",
+    "X-Trace-Id"
+  ],
+  "decision_precedence": [
+    "LEGAL_HOLD",
+    "DISPOSAL_EXECUTED",
+    "DISPOSAL_ELIGIBLE",
+    "RETAIN"
+  ],
+  "invariants": [
+    "Only archived proof-pack documents with an assigned retention policy are eligible.",
+    "Caller tenant must exactly match the archived document tenant.",
+    "Legal hold takes precedence over elapsed retention and purge eligibility.",
+    "disposal_authorized is always false; a decision projection never replaces the entitled purge command.",
+    "Same-key same-input replay returns the original signed decision across process restarts.",
+    "Same-key changed-input replay fails with conflict.",
+    "Raw client, portfolio, holding, transaction, report payload, and document binary data are excluded."
+  ],
+  "persistence": {
+    "local_adapter": "SQLite durable idempotency ledger",
+    "production_posture": "blocked until the durable Archive repository adapter and managed Ed25519 key source are available"
+  },
+  "non_proof_boundaries": [
+    "This contract is not legal or regulatory approval of a retention duration or disposal action.",
+    "This contract does not grant lotus-idea authority to set or release holds or execute purge.",
+    "Local development signatures and SQLite proof are not production certification."
+  ]
+}
