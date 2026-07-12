@@ -93,6 +93,12 @@ def test_verification_rejects_forged_expired_and_unknown_key_decisions(tmp_path:
         trusted_keys={"unknown": PUBLIC_KEY},
         at_utc=issued_at + timedelta(minutes=1),
     )
+    malformed = decision.model_copy(update={"signature": "ed25519:not-valid-base64%%%"})
+    assert not verify_lifecycle_decision(
+        malformed,
+        trusted_keys={"archive-local-v1": PUBLIC_KEY},
+        at_utc=issued_at + timedelta(minutes=1),
+    )
 
 
 def test_legal_hold_takes_precedence_over_elapsed_retention(tmp_path: Path) -> None:
@@ -144,6 +150,56 @@ def test_elapsed_retention_reports_eligibility_without_authorizing_disposal(
     assert decision.disposal_authorized is False
 
 
+def test_purged_document_reports_executed_disposal_without_new_authority(
+    tmp_path: Path,
+) -> None:
+    archive, document_id, audit = _archive(
+        tmp_path,
+        retention_start_date="2019-01-01",
+        retain_until_date="2020-01-01",
+    )
+    archive.purge_document(
+        document_id=document_id,
+        caller_context=_report_context(),
+        trace_id="trace-purge-before-decision",
+    )
+
+    decision = _decision_service(tmp_path, archive, audit).issue(
+        document_id=document_id,
+        request=_request(),
+        idempotency_key="decision-key-purged",
+        caller_context=_idea_context(),
+        trace_id="trace-decision-purged",
+    )
+
+    assert decision.lifecycle_action == "DISPOSAL_EXECUTED"
+    assert decision.decision_reason_code == "purge_executed"
+    assert decision.disposal_authorized is False
+
+
+@pytest.mark.parametrize(
+    "metadata_overrides",
+    [
+        {"report_type": "portfolio_review", "template_id": "portfolio-review"},
+        {"retention_policy_id": None},
+    ],
+)
+def test_non_idea_document_posture_is_rejected(
+    tmp_path: Path,
+    metadata_overrides: dict[str, object],
+) -> None:
+    archive, document_id, audit = _archive(tmp_path, **metadata_overrides)
+
+    with pytest.raises(ValueError):
+        _decision_service(tmp_path, archive, audit).issue(
+            document_id=document_id,
+            request=_request(),
+            idempotency_key="decision-key-invalid-document",
+            caller_context=_idea_context(),
+            trace_id="trace-invalid-document",
+        )
+
+
 def test_replay_survives_fresh_repository_and_changed_input_conflicts(tmp_path: Path) -> None:
     archive, document_id, audit = _archive(tmp_path)
     first_service = _decision_service(tmp_path, archive, audit)
@@ -173,6 +229,42 @@ def test_replay_survives_fresh_repository_and_changed_input_conflicts(tmp_path: 
             caller_context=_idea_context(),
             trace_id="trace-conflict",
         )
+
+
+def test_repository_insert_race_replays_or_conflicts_and_rolls_back(tmp_path: Path) -> None:
+    archive, document_id, audit = _archive(tmp_path)
+    service = _decision_service(tmp_path, archive, audit)
+    decision = service.issue(
+        document_id=document_id,
+        request=_request(),
+        idempotency_key="decision-key-race-source",
+        caller_context=_idea_context(),
+        trace_id="trace-race-source",
+    )
+    repository = SqliteIdeaLifecycleDecisionRepository(tmp_path / "race.sqlite3")
+    repository.save(
+        idempotency_key="decision-key-race",
+        request_fingerprint="sha256:first",
+        decision=decision,
+    )
+
+    replay = repository.save(
+        idempotency_key="decision-key-race",
+        request_fingerprint="sha256:first",
+        decision=decision,
+    )
+    assert replay == decision
+    with pytest.raises(LifecycleDecisionConflictError):
+        repository.save(
+            idempotency_key="decision-key-race",
+            request_fingerprint="sha256:changed",
+            decision=decision,
+        )
+    with pytest.raises(RuntimeError, match="rollback"):
+        with repository._connect() as connection:  # noqa: SLF001 - transaction regression proof
+            connection.execute("DELETE FROM idea_lifecycle_decision")
+            raise RuntimeError("rollback")
+    assert repository.get("decision-key-race") is not None
 
 
 def test_tenant_and_service_authority_fail_closed(tmp_path: Path) -> None:
@@ -238,12 +330,13 @@ def _archive(
         storage=storage,
         audit_repository=audit,
     )
+    metadata_values = {
+        "report_type": "proof_pack",
+        "template_id": "proof-pack",
+        **metadata_overrides,
+    }
     metadata = archive.writer.archive_document(
-        metadata_input=valid_metadata_input(
-            report_type="proof_pack",
-            template_id="proof-pack",
-            **metadata_overrides,
-        ),
+        metadata_input=valid_metadata_input(**metadata_values),
         content=b"idea evidence proof pack",
     )
     return archive, metadata.document_id, audit

@@ -1,8 +1,12 @@
 from pathlib import Path
+from types import SimpleNamespace
+from typing import cast
 
 import pytest
 from pydantic import SecretStr
+from starlette.requests import Request
 
+from app.archive.api import idea_lifecycle_decision_service
 from app.archive.exceptions import RuntimeConfigurationError
 from app.archive.runtime import build_archive_service, runtime_posture
 from app.archive.settings import ArchiveRuntimeSettings
@@ -51,6 +55,16 @@ def test_runtime_settings_rejects_postgresql_without_database_url() -> None:
         )
 
 
+def test_runtime_settings_rejects_production_without_managed_decision_key() -> None:
+    with pytest.raises(RuntimeConfigurationError, match="managed signing key material"):
+        ArchiveRuntimeSettings(
+            runtime_profile="production",
+            repository_mode="postgresql",
+            database_url="postgresql://archive/prod",
+            storage_mode="s3",
+        )
+
+
 def test_runtime_settings_reports_encoded_size_limit() -> None:
     settings = ArchiveRuntimeSettings(max_decoded_document_bytes=5)
 
@@ -77,3 +91,23 @@ def test_runtime_posture_reports_unavailable_non_durable_production() -> None:
 
     assert posture.state == "unavailable"
     assert posture.reason == "durable_archive_runtime_missing"
+
+
+def test_lifecycle_decision_dependency_builds_and_caches_local_service(
+    tmp_path: Path,
+) -> None:
+    state = SimpleNamespace(
+        archive_runtime_settings=ArchiveRuntimeSettings(
+            storage_root=tmp_path / "objects",
+            idea_lifecycle_decision_ledger_path=tmp_path / "decisions.sqlite3",
+        )
+    )
+    request = cast(
+        Request,
+        SimpleNamespace(app=SimpleNamespace(state=state)),
+    )
+
+    first = idea_lifecycle_decision_service(request)
+    second = idea_lifecycle_decision_service(request)
+
+    assert second is first
