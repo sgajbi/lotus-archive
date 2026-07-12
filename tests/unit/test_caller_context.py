@@ -9,6 +9,7 @@ def test_caller_context_from_headers_parses_required_support_context() -> None:
             "X-Caller-Service": "lotus-report",
             "X-Actor-Type": "service",
             "X-Actor-Id": "report-worker",
+            "X-Tenant-Id": "tenant-private-bank",
         },
         correlation_id="corr-123",
     )
@@ -17,6 +18,7 @@ def test_caller_context_from_headers_parses_required_support_context() -> None:
     assert context.actor_type == "service"
     assert context.actor_id == "report-worker"
     assert context.correlation_id == "corr-123"
+    assert context.tenant_id == "tenant-private-bank"
 
 
 def test_caller_context_from_headers_reports_missing_fields() -> None:

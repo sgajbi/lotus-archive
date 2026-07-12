@@ -7,6 +7,7 @@ from typing import Mapping
 CALLER_SERVICE_HEADER = "x-caller-service"
 ACTOR_TYPE_HEADER = "x-actor-type"
 ACTOR_ID_HEADER = "x-actor-id"
+TENANT_ID_HEADER = "x-tenant-id"
 
 
 class CallerContextMissingError(ValueError):
@@ -21,6 +22,7 @@ class CallerContext:
     actor_type: str
     actor_id: str
     correlation_id: str
+    tenant_id: str | None = None
 
 
 def caller_context_from_headers(
@@ -42,4 +44,5 @@ def caller_context_from_headers(
         actor_type=normalized[ACTOR_TYPE_HEADER],
         actor_id=normalized[ACTOR_ID_HEADER],
         correlation_id=correlation_id,
+        tenant_id=normalized.get(TENANT_ID_HEADER),
     )

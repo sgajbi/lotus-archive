@@ -19,6 +19,11 @@ from app.archive.exceptions import (
     SupersessionConflictError,
     UnsupportedLifecycleTransitionError,
 )
+from app.archive.idea_lifecycle_decisions.repository import LifecycleDecisionConflictError
+from app.archive.idea_lifecycle_decisions.service import (
+    LifecycleDecisionDocumentError,
+    LifecycleDecisionTenantError,
+)
 from app.contracts.errors import error_response
 from app.security.caller_context import CallerContextMissingError
 
@@ -49,6 +54,42 @@ def register_archive_exception_handlers(
         return error_response(
             code="authorization_failed",
             http_status=status.HTTP_403_FORBIDDEN,
+            correlation_id=correlation_id(request),
+            service=service_name,
+        )
+
+    @app.exception_handler(LifecycleDecisionTenantError)
+    async def lifecycle_decision_tenant_exception_handler(
+        request: Request,
+        _exc: LifecycleDecisionTenantError,
+    ) -> JSONResponse:
+        return error_response(
+            code="lifecycle_decision_tenant_forbidden",
+            http_status=status.HTTP_403_FORBIDDEN,
+            correlation_id=correlation_id(request),
+            service=service_name,
+        )
+
+    @app.exception_handler(LifecycleDecisionConflictError)
+    async def lifecycle_decision_conflict_exception_handler(
+        request: Request,
+        _exc: LifecycleDecisionConflictError,
+    ) -> JSONResponse:
+        return error_response(
+            code="lifecycle_decision_idempotency_conflict",
+            http_status=status.HTTP_409_CONFLICT,
+            correlation_id=correlation_id(request),
+            service=service_name,
+        )
+
+    @app.exception_handler(LifecycleDecisionDocumentError)
+    async def lifecycle_decision_document_exception_handler(
+        request: Request,
+        _exc: LifecycleDecisionDocumentError,
+    ) -> JSONResponse:
+        return error_response(
+            code="lifecycle_decision_document_invalid",
+            http_status=status.HTTP_422_UNPROCESSABLE_CONTENT,
             correlation_id=correlation_id(request),
             service=service_name,
         )

@@ -1,6 +1,7 @@
 from pathlib import Path
 
 import pytest
+from pydantic import SecretStr
 
 from app.archive.exceptions import RuntimeConfigurationError
 from app.archive.runtime import build_archive_service, runtime_posture
@@ -54,6 +55,12 @@ def test_runtime_settings_reports_encoded_size_limit() -> None:
     settings = ArchiveRuntimeSettings(max_decoded_document_bytes=5)
 
     assert settings.max_encoded_document_chars == 8
+
+
+@pytest.mark.parametrize("private_key", ["not-base64", "YQ=="])
+def test_runtime_settings_rejects_invalid_lifecycle_signing_key(private_key: str) -> None:
+    with pytest.raises(RuntimeConfigurationError, match="lifecycle decision"):
+        ArchiveRuntimeSettings(idea_lifecycle_decision_private_key_base64=SecretStr(private_key))
 
 
 def test_runtime_posture_reports_unavailable_non_durable_production() -> None:

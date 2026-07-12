@@ -22,6 +22,7 @@ class ArchivePermission(StrEnum):
     EXECUTE_PURGE = "execute_purge"
     MANAGE_LEGAL_HOLD = "manage_legal_hold"
     MANAGE_LIFECYCLE = "manage_lifecycle"
+    READ_IDEA_LIFECYCLE_DECISION = "read_idea_lifecycle_decision"
 
 
 class AuthorizationFailedError(PermissionError):
@@ -39,6 +40,7 @@ class ArchiveAuthorizationPolicy:
     purge_callers: frozenset[str] = frozenset({"lotus-report"})
     legal_hold_callers: frozenset[str] = frozenset({"lotus-report"})
     lifecycle_callers: frozenset[str] = frozenset({"lotus-report"})
+    idea_lifecycle_decision_callers: frozenset[str] = frozenset({"lotus-idea", "lotus-report"})
 
     def authorize(
         self,
@@ -78,4 +80,6 @@ class ArchiveAuthorizationPolicy:
             return self.legal_hold_callers
         if permission is ArchivePermission.MANAGE_LIFECYCLE:
             return self.lifecycle_callers
+        if permission is ArchivePermission.READ_IDEA_LIFECYCLE_DECISION:
+            return self.idea_lifecycle_decision_callers
         return self.audit_callers
