@@ -45,6 +45,8 @@ archive API surface:
     documents, preserving support-safe package lineage without raw narrative text.
 29. RFC-0024 advisor proposal memo archive summaries for rendered portfolio-review documents,
     preserving support-safe memo lineage without raw memo reconstruction or client-ready promotion.
+30. Limited Archive-owned Idea evidence lifecycle decisions with tenant enforcement, durable local
+    idempotency, Ed25519 authentication, legal-hold precedence, and no disposal authority.
 
 The current local runtime is intentionally non-durable unless a future production adapter is
 configured. Production-like profiles must not silently use in-memory metadata/audit repositories or
@@ -77,6 +79,7 @@ Workbench-facing archive retrieval is supported only through the `lotus-workbenc
 | Gateway-backed document retrieval | `ready` | `lotus-gateway` PR #150 exposes `/api/v1/documents/{document_id}` and `/api/v1/documents/{document_id}/download`, forwards caller context as `lotus-gateway`, preserves support-safe metadata and checksum headers, and keeps archive storage locations hidden. |
 | Gateway-backed Workbench document retrieval | `ready` | `lotus-workbench` PR #126 retrieves archive metadata and binary downloads through `/api/bff/api/v1/documents/{document_id}` and `/api/bff/api/v1/documents/{document_id}/download`, preserving the Gateway boundary and binary response headers. |
 | Archive supportability posture | `ready` | `/metadata` publishes `archive.observability.archive_supportability`, sourced from supported archive feature posture and drain state, with bounded `lotus_archive_supportability_total` metric observations. |
+| Idea evidence lifecycle decision proof | `limited` | `POST /documents/{document_id}/idea-lifecycle-decisions` issues short-lived Ed25519-signed, tenant-bound projections for archived proof-pack records. SQLite replay/conflict, hold precedence, expiry/forgery rejection, audit, and failure atomicity are tested. Production durable persistence, managed keys/trust distribution, legal approval, and live mainline proof remain blocked. |
 | Production durable archive runtime | `limited` | Runtime settings now prevent silent in-memory/filesystem use in production-like profiles. PostgreSQL metadata/audit and S3-compatible storage adapters remain future implementation work before production durable support can be claimed. |
 | Temporary dependency vulnerability exceptions | `limited` | `make security-audit` validates `security/pip-audit-exceptions.json` before invoking `pip-audit`. Starlette advisory ignores must carry owner, review date, rationale, dependency constraint, removal condition, and compensating controls. |
 

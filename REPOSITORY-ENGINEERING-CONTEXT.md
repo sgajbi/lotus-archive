@@ -73,6 +73,8 @@ not call `lotus-archive` directly.
 24. `src/app/archive/settings.py`: typed runtime profile, repository, storage, namespace, database,
     and upload-size configuration.
 25. `src/app/archive/runtime.py`: process-local archive dependency composition and runtime posture.
+26. `src/app/archive/idea_lifecycle_decisions/`: tenant-bound Archive lifecycle decision models,
+    durable idempotency adapter, Ed25519 signing/verification, and application service.
 
 ## Runtime And Integration Boundaries
 
@@ -129,6 +131,12 @@ build validation.
    reason codes and report-input provenance, never raw lifecycle free text, storage keys, raw
    payloads, client references, transaction facts, position facts, or calculation/methodology
    authority.
+10. Idea lifecycle decisions are read-only Archive projections. They may expose support-safe Idea
+    correlation references but never grant hold management, purge execution, portfolio, client,
+    report-payload, or document-content authority to `lotus-idea`.
+11. Local SQLite decision persistence and local Ed25519 keys are implementation proof only.
+    Production requires a durable Archive repository, managed private-key source and rotation,
+    consumer trust bundle, and live evidence.
 
 ## Context Maintenance Rule
 
