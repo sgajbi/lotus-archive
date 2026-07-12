@@ -103,6 +103,9 @@ not call `lotus-archive` directly.
 typecheck, OpenAPI quality, unit/integration/e2e tests, coverage gate, security audit, and Docker
 build validation.
 
+Pull requests use rebase merge to preserve linear, non-squashed commit history. The PR auto-merge
+workflow must request `--rebase`; merge commits and squash merges are disabled by repository policy.
+
 ## Standards And RFCs That Govern This Repository
 
 1. `lotus-platform/rfcs/RFC-0072-platform-wide-multi-lane-ci-validation-and-release-governance.md`
