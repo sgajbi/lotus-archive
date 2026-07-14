@@ -8,7 +8,7 @@ from app.archive.metrics import record_archive_supportability, validate_archive_
 from app.archive.runtime import runtime_posture
 from app.archive.settings import ArchiveRuntimeSettings
 from app.archive.service_profile import archive_supportability, service_posture
-from app.build_metadata import BuildMetadata, build_metadata
+from app.archive.build_metadata import BuildMetadata, build_metadata
 from app.contracts.errors import error_response
 from app.middleware.correlation import CorrelationIdMiddleware, configure_request_logging
 from starlette.exceptions import HTTPException as StarletteHTTPException

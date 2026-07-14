@@ -117,50 +117,87 @@ jobs:
     name: Main Releasability / Validate Docker Build
     needs: [coverage-gate]
     runs-on: ubuntu-latest
+    permissions:
+      attestations: write
+      contents: read
+      id-token: write
+      packages: write
     env:
       DOCKER_BUILDKIT: "1"
       COMPOSE_DOCKER_CLI_BUILD: "1"
+      LOTUS_ARCHIVE_VERSION: "0.1.0"
+      LOTUS_ARCHIVE_REPOSITORY_URL: https://github.com/${{ github.repository }}
+      LOTUS_ARCHIVE_COMMIT_SHA: ${{ github.sha }}
+      LOTUS_ARCHIVE_BUILD_REF: ${{ github.ref }}
+      LOTUS_ARCHIVE_CI_RUN_ID: ${{ github.run_id }}
+      LOTUS_ARCHIVE_IMAGE_NAME: lotus-archive
+      LOTUS_ARCHIVE_IMAGE_TAG: ${{ github.sha }}
+      LOTUS_ARCHIVE_IMAGE_REF: lotus-archive:${{ github.sha }}
+      RELEASE_IMAGE_NAME: ghcr.io/${{ github.repository }}
+      RELEASE_IMAGE_TAG: ${{ github.sha }}
     steps:
       - uses: actions/checkout@v6
       - uses: docker/setup-buildx-action@v3
+      - uses: sigstore/cosign-installer@v4
       - uses: actions/setup-python@v6
         with:
           python-version: ${{ env.PYTHON_VERSION }}
           cache: "pip"
       - name: Install
         run: make install
-      - name: Build Docker image
-        run: make docker-build
-      - name: Generate dependency SBOM
-        run: |
-          ./.venv/bin/python -m pip install cyclonedx-bom
-          ./.venv/bin/python -m cyclonedx_py environment --output-format JSON --output-file sbom.cdx.json
-      - name: Generate release metadata manifest
+      - name: Login to GitHub Container Registry
+        run: echo "${{ github.token }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+      - name: Capture build timestamp
+        run: echo "LOTUS_ARCHIVE_BUILD_TIMESTAMP_UTC=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" >> "$GITHUB_ENV"
+      - name: Build and push release image
+        run: make docker-release-build
+      - name: Capture image digest
+        id: image
         shell: python
         run: |
           import json
           import os
           from pathlib import Path
 
-          Path("release-evidence.json").write_text(
-              json.dumps(
-                  {
-                      "repository": os.environ["GITHUB_REPOSITORY"],
-                      "commit_sha": os.environ["GITHUB_SHA"],
-                      "ref": os.environ["GITHUB_REF"],
-                      "workflow": os.environ["GITHUB_WORKFLOW"],
-                      "run_id": os.environ["GITHUB_RUN_ID"],
-                      "dockerfile_path": "Dockerfile",
-                  },
-                  indent=2,
-              ),
-              encoding="utf-8",
-          )
+          metadata = json.loads(Path("image-build-metadata.json").read_text(encoding="utf-8"))
+          digest = metadata["containerimage.digest"]
+          with Path(os.environ["GITHUB_OUTPUT"]).open("a", encoding="utf-8") as output:
+              output.write(f"digest={digest}\n")
+          with Path(os.environ["GITHUB_ENV"]).open("a", encoding="utf-8") as env_file:
+              env_file.write(f"LOTUS_ARCHIVE_IMAGE_DIGEST={digest}\n")
+      - name: Generate release metadata manifest
+        run: make release-evidence
+      - name: Scan release image for vulnerabilities
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref: ${{ env.RELEASE_IMAGE_NAME }}@${{ steps.image.outputs.digest }}
+          vuln-type: os,library
+          severity: CRITICAL,HIGH
+          ignore-unfixed: true
+          format: table
+          exit-code: "1"
+      - name: Sign release image digest
+        run: cosign sign --yes "${RELEASE_IMAGE_NAME}@${LOTUS_ARCHIVE_IMAGE_DIGEST}"
+      - name: Verify release image signature
+        run: >
+          cosign verify
+          --certificate-identity-regexp
+          "https://github.com/${GITHUB_REPOSITORY}/.github/workflows/main-releasability.yml@refs/heads/main"
+          --certificate-oidc-issuer "https://token.actions.githubusercontent.com"
+          "${RELEASE_IMAGE_NAME}@${LOTUS_ARCHIVE_IMAGE_DIGEST}"
+      - name: Generate GitHub provenance attestation
+        uses: actions/attest@v4
+        with:
+          subject-name: ${{ env.RELEASE_IMAGE_NAME }}
+          subject-digest: ${{ steps.image.outputs.digest }}
+          push-to-registry: true
+      - name: Verify GitHub provenance attestation
+        run: gh attestation verify "oci://${RELEASE_IMAGE_NAME}@${LOTUS_ARCHIVE_IMAGE_DIGEST}" --repo "${GITHUB_REPOSITORY}"
       - name: Upload release evidence
         uses: actions/upload-artifact@v5
         with:
           name: main-releasability-release-evidence
           path: |
-            sbom.cdx.json
+            image-build-metadata.json
             release-evidence.json
           if-no-files-found: error

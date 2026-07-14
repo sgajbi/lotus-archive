@@ -1,22 +1,22 @@
-.PHONY: install lint monetary-float-guard typecheck openapi-gate migration-gate test test-unit test-integration test-e2e test-coverage coverage-gate security-audit check ci docker-build docker-release-build clean
+.PHONY: install lint monetary-float-guard typecheck openapi-gate migration-gate test test-unit test-integration test-e2e test-coverage coverage-gate security-audit check ci docker-build docker-release-build release-evidence clean
 
 VENV_DIR ?= .venv
-SERVICE_VERSION ?= 0.1.0
-IMAGE_NAME ?= backend-service
-IMAGE_TAG ?= ci-test
-IMAGE_FULL_TAG ?= $(IMAGE_NAME):$(IMAGE_TAG)
+LOTUS_ARCHIVE_VERSION ?= 0.1.0
+LOTUS_ARCHIVE_IMAGE_NAME ?= lotus-archive
+LOTUS_ARCHIVE_IMAGE_TAG ?= ci-test
+LOTUS_ARCHIVE_IMAGE_REF ?= $(LOTUS_ARCHIVE_IMAGE_NAME):$(LOTUS_ARCHIVE_IMAGE_TAG)
 IMAGE_REGISTRY ?= ghcr.io
 IMAGE_REPOSITORY ?= sgajbi/lotus-archive
 RELEASE_IMAGE_NAME ?= $(IMAGE_REGISTRY)/$(IMAGE_REPOSITORY)
-RELEASE_IMAGE_TAG ?= $(GIT_COMMIT_SHA)
+RELEASE_IMAGE_TAG ?= $(LOTUS_ARCHIVE_COMMIT_SHA)
 RELEASE_METADATA_FILE ?= image-build-metadata.json
-GIT_COMMIT_SHA ?= $(shell git rev-parse HEAD)
-GIT_REPOSITORY_URL ?= https://github.com/sgajbi/lotus-archive
-GIT_REF ?= local
-BUILD_TIMESTAMP_UTC ?= local
-CI_RUN_ID ?= local
-IMAGE_DIGEST ?= not-published
-DOCKER_BUILD_ARGS := --build-arg SERVICE_VERSION=$(SERVICE_VERSION) --build-arg GIT_COMMIT_SHA=$(GIT_COMMIT_SHA) --build-arg GIT_REPOSITORY_URL=$(GIT_REPOSITORY_URL) --build-arg GIT_REF=$(GIT_REF) --build-arg BUILD_TIMESTAMP_UTC=$(BUILD_TIMESTAMP_UTC) --build-arg CI_RUN_ID=$(CI_RUN_ID) --build-arg IMAGE_DIGEST=$(IMAGE_DIGEST)
+LOTUS_ARCHIVE_COMMIT_SHA ?= $(shell git rev-parse HEAD)
+LOTUS_ARCHIVE_REPOSITORY_URL ?= https://github.com/sgajbi/lotus-archive
+LOTUS_ARCHIVE_BUILD_REF ?= $(or $(GITHUB_REF),local)
+LOTUS_ARCHIVE_BUILD_TIMESTAMP_UTC ?= local
+LOTUS_ARCHIVE_CI_RUN_ID ?= $(or $(GITHUB_RUN_ID),local)
+LOTUS_ARCHIVE_IMAGE_DIGEST ?= not-published
+DOCKER_BUILD_ARGS := --build-arg LOTUS_ARCHIVE_VERSION=$(LOTUS_ARCHIVE_VERSION) --build-arg LOTUS_ARCHIVE_COMMIT_SHA=$(LOTUS_ARCHIVE_COMMIT_SHA) --build-arg LOTUS_ARCHIVE_REPOSITORY_URL=$(LOTUS_ARCHIVE_REPOSITORY_URL) --build-arg LOTUS_ARCHIVE_BUILD_REF=$(LOTUS_ARCHIVE_BUILD_REF) --build-arg LOTUS_ARCHIVE_BUILD_TIMESTAMP_UTC=$(LOTUS_ARCHIVE_BUILD_TIMESTAMP_UTC) --build-arg LOTUS_ARCHIVE_CI_RUN_ID=$(LOTUS_ARCHIVE_CI_RUN_ID) --build-arg LOTUS_ARCHIVE_IMAGE_REF=$(LOTUS_ARCHIVE_IMAGE_REF) --build-arg LOTUS_ARCHIVE_IMAGE_DIGEST=$(LOTUS_ARCHIVE_IMAGE_DIGEST)
 
 ifeq ($(OS),Windows_NT)
 VENV_PYTHON := $(VENV_DIR)/Scripts/python.exe
@@ -75,10 +75,13 @@ check: lint typecheck openapi-gate migration-gate test
 ci: lint typecheck openapi-gate migration-gate test-integration test-e2e test-coverage security-audit
 
 docker-build:
-	docker build $(DOCKER_BUILD_ARGS) -t $(IMAGE_FULL_TAG) -t backend-service:ci-test .
+	docker build $(DOCKER_BUILD_ARGS) -t $(LOTUS_ARCHIVE_IMAGE_REF) .
 
 docker-release-build:
 	docker buildx build $(DOCKER_BUILD_ARGS) --metadata-file $(RELEASE_METADATA_FILE) --provenance=true --sbom=true --push -t $(RELEASE_IMAGE_NAME):$(RELEASE_IMAGE_TAG) .
+
+release-evidence:
+	$(VENV_PYTHON) scripts/generate_release_evidence.py --buildx-metadata $(RELEASE_METADATA_FILE) --output release-evidence.json
 
 clean:
 	python -c "import shutil, pathlib; [shutil.rmtree(p, ignore_errors=True) for p in ['.pytest_cache', '.ruff_cache', '.mypy_cache']]; [pathlib.Path(p).unlink(missing_ok=True) for p in ['.coverage', '.coverage.unit', '.coverage.integration', '.coverage.e2e']]"

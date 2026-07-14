@@ -22,6 +22,7 @@ class BuildMetadata(BaseModel):
     git_ref: str = Field(description="Git branch, tag, or ref used for the build.")
     build_timestamp_utc: str = Field(description="UTC timestamp supplied by the build pipeline.")
     ci_run_id: str = Field(description="CI pipeline run identifier that produced the build.")
+    image_ref: str = Field(description="Image reference used for the local or CI build.")
     image_digest: str = Field(description="Immutable image digest when published by CI.")
     image_digest_posture: Literal["immutable_digest", "not_published"] = Field(
         description="Whether the runtime is bound to a published immutable image digest."
@@ -47,17 +48,18 @@ def _image_digest_posture(image_digest: str) -> Literal["immutable_digest", "not
 
 
 def build_metadata() -> BuildMetadata:
-    image_digest = _env("LOTUS_BUILD_IMAGE_DIGEST", UNPUBLISHED_IMAGE_DIGEST)
+    image_digest = _env("LOTUS_ARCHIVE_IMAGE_DIGEST", UNPUBLISHED_IMAGE_DIGEST)
     return BuildMetadata(
-        service=_env("LOTUS_SERVICE_NAME", DEFAULT_SERVICE_NAME),
-        version=_env("LOTUS_SERVICE_VERSION", DEFAULT_SERVICE_VERSION),
-        commit_sha=_env("LOTUS_BUILD_COMMIT_SHA", LOCAL_VALUE),
+        service=_env("LOTUS_ARCHIVE_SERVICE_NAME", DEFAULT_SERVICE_NAME),
+        version=_env("LOTUS_ARCHIVE_VERSION", DEFAULT_SERVICE_VERSION),
+        commit_sha=_env("LOTUS_ARCHIVE_COMMIT_SHA", LOCAL_VALUE),
         repository_url=_source_safe_repository_url(
-            _env("LOTUS_BUILD_REPOSITORY_URL", DEFAULT_REPOSITORY_URL)
+            _env("LOTUS_ARCHIVE_REPOSITORY_URL", DEFAULT_REPOSITORY_URL)
         ),
-        git_ref=_env("LOTUS_BUILD_GIT_REF", LOCAL_VALUE),
-        build_timestamp_utc=_env("LOTUS_BUILD_TIMESTAMP_UTC", LOCAL_VALUE),
-        ci_run_id=_env("LOTUS_BUILD_CI_RUN_ID", LOCAL_VALUE),
+        git_ref=_env("LOTUS_ARCHIVE_BUILD_REF", LOCAL_VALUE),
+        build_timestamp_utc=_env("LOTUS_ARCHIVE_BUILD_TIMESTAMP_UTC", LOCAL_VALUE),
+        ci_run_id=_env("LOTUS_ARCHIVE_CI_RUN_ID", LOCAL_VALUE),
+        image_ref=_env("LOTUS_ARCHIVE_IMAGE_REF", "lotus-archive:local"),
         image_digest=image_digest,
         image_digest_posture=_image_digest_posture(image_digest),
     )

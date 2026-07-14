@@ -126,12 +126,13 @@ def test_metadata_reports_archive_supportability() -> None:
 
 
 def test_version_endpoint_reports_runtime_build_metadata(monkeypatch) -> None:
-    monkeypatch.setenv("LOTUS_BUILD_COMMIT_SHA", "abc123")
-    monkeypatch.setenv("LOTUS_BUILD_REPOSITORY_URL", "https://github.com/sgajbi/lotus-archive")
-    monkeypatch.setenv("LOTUS_BUILD_GIT_REF", "refs/heads/main")
-    monkeypatch.setenv("LOTUS_BUILD_TIMESTAMP_UTC", "2026-07-14T00:00:00Z")
-    monkeypatch.setenv("LOTUS_BUILD_CI_RUN_ID", "29290000000")
-    monkeypatch.setenv("LOTUS_BUILD_IMAGE_DIGEST", "sha256:" + "b" * 64)
+    monkeypatch.setenv("LOTUS_ARCHIVE_COMMIT_SHA", "abc123")
+    monkeypatch.setenv("LOTUS_ARCHIVE_REPOSITORY_URL", "https://github.com/sgajbi/lotus-archive")
+    monkeypatch.setenv("LOTUS_ARCHIVE_BUILD_REF", "refs/heads/main")
+    monkeypatch.setenv("LOTUS_ARCHIVE_BUILD_TIMESTAMP_UTC", "2026-07-14T00:00:00Z")
+    monkeypatch.setenv("LOTUS_ARCHIVE_CI_RUN_ID", "29290000000")
+    monkeypatch.setenv("LOTUS_ARCHIVE_IMAGE_REF", "lotus-archive:abc123")
+    monkeypatch.setenv("LOTUS_ARCHIVE_IMAGE_DIGEST", "sha256:" + "b" * 64)
 
     client = TestClient(app)
     response = client.get("/version")
@@ -145,6 +146,7 @@ def test_version_endpoint_reports_runtime_build_metadata(monkeypatch) -> None:
         "git_ref": "refs/heads/main",
         "build_timestamp_utc": "2026-07-14T00:00:00Z",
         "ci_run_id": "29290000000",
+        "image_ref": "lotus-archive:abc123",
         "image_digest": "sha256:" + "b" * 64,
         "image_digest_posture": "immutable_digest",
     }

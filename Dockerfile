@@ -8,31 +8,36 @@ RUN python -m pip install --no-cache-dir --upgrade pip \
 
 FROM python:3.12-slim AS runtime
 
-ARG SERVICE_VERSION=0.1.0
-ARG GIT_COMMIT_SHA=local
-ARG GIT_REPOSITORY_URL=https://github.com/sgajbi/lotus-archive
-ARG GIT_REF=local
-ARG BUILD_TIMESTAMP_UTC=local
-ARG CI_RUN_ID=local
-ARG IMAGE_DIGEST=not-published
+ARG LOTUS_ARCHIVE_VERSION=0.1.0
+ARG LOTUS_ARCHIVE_COMMIT_SHA=local
+ARG LOTUS_ARCHIVE_REPOSITORY_URL=https://github.com/sgajbi/lotus-archive
+ARG LOTUS_ARCHIVE_BUILD_REF=local
+ARG LOTUS_ARCHIVE_BUILD_TIMESTAMP_UTC=local
+ARG LOTUS_ARCHIVE_CI_RUN_ID=local
+ARG LOTUS_ARCHIVE_IMAGE_REF=lotus-archive:local
+ARG LOTUS_ARCHIVE_IMAGE_DIGEST=not-published
 
 LABEL org.opencontainers.image.title="lotus-archive" \
       org.opencontainers.image.description="Lotus generated-document archive service" \
-      org.opencontainers.image.version="${SERVICE_VERSION}" \
-      org.opencontainers.image.revision="${GIT_COMMIT_SHA}" \
-      org.opencontainers.image.source="${GIT_REPOSITORY_URL}" \
-      org.opencontainers.image.ref.name="${GIT_REF}" \
-      org.opencontainers.image.created="${BUILD_TIMESTAMP_UTC}" \
-      com.lotus.ci.run-id="${CI_RUN_ID}"
+      org.opencontainers.image.version="${LOTUS_ARCHIVE_VERSION}" \
+      org.opencontainers.image.revision="${LOTUS_ARCHIVE_COMMIT_SHA}" \
+      org.opencontainers.image.source="${LOTUS_ARCHIVE_REPOSITORY_URL}" \
+      org.opencontainers.image.ref.name="${LOTUS_ARCHIVE_BUILD_REF}" \
+      org.opencontainers.image.created="${LOTUS_ARCHIVE_BUILD_TIMESTAMP_UTC}" \
+      io.lotus.pipeline.run-id="${LOTUS_ARCHIVE_CI_RUN_ID}" \
+      io.lotus.image.ref="${LOTUS_ARCHIVE_IMAGE_REF}" \
+      io.lotus.image.digest="${LOTUS_ARCHIVE_IMAGE_DIGEST}"
 
-ENV LOTUS_SERVICE_NAME=lotus-archive \
-    LOTUS_SERVICE_VERSION="${SERVICE_VERSION}" \
-    LOTUS_BUILD_COMMIT_SHA="${GIT_COMMIT_SHA}" \
-    LOTUS_BUILD_REPOSITORY_URL="${GIT_REPOSITORY_URL}" \
-    LOTUS_BUILD_GIT_REF="${GIT_REF}" \
-    LOTUS_BUILD_TIMESTAMP_UTC="${BUILD_TIMESTAMP_UTC}" \
-    LOTUS_BUILD_CI_RUN_ID="${CI_RUN_ID}" \
-    LOTUS_BUILD_IMAGE_DIGEST="${IMAGE_DIGEST}"
+ENV LOTUS_ARCHIVE_SERVICE_NAME=lotus-archive \
+    LOTUS_ARCHIVE_VERSION="${LOTUS_ARCHIVE_VERSION}" \
+    LOTUS_ARCHIVE_COMMIT_SHA="${LOTUS_ARCHIVE_COMMIT_SHA}" \
+    LOTUS_ARCHIVE_REPOSITORY_URL="${LOTUS_ARCHIVE_REPOSITORY_URL}" \
+    LOTUS_ARCHIVE_BUILD_REF="${LOTUS_ARCHIVE_BUILD_REF}" \
+    LOTUS_ARCHIVE_BUILD_TIMESTAMP_UTC="${LOTUS_ARCHIVE_BUILD_TIMESTAMP_UTC}" \
+    LOTUS_ARCHIVE_CI_RUN_ID="${LOTUS_ARCHIVE_CI_RUN_ID}" \
+    LOTUS_ARCHIVE_IMAGE_REF="${LOTUS_ARCHIVE_IMAGE_REF}" \
+    LOTUS_ARCHIVE_IMAGE_DIGEST="${LOTUS_ARCHIVE_IMAGE_DIGEST}" \
+    PYTHONUNBUFFERED=1
 
 WORKDIR /app
 COPY --from=wheel-builder /wheels /wheels
