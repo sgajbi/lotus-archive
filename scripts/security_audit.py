@@ -46,8 +46,8 @@ def validate_policy(
     if policy.get("schema_version") != "lotus-pip-audit-exceptions.v1":
         errors.append("policy schema_version must be lotus-pip-audit-exceptions.v1")
     exceptions = policy.get("exceptions")
-    if not isinstance(exceptions, list) or not exceptions:
-        errors.append("policy exceptions must be a non-empty list")
+    if not isinstance(exceptions, list):
+        errors.append("policy exceptions must be a list")
         return errors
 
     seen: set[str] = set()

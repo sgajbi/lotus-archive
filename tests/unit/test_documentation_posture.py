@@ -36,7 +36,7 @@ def test_supported_features_baseline_blocks_direct_workbench_overclaim() -> None
     assert "| Gateway-backed Workbench document retrieval | `ready` |" in supported_features
     assert "| Reviewed advisory narrative archive summary | `ready` |" in supported_features
     assert "| Production durable archive runtime | `limited` |" in supported_features
-    assert "| Temporary dependency vulnerability exceptions | `limited` |" in supported_features
+    assert "| Dependency vulnerability exceptions | `ready` |" in supported_features
     assert "| Report-to-archive handoff | `not_supported` |" not in supported_features
     assert "| Direct Workbench archive calls | `not_supported` |" in supported_features
     assert "| Client-ready advisory narrative publication | `not_supported` |" in supported_features
