@@ -134,3 +134,27 @@ def test_release_workflows_record_image_identity_evidence() -> None:
     assert '--source-digest "${GITHUB_SHA}"' in steps["Verify GitHub provenance attestation"]["run"]
     assert "image-build-metadata.json" in main_workflow
     assert "release-evidence.json" in main_workflow
+
+
+def test_release_workflows_use_current_runtime_action_versions() -> None:
+    workflows = [
+        ".github/workflows/main-releasability.yml",
+        ".github/workflows/pr-merge-gate.yml",
+    ]
+    expected_actions = {
+        "actions/upload-artifact@v7.0.1",
+        "actions/download-artifact@v8.0.1",
+        "docker/setup-buildx-action@v4.2.0",
+    }
+    deprecated_actions = {
+        "actions/upload-artifact@v5",
+        "actions/download-artifact@v4",
+        "docker/setup-buildx-action@v3",
+    }
+
+    for workflow_path in workflows:
+        workflow = _read(workflow_path)
+        for action in expected_actions:
+            assert action in workflow
+        for action in deprecated_actions:
+            assert action not in workflow
