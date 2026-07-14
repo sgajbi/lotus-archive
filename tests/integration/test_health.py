@@ -1,4 +1,5 @@
 from fastapi.testclient import TestClient
+import pytest
 from app.main import app
 from app.archive.settings import ArchiveRuntimeSettings
 
@@ -125,7 +126,9 @@ def test_metadata_reports_archive_supportability() -> None:
     assert payload["build"]["image_digest_posture"] == "not_published"
 
 
-def test_version_endpoint_reports_runtime_build_metadata(monkeypatch) -> None:
+def test_version_endpoint_reports_runtime_build_metadata(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     monkeypatch.setenv("LOTUS_ARCHIVE_COMMIT_SHA", "abc123")
     monkeypatch.setenv("LOTUS_ARCHIVE_REPOSITORY_URL", "https://github.com/sgajbi/lotus-archive")
     monkeypatch.setenv("LOTUS_ARCHIVE_BUILD_REF", "refs/heads/main")

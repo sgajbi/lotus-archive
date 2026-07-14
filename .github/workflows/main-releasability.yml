@@ -119,6 +119,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       attestations: write
+      artifact-metadata: write
       contents: read
       id-token: write
       packages: write
@@ -192,7 +193,11 @@ jobs:
           subject-digest: ${{ steps.image.outputs.digest }}
           push-to-registry: true
       - name: Verify GitHub provenance attestation
-        run: gh attestation verify "oci://${RELEASE_IMAGE_NAME}@${LOTUS_ARCHIVE_IMAGE_DIGEST}" --repo "${GITHUB_REPOSITORY}"
+        run: >
+          gh attestation verify "oci://${RELEASE_IMAGE_NAME}@${LOTUS_ARCHIVE_IMAGE_DIGEST}"
+          --repo "${GITHUB_REPOSITORY}"
+          --signer-workflow "${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/.github/workflows/main-releasability.yml"
+          --source-ref "refs/heads/main"
       - name: Upload release evidence
         uses: actions/upload-artifact@v5
         with:
