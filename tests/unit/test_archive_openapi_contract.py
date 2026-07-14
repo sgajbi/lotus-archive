@@ -102,3 +102,28 @@ def test_archive_document_api_openapi_contract_is_certification_ready() -> None:
         parameters = spec["paths"][path]["get"]["parameters"]
         names = {parameter["name"] for parameter in parameters}
         assert {"limit", "offset"} <= names
+
+
+def test_version_endpoint_openapi_contract_is_support_ready() -> None:
+    spec = app.openapi()
+
+    operation = spec["paths"]["/version"]["get"]
+
+    assert operation["summary"] == "Get runtime build metadata"
+    assert "support diagnostics" in operation["description"]
+    assert "operations" in operation["tags"]
+    assert "BuildMetadata" in str(operation["responses"]["200"])
+
+    schema = spec["components"]["schemas"]["BuildMetadata"]["properties"]
+    for field in [
+        "service",
+        "version",
+        "commit_sha",
+        "repository_url",
+        "git_ref",
+        "build_timestamp_utc",
+        "ci_run_id",
+        "image_digest",
+        "image_digest_posture",
+    ]:
+        assert schema[field]["description"]
