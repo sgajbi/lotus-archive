@@ -92,9 +92,16 @@ def test_release_workflows_record_image_identity_evidence() -> None:
     assert "image-labels.json" in pr_workflow
 
     workflow = yaml.safe_load(main_workflow)
+    pr_gate_workflow = yaml.safe_load(pr_workflow)
     docker_job = workflow["jobs"]["docker-build"]
+    coverage_job = workflow["jobs"]["coverage-gate"]
+    pr_coverage_job = pr_gate_workflow["jobs"]["coverage-gate"]
     steps = {step["name"]: step for step in docker_job["steps"] if "name" in step}
+    coverage_steps = {step["name"]: step for step in coverage_job["steps"] if "name" in step}
+    pr_coverage_steps = {step["name"]: step for step in pr_coverage_job["steps"] if "name" in step}
 
+    assert workflow["permissions"] == {"actions": "read", "contents": "read"}
+    assert pr_gate_workflow["permissions"] == {"actions": "read", "contents": "read"}
     assert docker_job["permissions"] == {
         "attestations": "write",
         "artifact-metadata": "write",
@@ -102,6 +109,22 @@ def test_release_workflows_record_image_identity_evidence() -> None:
         "id-token": "write",
         "packages": "write",
     }
+    assert coverage_steps["Download coverage artifacts"]["env"] == {
+        "GH_TOKEN": "${{ github.token }}"
+    }
+    assert pr_coverage_steps["Download coverage artifacts"]["env"] == {
+        "GH_TOKEN": "${{ github.token }}"
+    }
+    assert (
+        'gh run download "${GITHUB_RUN_ID}" --pattern "coverage-data-*"'
+        in coverage_steps["Download coverage artifacts"]["run"]
+    )
+    assert (
+        'find coverage-artifacts -type f -name ".coverage.*"'
+        in coverage_steps["Download coverage artifacts"]["run"]
+    )
+    assert "actions/download-artifact" not in main_workflow
+    assert "actions/download-artifact" not in pr_workflow
     assert steps["Build and push release image"]["run"] == "make docker-release-build"
     assert steps["Generate release metadata manifest"]["run"] == "make release-evidence"
     assert "sigstore/cosign-installer@v4.1.0" in main_workflow
@@ -143,12 +166,12 @@ def test_release_workflows_use_current_runtime_action_versions() -> None:
     ]
     expected_actions = {
         "actions/upload-artifact@v7.0.1",
-        "actions/download-artifact@v8.0.1",
         "docker/setup-buildx-action@v4.2.0",
     }
     deprecated_actions = {
         "actions/upload-artifact@v5",
         "actions/download-artifact@v4",
+        "actions/download-artifact@v8.0.1",
         "docker/setup-buildx-action@v3",
     }
 
