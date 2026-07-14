@@ -42,6 +42,11 @@ Lotus generated-document archive, retrieval, retention, legal hold, and access a
 - `/metadata` publishes RFC-0108 `archive.observability.archive_supportability` posture covering
   retrieval, retention, legal hold, access audit, lifecycle, gateway retrieval, and Gateway-backed
   Workbench retrieval.
+- `/version` publishes source-safe Archive build metadata: service version, repository URL, commit
+  SHA, Git ref, build timestamp, CI run id, image reference, image digest, and digest posture.
+  Local images report `not_published`; mainline CI records registry digest, scan, signature, and
+  attestation evidence. Production deployment certification remains blocked until deployment
+  manifests consume that digest and same-digest promotion evidence is available.
 - `lotus_archive_supportability_total` is implementation-backed with bounded `state`, `reason`,
   and `freshness_bucket` labels only, with recorder-level fallback for unknown label values.
 - Workbench retrieval is supported only through the Workbench BFF and `lotus-gateway`; Workbench

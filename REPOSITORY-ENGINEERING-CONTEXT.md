@@ -35,6 +35,12 @@ raw memo reconstruction and client-ready memo promotion remain out of scope. RFC
 archive supportability now publishes `archive.observability.archive_supportability` through `/metadata` and
 `lotus_archive_supportability_total`, covering retrieval, retention, legal-hold, access-audit,
 lifecycle, gateway retrieval, and Gateway-backed Workbench retrieval with bounded labels only.
+Archive runtime build metadata is exposed through `src/app/archive/build_metadata.py`, `/version`,
+and `/metadata.build`; Docker builds inject matching source-safe OCI labels and runtime environment
+variables. Mainline CI is configured to publish the release image to GHCR, capture the immutable
+digest, scan, sign, attest, verify, and write release evidence. Full production deployment
+certification remains limited until deployment manifests consume the digest and same-digest
+promotion evidence exists.
 
 Workbench retrieval is supported only through the Workbench BFF and `lotus-gateway`; Workbench must
 not call `lotus-archive` directly.
@@ -73,7 +79,9 @@ not call `lotus-archive` directly.
 24. `src/app/archive/settings.py`: typed runtime profile, repository, storage, namespace, database,
     and upload-size configuration.
 25. `src/app/archive/runtime.py`: process-local archive dependency composition and runtime posture.
-26. `src/app/archive/idea_lifecycle_decisions/`: tenant-bound Archive lifecycle decision models,
+26. `src/app/archive/build_metadata.py`: source-safe runtime build, Git, CI, and image provenance
+    metadata exposed through `/version` and `/metadata.build`.
+27. `src/app/archive/idea_lifecycle_decisions/`: tenant-bound Archive lifecycle decision models,
     durable idempotency adapter, Ed25519 signing/verification, and application service.
 
 ## Runtime And Integration Boundaries
@@ -140,6 +148,9 @@ workflow must request `--rebase`; merge commits and squash merges are disabled b
 11. Local SQLite decision persistence and local Ed25519 keys are implementation proof only.
     Production requires a durable Archive repository, managed private-key source and rotation,
     consumer trust bundle, and live evidence.
+12. Local container builds may expose `image_digest_posture=not_published`. Do not claim production
+    deployment certification until mainline release evidence is paired with digest-based deployment
+    manifests and same-digest promotion evidence.
 
 ## Context Maintenance Rule
 

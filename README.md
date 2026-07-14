@@ -58,6 +58,13 @@ RFC-0108 archive supportability posture is published through `/metadata` as
 legal-hold, access-audit, lifecycle, gateway retrieval, and Gateway-backed Workbench retrieval
 without document, storage, report, render, tenant, trace, or correlation labels.
 
+`/version` publishes source-safe Archive build metadata for operator diagnostics: service version,
+repository URL, commit SHA, Git ref, build timestamp, CI run id, image reference, image digest, and
+digest posture. Local images report `not_published`; mainline CI is configured to publish a
+GHCR image, capture its immutable digest, scan it, sign it, generate provenance attestation, and
+write release evidence. Production deployment certification remains blocked until deployment
+manifests consume the digest and same-digest environment promotion evidence exists.
+
 The default local runtime is explicit `local-development`: in-memory metadata/audit repositories
 plus filesystem object storage under the configured archive storage root. Production-like profiles
 must configure durable metadata/audit persistence and object storage; otherwise startup/readiness
@@ -104,6 +111,12 @@ uvicorn app.main:app --reload --port 8150
 ```powershell
 docker compose up --build
 ```
+
+`make docker-build` builds a production wheel-based local image tagged as `lotus-archive:ci-test`
+by default and injects OCI label/runtime metadata. `make docker-release-build` and
+`make release-evidence` are reserved for CI-owned registry publication with immutable digest,
+BuildKit SBOM/provenance metadata, scan/sign/attestation checks, and release evidence. Do not use
+local developer pushes for release registry paths.
 
 ## Standards
 
