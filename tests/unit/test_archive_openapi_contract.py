@@ -123,6 +123,7 @@ def test_version_endpoint_openapi_contract_is_support_ready() -> None:
         "git_ref",
         "build_timestamp_utc",
         "ci_run_id",
+        "image_ref",
         "image_digest",
         "image_digest_posture",
     ]:

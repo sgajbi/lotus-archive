@@ -26,7 +26,7 @@ def test_dockerfile_builds_production_runtime_without_dev_dependencies() -> None
     assert "AS runtime" in dockerfile
     assert "pip wheel --no-cache-dir --wheel-dir /wheels ." in dockerfile
     assert "pip install --no-cache-dir /wheels/*.whl" in dockerfile
-    assert '.[dev]' not in dockerfile
+    assert ".[dev]" not in dockerfile
     assert "pip install --no-cache-dir -e" not in dockerfile
     assert "USER lotus" in dockerfile
 
@@ -40,17 +40,20 @@ def test_dockerfile_exposes_source_safe_oci_and_runtime_metadata() -> None:
         "org.opencontainers.image.source",
         "org.opencontainers.image.ref.name",
         "org.opencontainers.image.created",
-        "com.lotus.ci.run-id",
+        "io.lotus.pipeline.run-id",
+        "io.lotus.image.ref",
+        "io.lotus.image.digest",
     ]:
         assert label in dockerfile
 
     for env_name in [
-        "LOTUS_BUILD_COMMIT_SHA",
-        "LOTUS_BUILD_REPOSITORY_URL",
-        "LOTUS_BUILD_GIT_REF",
-        "LOTUS_BUILD_TIMESTAMP_UTC",
-        "LOTUS_BUILD_CI_RUN_ID",
-        "LOTUS_BUILD_IMAGE_DIGEST",
+        "LOTUS_ARCHIVE_COMMIT_SHA",
+        "LOTUS_ARCHIVE_REPOSITORY_URL",
+        "LOTUS_ARCHIVE_BUILD_REF",
+        "LOTUS_ARCHIVE_BUILD_TIMESTAMP_UTC",
+        "LOTUS_ARCHIVE_CI_RUN_ID",
+        "LOTUS_ARCHIVE_IMAGE_REF",
+        "LOTUS_ARCHIVE_IMAGE_DIGEST",
     ]:
         assert env_name in dockerfile
 
@@ -68,10 +71,42 @@ def test_makefile_tags_local_and_release_images_with_build_metadata() -> None:
     makefile = _read("Makefile")
 
     assert "docker-build:" in makefile
-    assert "-t $(IMAGE_FULL_TAG)" in makefile
-    assert "-t backend-service:ci-test" in makefile
+    assert "-t $(LOTUS_ARCHIVE_IMAGE_REF)" in makefile
+    assert "backend-service:ci-test" not in makefile
     assert "docker-release-build:" in makefile
     assert "--metadata-file $(RELEASE_METADATA_FILE)" in makefile
     assert "--provenance=true" in makefile
     assert "--sbom=true" in makefile
     assert "--push -t $(RELEASE_IMAGE_NAME):$(RELEASE_IMAGE_TAG)" in makefile
+    assert "release-evidence:" in makefile
+    assert "scripts/generate_release_evidence.py" in makefile
+
+
+def test_release_workflows_record_image_identity_evidence() -> None:
+    main_workflow = _read(".github/workflows/main-releasability.yml")
+    pr_workflow = _read(".github/workflows/pr-merge-gate.yml")
+
+    assert "LOTUS_ARCHIVE_IMAGE_REF: lotus-archive:${{ github.sha }}" in pr_workflow
+    assert "LOTUS_ARCHIVE_COMMIT_SHA: ${{ github.sha }}" in pr_workflow
+    assert "docker image inspect" in pr_workflow
+    assert "image-labels.json" in pr_workflow
+
+    workflow = yaml.safe_load(main_workflow)
+    docker_job = workflow["jobs"]["docker-build"]
+    steps = {step["name"]: step for step in docker_job["steps"] if "name" in step}
+
+    assert docker_job["permissions"] == {
+        "attestations": "write",
+        "contents": "read",
+        "id-token": "write",
+        "packages": "write",
+    }
+    assert steps["Build and push release image"]["run"] == "make docker-release-build"
+    assert steps["Generate release metadata manifest"]["run"] == "make release-evidence"
+    assert steps["Scan release image for vulnerabilities"]["uses"] == "aquasecurity/trivy-action@v0.36.0"
+    assert steps["Generate GitHub provenance attestation"]["uses"] == "actions/attest@v4"
+    assert "cosign sign --yes" in steps["Sign release image digest"]["run"]
+    assert "cosign verify" in steps["Verify release image signature"]["run"]
+    assert "gh attestation verify" in steps["Verify GitHub provenance attestation"]["run"]
+    assert "image-build-metadata.json" in main_workflow
+    assert "release-evidence.json" in main_workflow
