@@ -131,11 +131,12 @@ def main() -> int:
     args = parser.parse_args()
 
     build_timestamp = _env("LOTUS_ARCHIVE_BUILD_TIMESTAMP_UTC", datetime.now(UTC).isoformat())
-    image_name = _env("RELEASE_IMAGE_NAME", f"ghcr.io/{_env('GITHUB_REPOSITORY')}")
+    repository = _env("GITHUB_REPOSITORY", "sgajbi/lotus-archive")
+    image_name = _env("RELEASE_IMAGE_NAME", f"ghcr.io/{repository}")
     image_tag = _env("RELEASE_IMAGE_TAG", _env("GITHUB_SHA", "local"))
     try:
         evidence = build_release_evidence(
-            repository=_env("GITHUB_REPOSITORY", "sgajbi/lotus-archive"),
+            repository=repository,
             commit_sha=_env("GITHUB_SHA", "local"),
             git_ref=_env("GITHUB_REF", "local"),
             workflow=_env("GITHUB_WORKFLOW", "local"),
@@ -151,6 +152,7 @@ def main() -> int:
     except ValueError as exc:
         print(f"release evidence error: {exc}", file=sys.stderr)
         return 1
+    args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(evidence, indent=2) + "\n", encoding="utf-8")
     print(f"wrote {args.output}")
     return 0

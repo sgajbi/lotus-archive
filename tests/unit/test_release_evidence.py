@@ -1,8 +1,14 @@
+import json
+from pathlib import Path
 from typing import Any, cast
 
 import pytest
 
-from scripts.generate_release_evidence import build_release_evidence, image_digest_from_metadata
+from scripts.generate_release_evidence import (
+    build_release_evidence,
+    image_digest_from_metadata,
+    main,
+)
 
 
 def _evidence(**overrides: object) -> dict[str, Any]:
@@ -57,3 +63,30 @@ def test_release_evidence_rejects_credentialed_repository_url() -> None:
 def test_release_evidence_rejects_secret_like_metadata_values() -> None:
     with pytest.raises(ValueError, match="secret-like"):
         _evidence(git_ref="refs/heads/add-secret-token")
+
+
+def test_release_evidence_cli_creates_output_parent(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    metadata_path = tmp_path / "image-build-metadata.json"
+    metadata_path.write_text(
+        json.dumps({"containerimage.digest": "sha256:" + "c" * 64}),
+        encoding="utf-8",
+    )
+    output_path = tmp_path / "nested" / "release-evidence.json"
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "generate_release_evidence.py",
+            "--buildx-metadata",
+            str(metadata_path),
+            "--output",
+            str(output_path),
+        ],
+    )
+
+    assert main() == 0
+    assert output_path.exists()
+    evidence = json.loads(output_path.read_text(encoding="utf-8"))
+    assert evidence["image"]["name"] == "ghcr.io/sgajbi/lotus-archive"
