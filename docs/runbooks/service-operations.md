@@ -32,6 +32,7 @@ boundary.
 - Readiness: /health/ready
 - General health: `/health`
 - Metadata and RFC-0108 archive supportability posture: `/metadata`
+- Runtime build and image provenance metadata: `/version`
 - Metrics: `/metrics`
 - Correlation header: `X-Correlation-Id`
 - Trace header: `X-Trace-Id`
@@ -40,8 +41,19 @@ boundary.
 ## Incident First Checks
 
 1. Check structured request logs for correlation ID, trace ID, method, path, status, and duration.
-2. Verify `/health/ready`, `/metadata` supportability state and reason, and metrics endpoint.
+2. Verify `/health/ready`, `/metadata` supportability state and reason, `/version` commit/image
+   metadata, and metrics endpoint.
 3. Run local parity check (make ci) before hotfix PR.
+
+## Container Provenance Checks
+
+1. Use `/version` to compare the running process commit, Git ref, CI run id, image reference, and
+   image digest posture with CI release evidence.
+2. Treat `image_digest_posture=not_published` as acceptable only for local development or
+   diagnostic builds.
+3. Treat mainline CI release evidence as image provenance proof only. Do not certify production
+   deployment until a deployment manifest consumes the recorded digest and same-digest promotion
+   evidence exists.
 
 ## Archive-Specific First Checks
 

@@ -37,15 +37,17 @@ archive API surface:
     `archive.observability.archive_supportability`.
 25. Bounded archive supportability metric `lotus_archive_supportability_total` with only `state`,
     `reason`, and `freshness_bucket` labels.
-26. Governed `pip-audit` exception policy with owner, review date, rationale, dependency
+26. Runtime build metadata through `/version` with source-safe commit, repository, Git ref, CI run
+    id, image reference, image digest, and digest posture fields.
+27. Governed `pip-audit` exception policy with owner, review date, rationale, dependency
     constraint, removal condition, and CI-backed validation.
-27. Governed generated-report type validation for `portfolio_review`, `outcome_review`,
+28. Governed generated-report type validation for `portfolio_review`, `outcome_review`,
     `proof_pack`, and `rebalance_wave` archive records.
-28. RFC-0023 reviewed advisory narrative archive summaries for rendered portfolio-review
+29. RFC-0023 reviewed advisory narrative archive summaries for rendered portfolio-review
     documents, preserving support-safe package lineage without raw narrative text.
-29. RFC-0024 advisor proposal memo archive summaries for rendered portfolio-review documents,
+30. RFC-0024 advisor proposal memo archive summaries for rendered portfolio-review documents,
     preserving support-safe memo lineage without raw memo reconstruction or client-ready promotion.
-30. Limited Archive-owned Idea evidence lifecycle decisions with tenant enforcement, durable local
+31. Limited Archive-owned Idea evidence lifecycle decisions with tenant enforcement, durable local
     idempotency, Ed25519 authentication, legal-hold precedence, and no disposal authority.
 
 The current local runtime is intentionally non-durable unless a future production adapter is
@@ -79,8 +81,10 @@ Workbench-facing archive retrieval is supported only through the `lotus-workbenc
 | Gateway-backed document retrieval | `ready` | `lotus-gateway` PR #150 exposes `/api/v1/documents/{document_id}` and `/api/v1/documents/{document_id}/download`, forwards caller context as `lotus-gateway`, preserves support-safe metadata and checksum headers, and keeps archive storage locations hidden. |
 | Gateway-backed Workbench document retrieval | `ready` | `lotus-workbench` PR #126 retrieves archive metadata and binary downloads through `/api/bff/api/v1/documents/{document_id}` and `/api/bff/api/v1/documents/{document_id}/download`, preserving the Gateway boundary and binary response headers. |
 | Archive supportability posture | `ready` | `/metadata` publishes `archive.observability.archive_supportability`, sourced from supported archive feature posture and drain state, with bounded `lotus_archive_supportability_total` metric observations. |
+| Runtime build metadata | `ready` | `/version` and `/metadata.build` expose source-safe service version, repository URL, commit SHA, Git ref, build timestamp, CI run id, image reference, image digest, and digest posture. Docker builds inject matching OCI labels and runtime environment variables. |
 | Idea evidence lifecycle decision proof | `limited` | `POST /documents/{document_id}/idea-lifecycle-decisions` issues short-lived Ed25519-signed, tenant-bound projections for archived proof-pack records. SQLite replay/conflict, hold precedence, expiry/forgery rejection, audit, and failure atomicity are tested. Production durable persistence, managed keys/trust distribution, legal approval, and live mainline proof remain blocked. |
 | Production durable archive runtime | `limited` | Runtime settings now prevent silent in-memory/filesystem use in production-like profiles. PostgreSQL metadata/audit and S3-compatible storage adapters remain future implementation work before production durable support can be claimed. |
+| Production container provenance certification | `limited` | The runtime image is wheel-based, non-root, and carries OCI/runtime metadata. Mainline CI is configured for GHCR publication, immutable digest capture, vulnerability scan, signature, provenance attestation, verification, and release evidence. Deployment certification still requires digest-based deployment manifests and same-digest promotion evidence. |
 | Temporary dependency vulnerability exceptions | `limited` | `make security-audit` validates `security/pip-audit-exceptions.json` before invoking `pip-audit`. Starlette advisory ignores must carry owner, review date, rationale, dependency constraint, removal condition, and compensating controls. |
 
 ## Not Yet Supported
