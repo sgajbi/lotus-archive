@@ -117,6 +117,14 @@ def test_release_workflows_record_image_identity_evidence() -> None:
         "GH_TOKEN": "${{ github.token }}"
     }
     assert "--signer-workflow" in steps["Verify GitHub provenance attestation"]["run"]
+    assert (
+        'github.com/${GITHUB_REPOSITORY}/.github/workflows/main-releasability.yml"'
+        in steps["Verify GitHub provenance attestation"]["run"]
+    )
+    assert (
+        '"${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/.github/workflows/main-releasability.yml"'
+        not in steps["Verify GitHub provenance attestation"]["run"]
+    )
     assert '--source-ref "refs/heads/main"' in steps["Verify GitHub provenance attestation"]["run"]
     assert "image-build-metadata.json" in main_workflow
     assert "release-evidence.json" in main_workflow
