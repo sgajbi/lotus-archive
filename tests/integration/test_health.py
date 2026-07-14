@@ -121,6 +121,33 @@ def test_metadata_reports_archive_supportability() -> None:
         "gateway_backed_workbench_document_retrieval"
         in payload["supportability"]["supportedArchiveFeatures"]
     )
+    assert payload["build"]["service"] == "lotus-archive"
+    assert payload["build"]["image_digest_posture"] == "not_published"
+
+
+def test_version_endpoint_reports_runtime_build_metadata(monkeypatch) -> None:
+    monkeypatch.setenv("LOTUS_BUILD_COMMIT_SHA", "abc123")
+    monkeypatch.setenv("LOTUS_BUILD_REPOSITORY_URL", "https://github.com/sgajbi/lotus-archive")
+    monkeypatch.setenv("LOTUS_BUILD_GIT_REF", "refs/heads/main")
+    monkeypatch.setenv("LOTUS_BUILD_TIMESTAMP_UTC", "2026-07-14T00:00:00Z")
+    monkeypatch.setenv("LOTUS_BUILD_CI_RUN_ID", "29290000000")
+    monkeypatch.setenv("LOTUS_BUILD_IMAGE_DIGEST", "sha256:" + "b" * 64)
+
+    client = TestClient(app)
+    response = client.get("/version")
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "service": "lotus-archive",
+        "version": "0.1.0",
+        "commit_sha": "abc123",
+        "repository_url": "https://github.com/sgajbi/lotus-archive",
+        "git_ref": "refs/heads/main",
+        "build_timestamp_utc": "2026-07-14T00:00:00Z",
+        "ci_run_id": "29290000000",
+        "image_digest": "sha256:" + "b" * 64,
+        "image_digest_posture": "immutable_digest",
+    }
 
 
 def test_unknown_route_uses_support_safe_error_envelope() -> None:

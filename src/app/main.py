@@ -8,6 +8,7 @@ from app.archive.metrics import record_archive_supportability, validate_archive_
 from app.archive.runtime import runtime_posture
 from app.archive.settings import ArchiveRuntimeSettings
 from app.archive.service_profile import archive_supportability, service_posture
+from app.build_metadata import BuildMetadata, build_metadata
 from app.contracts.errors import error_response
 from app.middleware.correlation import CorrelationIdMiddleware, configure_request_logging
 from starlette.exceptions import HTTPException as StarletteHTTPException
@@ -109,4 +110,20 @@ async def metadata() -> dict[str, object]:
         "archivePosture": service_posture(),
         "runtimePosture": runtime.__dict__,
         "supportability": supportability,
+        "build": build_metadata().model_dump(),
     }
+
+
+@app.get(
+    "/version",
+    response_model=BuildMetadata,
+    summary="Get runtime build metadata",
+    description=(
+        "Returns source-safe build and image provenance metadata for support diagnostics. "
+        "Published CI images expose the immutable image digest through deployment-provided "
+        "runtime metadata; local builds report a not-published posture."
+    ),
+    tags=["operations"],
+)
+async def version() -> BuildMetadata:
+    return build_metadata()
