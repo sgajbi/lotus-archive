@@ -104,6 +104,7 @@ def test_release_workflows_record_image_identity_evidence() -> None:
     }
     assert steps["Build and push release image"]["run"] == "make docker-release-build"
     assert steps["Generate release metadata manifest"]["run"] == "make release-evidence"
+    assert "sigstore/cosign-installer@v4.1.0" in main_workflow
     assert (
         steps["Scan release image for vulnerabilities"]["uses"]
         == "aquasecurity/trivy-action@v0.36.0"
