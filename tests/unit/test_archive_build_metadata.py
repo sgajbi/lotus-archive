@@ -1,8 +1,9 @@
 from app.archive import build_metadata as build_metadata_module
 from app.archive.build_metadata import build_metadata
+import pytest
 
 
-def test_build_metadata_uses_source_safe_local_defaults(monkeypatch) -> None:
+def test_build_metadata_uses_source_safe_local_defaults(monkeypatch: pytest.MonkeyPatch) -> None:
     for name in [
         "LOTUS_ARCHIVE_SERVICE_NAME",
         "LOTUS_ARCHIVE_VERSION",
@@ -26,7 +27,7 @@ def test_build_metadata_uses_source_safe_local_defaults(monkeypatch) -> None:
 
 
 def test_build_metadata_reports_immutable_digest_when_deployment_supplies_digest(
-    monkeypatch,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setenv("LOTUS_ARCHIVE_IMAGE_DIGEST", "sha256:" + "a" * 64)
 
@@ -36,7 +37,9 @@ def test_build_metadata_reports_immutable_digest_when_deployment_supplies_digest
     assert metadata.image_digest_posture == "immutable_digest"
 
 
-def test_build_metadata_redacts_credentialed_repository_url(monkeypatch) -> None:
+def test_build_metadata_redacts_credentialed_repository_url(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     monkeypatch.setenv("LOTUS_ARCHIVE_REPOSITORY_URL", "https://token@example.com/sgajbi/archive")
 
     metadata = build_metadata_module.build_metadata()

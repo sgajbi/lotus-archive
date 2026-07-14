@@ -97,16 +97,22 @@ def test_release_workflows_record_image_identity_evidence() -> None:
 
     assert docker_job["permissions"] == {
         "attestations": "write",
+        "artifact-metadata": "write",
         "contents": "read",
         "id-token": "write",
         "packages": "write",
     }
     assert steps["Build and push release image"]["run"] == "make docker-release-build"
     assert steps["Generate release metadata manifest"]["run"] == "make release-evidence"
-    assert steps["Scan release image for vulnerabilities"]["uses"] == "aquasecurity/trivy-action@v0.36.0"
+    assert (
+        steps["Scan release image for vulnerabilities"]["uses"]
+        == "aquasecurity/trivy-action@v0.36.0"
+    )
     assert steps["Generate GitHub provenance attestation"]["uses"] == "actions/attest@v4"
     assert "cosign sign --yes" in steps["Sign release image digest"]["run"]
     assert "cosign verify" in steps["Verify release image signature"]["run"]
     assert "gh attestation verify" in steps["Verify GitHub provenance attestation"]["run"]
+    assert "--signer-workflow" in steps["Verify GitHub provenance attestation"]["run"]
+    assert '--source-ref "refs/heads/main"' in steps["Verify GitHub provenance attestation"]["run"]
     assert "image-build-metadata.json" in main_workflow
     assert "release-evidence.json" in main_workflow
