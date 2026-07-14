@@ -193,6 +193,8 @@ jobs:
           subject-digest: ${{ steps.image.outputs.digest }}
           push-to-registry: true
       - name: Verify GitHub provenance attestation
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: >
           gh attestation verify "oci://${RELEASE_IMAGE_NAME}@${LOTUS_ARCHIVE_IMAGE_DIGEST}"
           --repo "${GITHUB_REPOSITORY}"
