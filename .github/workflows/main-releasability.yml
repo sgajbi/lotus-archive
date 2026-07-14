@@ -198,7 +198,7 @@ jobs:
         run: >
           gh attestation verify "oci://${RELEASE_IMAGE_NAME}@${LOTUS_ARCHIVE_IMAGE_DIGEST}"
           --repo "${GITHUB_REPOSITORY}"
-          --signer-workflow "${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/.github/workflows/main-releasability.yml"
+          --signer-workflow "github.com/${GITHUB_REPOSITORY}/.github/workflows/main-releasability.yml"
           --source-ref "refs/heads/main"
       - name: Upload release evidence
         uses: actions/upload-artifact@v5
