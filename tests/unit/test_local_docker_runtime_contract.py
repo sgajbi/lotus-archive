@@ -113,6 +113,9 @@ def test_release_workflows_record_image_identity_evidence() -> None:
     assert "cosign sign --yes" in steps["Sign release image digest"]["run"]
     assert "cosign verify" in steps["Verify release image signature"]["run"]
     assert "gh attestation verify" in steps["Verify GitHub provenance attestation"]["run"]
+    assert steps["Verify GitHub provenance attestation"]["env"] == {
+        "GH_TOKEN": "${{ github.token }}"
+    }
     assert "--signer-workflow" in steps["Verify GitHub provenance attestation"]["run"]
     assert '--source-ref "refs/heads/main"' in steps["Verify GitHub provenance attestation"]["run"]
     assert "image-build-metadata.json" in main_workflow
