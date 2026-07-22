@@ -30,6 +30,11 @@ Lotus generated-document archive, retrieval, retention, legal hold, and access a
 - RFC-0040 proof-pack report artifacts are governed by the same archive lifecycle when
   `lotus-report` supplies `report_type=proof_pack`, the `proof-pack` render template, and
   `dpm_proof_pack_report_input.v1` metadata.
+- RFC-0002 reviewed Idea evidence-pack artifacts are governed by the same archive lifecycle when
+  `lotus-report` supplies a rendered `proof-pack` artifact with support-safe `idea_evidence_pack`
+  metadata. Archive preserves evidence ids, source-contract lineage, retention posture, source-event
+  refs, and access-audit evidence without raw Idea evidence payloads or client-publication
+  authority.
 - RFC-0041 rebalance-wave report artifacts are governed by the same archive lifecycle when
   `lotus-report` supplies `report_type=rebalance_wave`, the `rebalance-wave` render template, and
   `dpm_wave_report_input.v1` metadata.
@@ -79,6 +84,24 @@ sequenceDiagram
     Archive-->>Manage: source-event refs for portfolio memory
     Gateway->>Archive: controlled metadata/download
     Workbench->>Gateway: BFF document retrieval
+```
+
+## Idea Evidence-Pack Archive Flow
+
+```mermaid
+sequenceDiagram
+    participant Idea as lotus-idea
+    participant Report as lotus-report
+    participant Render as lotus-render
+    participant Archive as lotus-archive
+    participant Gateway as lotus-gateway
+
+    Idea->>Report: reviewed IdeaEvidencePacket refs
+    Report->>Render: proof-pack package with Idea source lineage
+    Render-->>Report: deterministic PDF artifact
+    Report->>Archive: POST /documents report_type=proof_pack + idea_evidence_pack summary
+    Archive-->>Report: document_id, checksum, retention posture
+    Archive-->>Gateway: controlled metadata/download/source-event evidence
 ```
 
 ## Rebalance-Wave Archive Flow

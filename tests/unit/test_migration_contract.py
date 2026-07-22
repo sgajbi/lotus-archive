@@ -70,6 +70,15 @@ def test_advisor_proposal_memo_migration_contains_required_field() -> None:
     assert "ADD COLUMN IF NOT EXISTS" in migration
 
 
+def test_idea_evidence_pack_migration_contains_required_field() -> None:
+    migration = (
+        ROOT / "migrations" / "006_add_idea_evidence_pack_to_archive_documents.sql"
+    ).read_text(encoding="utf-8")
+
+    assert "idea_evidence_pack JSONB" in migration
+    assert "ADD COLUMN IF NOT EXISTS" in migration
+
+
 def test_legal_hold_migration_contains_required_fields() -> None:
     migration = (ROOT / "migrations" / "002_create_archive_legal_holds.sql").read_text(
         encoding="utf-8"

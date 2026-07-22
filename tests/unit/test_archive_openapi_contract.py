@@ -55,6 +55,7 @@ def test_archive_document_api_openapi_contract_is_certification_ready() -> None:
     assert metadata_schema["document_id"]["description"]
     assert metadata_schema["checksum"]["description"]
     assert metadata_schema["reviewed_advisory_narrative"]["description"]
+    assert metadata_schema["idea_evidence_pack"]["description"]
     assert "storage_key" not in metadata_schema
 
     narrative_schema = spec["components"]["schemas"]["ReviewedAdvisoryNarrativeArchiveSummary"][
@@ -63,6 +64,13 @@ def test_archive_document_api_openapi_contract_is_certification_ready() -> None:
     assert narrative_schema["package_id"]["minLength"] == 1
     assert narrative_schema["source_narrative_hash"]["description"].startswith("SHA-256")
     assert "PDF render" in narrative_schema["included_in_render"]["description"]
+
+    idea_schema = spec["components"]["schemas"]["IdeaEvidencePackArchiveSummary"]["properties"]
+    assert idea_schema["report_evidence_pack_id"]["minLength"] == 1
+    assert idea_schema["source_contract_version"]["const"] == (
+        "lotus_idea_evidence_pack_report_input.v1"
+    )
+    assert idea_schema["client_publication_authority_granted"]["const"] is False
 
     retention_schema = spec["components"]["schemas"]["RetentionResponse"]["properties"]
     assert retention_schema["purge_status"]["description"]
