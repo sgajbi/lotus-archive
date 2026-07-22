@@ -11,6 +11,7 @@ from app.archive.models import (
     AdvisorProposalMemoArchiveSummary,
     DocumentClassification,
     GeneratedReportType,
+    IdeaEvidencePackArchiveSummary,
     LegalHoldStatus,
     LegalHoldRecord,
     LifecycleRelationshipRecord,
@@ -89,6 +90,15 @@ class ArchiveDocumentResponse(BaseModel):
             "Support-safe advisor proposal memo archive summary when the portfolio-review "
             "document includes an RFC-0024 advisor-use memo package. Client-ready memo document "
             "publication remains blocked."
+        ),
+    )
+    idea_evidence_pack: IdeaEvidencePackArchiveSummary | None = Field(
+        default=None,
+        description=(
+            "Support-safe reviewed Idea evidence-pack archive summary when lotus-report archived "
+            "a rendered proof-pack package sourced from lotus-idea. This preserves evidence ids, "
+            "hash lineage, source-contract posture, and no-client-publication authority without "
+            "raw Idea evidence payloads."
         ),
     )
     purge_status: PurgeStatus = Field(description="Current purge eligibility status.")

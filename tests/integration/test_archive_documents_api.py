@@ -11,7 +11,10 @@ from app.archive.service import ArchiveDocumentService
 from app.archive.storage import FilesystemObjectStorage
 from app.main import app
 from tests.unit.test_archive_writer import valid_metadata_input
-from tests.unit.test_archive_metadata_model import reviewed_advisory_narrative_summary
+from tests.unit.test_archive_metadata_model import (
+    idea_evidence_pack_summary,
+    reviewed_advisory_narrative_summary,
+)
 
 
 def _service(tmp_path: Path) -> ArchiveDocumentService:
@@ -84,6 +87,32 @@ def _proof_pack_payload() -> dict[str, object]:
         classification="restricted",
         retention_start_date="2019-01-01",
         retain_until_date="2020-01-01",
+    ).model_dump(mode="json")
+    return payload
+
+
+def _idea_evidence_pack_payload() -> dict[str, object]:
+    payload = _payload(content=b"idea evidence proof pack pdf bytes")
+    payload["metadata"] = valid_metadata_input(
+        archive_request_id="archive-request-idea-evidence-pack-001",
+        report_job_id="report-job-idea-evidence-pack-001",
+        report_request_id="report-request-idea-evidence-pack-001",
+        snapshot_id="snapshot-idea-evidence-pack-001",
+        render_job_id="render-job-idea-evidence-pack-001",
+        render_attempt_id="render-attempt-idea-evidence-pack-001",
+        report_type="proof_pack",
+        portfolio_scope="idea_evidence_pack:irep_001",
+        portfolio_id="PB_SG_GLOBAL_BAL_001",
+        as_of_date="2026-06-24",
+        reporting_period_start="2026-06-24",
+        reporting_period_end="2026-06-24",
+        frequency="event",
+        template_id="proof-pack",
+        report_data_contract_version="dpm_proof_pack_report_input.v1",
+        classification="restricted",
+        retention_start_date="2026-06-24",
+        retain_until_date="2033-06-24",
+        idea_evidence_pack=idea_evidence_pack_summary(),
     ).model_dump(mode="json")
     return payload
 
@@ -240,6 +269,77 @@ def test_proof_pack_report_archive_lifecycle_preserves_retention_and_audit(
         assert "purged" in reason_codes
     finally:
         app.dependency_overrides.clear()
+
+
+def test_idea_evidence_pack_archive_summary_preserves_lifecycle_and_audit(
+    tmp_path: Path,
+) -> None:
+    service = _service(tmp_path)
+    app.dependency_overrides[archive_service] = lambda: service
+    client = TestClient(app)
+    try:
+        create_response = client.post(
+            "/documents",
+            json=_idea_evidence_pack_payload(),
+            headers=_headers(),
+        )
+        assert create_response.status_code == 201
+        document_id = create_response.json()["document_id"]
+        idea_summary = create_response.json()["idea_evidence_pack"]
+        assert idea_summary["report_evidence_pack_id"] == "irep_001"
+        assert idea_summary["client_publication_authority_granted"] is False
+        assert "raw" not in str(idea_summary).lower()
+
+        metadata_response = client.get(
+            f"/documents/{document_id}",
+            headers=_headers(caller_service="lotus-gateway"),
+        )
+        download_response = client.get(
+            f"/documents/{document_id}/download",
+            headers=_headers(caller_service="lotus-gateway"),
+        )
+        retention_response = client.get(
+            f"/documents/{document_id}/retention",
+            headers=_headers(),
+        )
+        source_events_response = client.get(
+            f"/documents/{document_id}/source-events",
+            headers=_headers(caller_service="lotus-gateway"),
+        )
+        access_events_response = client.get(
+            f"/documents/{document_id}/access-events",
+            headers=_headers(),
+        )
+    finally:
+        app.dependency_overrides.clear()
+
+    assert metadata_response.status_code == 200
+    assert metadata_response.json()["idea_evidence_pack"] == idea_summary
+    assert "storage_key" not in metadata_response.json()
+    assert download_response.status_code == 200
+    assert download_response.content == b"idea evidence proof pack pdf bytes"
+    assert retention_response.status_code == 200
+    assert retention_response.json()["retention_policy_id"] == "generated-report-standard"
+
+    created_event = source_events_response.json()["events"][0]
+    assert "idea_evidence_pack_archive_summary_preserved" in created_event["reason_codes"]
+    assert {
+        "artifact_type": "idea_evidence_pack",
+        "artifact_id": "ievp_001",
+        "content_hash": "sha256:" + "e" * 64,
+    } in created_event["artifact_refs"]
+    assert "idea evidence proof pack pdf bytes" not in str(created_event)
+    assert "storage_key" not in str(created_event)
+
+    event_types = [event["event_type"] for event in access_events_response.json()["events"]]
+    assert event_types == [
+        "archive_create",
+        "metadata_read",
+        "binary_download",
+        "retention_read",
+        "source_events_read",
+        "access_events_read",
+    ]
 
 
 def test_rebalance_wave_report_archive_lifecycle_preserves_download_and_audit(

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import date, datetime, timezone
 from enum import StrEnum
-from typing import Self
+from typing import Literal, Self
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
@@ -149,6 +149,43 @@ class AdvisorProposalMemoArchiveSummary(BaseModel):
         return self
 
 
+class IdeaEvidencePackArchiveSummary(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True)
+
+    report_evidence_pack_id: str = Field(min_length=1)
+    conversion_intent_id: str = Field(min_length=1)
+    candidate_id: str = Field(min_length=1)
+    evidence_packet_id: str = Field(min_length=1)
+    source_contract_version: Literal["lotus_idea_evidence_pack_report_input.v1"]
+    evidence_content_fingerprint: str = Field(min_length=1)
+    source_summary_count: int = Field(ge=1)
+    reason_codes: list[str] = Field(min_length=1)
+    retention_policy_ref: str = Field(min_length=1)
+    supportability_status: Literal["not_certified"]
+    included_in_render: bool
+    client_publication_authority_granted: Literal[False] = False
+
+    @field_validator("evidence_content_fingerprint")
+    @classmethod
+    def _fingerprint_must_be_sha256_lineage(cls, value: str) -> str:
+        if not value.startswith("sha256:"):
+            raise ValueError("idea evidence archive summary must carry sha256 lineage")
+        return value
+
+    @field_validator("reason_codes")
+    @classmethod
+    def _reason_codes_must_be_support_safe(cls, values: list[str]) -> list[str]:
+        if any(not value.strip() for value in values):
+            raise ValueError("idea evidence archive reason codes must not be blank")
+        return values
+
+    @model_validator(mode="after")
+    def _summary_must_be_rendered_and_not_client_published(self) -> Self:
+        if not self.included_in_render:
+            raise ValueError("idea evidence archive summary must be rendered")
+        return self
+
+
 class ArchiveDocumentInput(BaseModel):
     model_config = ConfigDict(str_strip_whitespace=True)
 
@@ -180,6 +217,7 @@ class ArchiveDocumentInput(BaseModel):
     retain_until_date: date | None = None
     reviewed_advisory_narrative: ReviewedAdvisoryNarrativeArchiveSummary | None = None
     advisor_proposal_memo: AdvisorProposalMemoArchiveSummary | None = None
+    idea_evidence_pack: IdeaEvidencePackArchiveSummary | None = None
     created_by_service: str = Field(min_length=1)
     created_by_actor: str = Field(min_length=1)
 
@@ -216,6 +254,17 @@ class ArchiveDocumentInput(BaseModel):
             if self.template_id != "portfolio-review":
                 raise ValueError(
                     "advisor proposal memo archive summary requires portfolio-review template"
+                )
+        if self.idea_evidence_pack is not None:
+            if self.report_type is not GeneratedReportType.PROOF_PACK:
+                raise ValueError(
+                    "idea evidence archive summary is only supported for proof_pack reports"
+                )
+            if self.template_id != "proof-pack":
+                raise ValueError("idea evidence archive summary requires proof-pack template")
+            if self.report_data_contract_version != "dpm_proof_pack_report_input.v1":
+                raise ValueError(
+                    "idea evidence archive summary requires dpm_proof_pack_report_input.v1"
                 )
         return self
 

@@ -31,8 +31,12 @@ advisory narrative portfolio-review artifacts can now preserve a support-safe
 narrative page; raw narrative sections and client-ready promotion remain out of scope. RFC-0024
 advisor proposal memo portfolio-review artifacts can now preserve a support-safe
 `advisor_proposal_memo` archive summary when the PDF includes the rendered advisor-use memo page;
-raw memo reconstruction and client-ready memo promotion remain out of scope. RFC-0108
-archive supportability now publishes `archive.observability.archive_supportability` through `/metadata` and
+raw memo reconstruction and client-ready memo promotion remain out of scope. RFC-0002 reviewed Idea
+evidence pack artifacts can now preserve a support-safe
+`idea_evidence_pack` archive summary when `lotus-report` archives a rendered `proof-pack` package
+sourced from `lotus-idea`; Archive preserves evidence ids, source-contract lineage, retention
+posture, access-audit events, and source-event artifact refs without raw Idea evidence payloads or
+client-publication authority. RFC-0108 archive supportability now publishes `archive.observability.archive_supportability` through `/metadata` and
 `lotus_archive_supportability_total`, covering retrieval, retention, legal-hold, access-audit,
 lifecycle, gateway retrieval, and Gateway-backed Workbench retrieval with bounded labels only.
 Archive runtime build metadata is exposed through `src/app/archive/build_metadata.py`, `/version`,
@@ -145,10 +149,14 @@ workflow must request `--rebase`; merge commits and squash merges are disabled b
 10. Idea lifecycle decisions are read-only Archive projections. They may expose support-safe Idea
     correlation references but never grant hold management, purge execution, portfolio, client,
     report-payload, or document-content authority to `lotus-idea`.
-11. Local SQLite decision persistence and local Ed25519 keys are implementation proof only.
+11. Idea evidence-pack archive summaries are source-safe metadata on Archive-generated-document
+    records. They require `report_type=proof_pack`, `template_id=proof-pack`,
+    `report_data_contract_version=dpm_proof_pack_report_input.v1`, rendered-page evidence, SHA-256
+    evidence fingerprint lineage, and `client_publication_authority_granted=false`.
+12. Local SQLite decision persistence and local Ed25519 keys are implementation proof only.
     Production requires a durable Archive repository, managed private-key source and rotation,
     consumer trust bundle, and live evidence.
-12. Local container builds may expose `image_digest_posture=not_published`. Do not claim production
+13. Local container builds may expose `image_digest_posture=not_published`. Do not claim production
     deployment certification until mainline release evidence is paired with digest-based deployment
     manifests and same-digest promotion evidence.
 

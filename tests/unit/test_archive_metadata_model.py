@@ -80,6 +80,25 @@ def advisor_proposal_memo_summary(**overrides: object) -> dict[str, object]:
     return values
 
 
+def idea_evidence_pack_summary(**overrides: object) -> dict[str, object]:
+    values: dict[str, object] = {
+        "report_evidence_pack_id": "irep_001",
+        "conversion_intent_id": "icnv_001",
+        "candidate_id": "icand_001",
+        "evidence_packet_id": "ievp_001",
+        "source_contract_version": "lotus_idea_evidence_pack_report_input.v1",
+        "evidence_content_fingerprint": "sha256:" + "e" * 64,
+        "source_summary_count": 1,
+        "reason_codes": ["HIGH_CASH_REVIEWED_FOR_REPORT"],
+        "retention_policy_ref": "generated-report-standard",
+        "supportability_status": "not_certified",
+        "included_in_render": True,
+        "client_publication_authority_granted": False,
+    }
+    values.update(overrides)
+    return values
+
+
 def test_metadata_input_accepts_source_backed_minimum_contract() -> None:
     metadata = valid_metadata_input()
 
@@ -148,6 +167,58 @@ def test_metadata_input_accepts_advisor_proposal_memo_archive_summary() -> None:
     assert metadata.advisor_proposal_memo is not None
     assert metadata.advisor_proposal_memo.memo_id == "memo-001"
     assert metadata.advisor_proposal_memo.review_action == "APPROVE_FOR_ADVISOR_USE"
+
+
+def test_metadata_input_accepts_idea_evidence_pack_archive_summary() -> None:
+    metadata = valid_metadata_input(
+        report_type="proof_pack",
+        template_id="proof-pack",
+        report_data_contract_version="dpm_proof_pack_report_input.v1",
+        portfolio_scope="idea_evidence_pack:irep_001",
+        frequency="event",
+        idea_evidence_pack=idea_evidence_pack_summary(),
+    )
+
+    assert metadata.idea_evidence_pack is not None
+    assert metadata.idea_evidence_pack.report_evidence_pack_id == "irep_001"
+    assert metadata.idea_evidence_pack.client_publication_authority_granted is False
+
+
+def test_metadata_input_rejects_idea_evidence_pack_for_wrong_report_type() -> None:
+    with pytest.raises(ValidationError):
+        valid_metadata_input(idea_evidence_pack=idea_evidence_pack_summary())
+
+
+def test_metadata_input_rejects_idea_evidence_pack_for_wrong_template() -> None:
+    with pytest.raises(ValidationError):
+        valid_metadata_input(
+            report_type="proof_pack",
+            template_id="portfolio-review",
+            report_data_contract_version="dpm_proof_pack_report_input.v1",
+            idea_evidence_pack=idea_evidence_pack_summary(),
+        )
+
+
+def test_metadata_input_rejects_idea_evidence_pack_without_sha256_lineage() -> None:
+    with pytest.raises(ValidationError):
+        valid_metadata_input(
+            report_type="proof_pack",
+            template_id="proof-pack",
+            report_data_contract_version="dpm_proof_pack_report_input.v1",
+            idea_evidence_pack=idea_evidence_pack_summary(
+                evidence_content_fingerprint="not-a-sha256-hash"
+            ),
+        )
+
+
+def test_metadata_input_rejects_unrendered_idea_evidence_pack_summary() -> None:
+    with pytest.raises(ValidationError):
+        valid_metadata_input(
+            report_type="proof_pack",
+            template_id="proof-pack",
+            report_data_contract_version="dpm_proof_pack_report_input.v1",
+            idea_evidence_pack=idea_evidence_pack_summary(included_in_render=False),
+        )
 
 
 def test_metadata_input_rejects_client_ready_advisor_proposal_memo_summary() -> None:
