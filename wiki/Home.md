@@ -2,6 +2,15 @@
 
 Lotus generated-document archive, retrieval, retention, legal hold, and access audit service
 
+## Reader Map
+
+| Need | Start here |
+| --- | --- |
+| Current capability and boundary | [Current posture](#current-posture) |
+| API and ownership decisions | [Archive service boundaries](../docs/architecture/archive-service-boundaries.md) |
+| Supported feature evidence | [Supported features](../docs/supported-features.md) |
+| Local validation and publication | [Repository context](../REPOSITORY-ENGINEERING-CONTEXT.md) |
+
 ## Current posture
 
 - Governed service boundary scaffold is in place.
@@ -54,6 +63,12 @@ Lotus generated-document archive, retrieval, retention, legal hold, and access a
   manifests consume that digest and same-digest promotion evidence is available.
 - `lotus_archive_supportability_total` is implementation-backed with bounded `state`, `reason`,
   and `freshness_bucket` labels only, with recorder-level fallback for unknown label values.
+- `POST /documents/access-preflight` provides a bounded, ordered caller-scoped Archive posture for
+  `lotus-gateway` batch consumers. It requires trusted tenant and region context, performs one
+  repository batch lookup, returns explicit complete/partial/unavailable and per-document
+  allowed/denied/missing/unavailable states, and never returns storage paths or archive payloads.
+  The response is advisory; the single-document metadata and download routes remain the final
+  access boundary.
 - Workbench retrieval is supported only through the Workbench BFF and `lotus-gateway`; Workbench
   must not call `lotus-archive` directly.
 - `POST /documents/{document_id}/idea-lifecycle-decisions` is a limited, not-certified Archive

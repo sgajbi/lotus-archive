@@ -39,6 +39,7 @@ sections, and does not promote client-ready commentary.
 | Idea evidence lifecycle decision | `lotus-archive` supplies, `lotus-idea` projects | Limited authenticated read-only projection of Archive retention, hold, and purge posture; Idea cannot set/release holds or authorize/execute disposal |
 | Product-facing retrieval | `lotus-gateway` | Supported through gateway metadata and controlled download routes |
 | Workbench retrieval surface | `lotus-workbench` | Supported only through the Workbench BFF and existing gateway-backed retrieval boundary; direct Workbench-to-archive calls remain unsupported |
+| Batch caller access posture | `lotus-archive` | Published through a bounded, ordered preflight contract; Archive evaluates tenant/region scope without returning payloads or storage truth |
 
 ## Module Families
 
@@ -93,6 +94,19 @@ All archive API routes require caller context. Workbench is intentionally not an
 archive caller. Gateway-backed product retrieval is implemented in `lotus-gateway`; Workbench
 retrieval consumes that gateway boundary through the Workbench BFF and must not call
 `lotus-archive` directly.
+
+The bounded caller-access preflight contract adds:
+
+1. `POST /documents/access-preflight` accepts up to 100 unique opaque document identifiers.
+2. The endpoint requires trusted `lotus-gateway` caller identity plus tenant and region context;
+   caller-supplied document authority is not accepted in the body.
+3. The response preserves request order and returns bounded `allowed`, `denied`, `missing`, or
+   `unavailable` posture with `complete`, `partial`, or `unavailable` batch state.
+4. One repository batch lookup is used for the complete request; the contract does not require
+   one Archive call per document.
+5. The response is advisory only. It does not mint links or authorize metadata/download access,
+   which remains enforced by the single-document routes.
+6. No raw document bytes, storage paths, or sensitive authorization scope details are returned.
 
 RFC-0103 Slice 5 adds:
 

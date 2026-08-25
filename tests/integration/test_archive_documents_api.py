@@ -1,5 +1,6 @@
 from base64 import b64encode
 from pathlib import Path
+from typing import cast
 
 from fastapi.testclient import TestClient
 
@@ -35,6 +36,8 @@ def _headers(caller_service: str = "lotus-report") -> dict[str, str]:
         "X-Caller-Service": caller_service,
         "X-Actor-Type": "service",
         "X-Actor-Id": "report-worker",
+        "X-Tenant-Id": "tenant-private-bank",
+        "X-Region": "SG",
     }
 
 
@@ -489,6 +492,108 @@ def test_document_api_requires_caller_context(tmp_path: Path) -> None:
 
     assert response.status_code == 401
     assert response.json()["error"]["code"] == "caller_context_missing"
+
+
+def test_batch_access_preflight_is_ordered_bounded_and_advisory(tmp_path: Path) -> None:
+    service = _service(tmp_path)
+    app.dependency_overrides[archive_service] = lambda: service
+    client = TestClient(app)
+    other_payload = _payload_with_id("preflight-other", b"other document")
+    other_metadata = cast(dict[str, object], other_payload["metadata"])
+    other_metadata["tenant_id"] = "tenant-other"
+    other_metadata["region"] = "EMEA"
+    try:
+        allowed_response = client.post("/documents", json=_payload(), headers=_headers())
+        other_response = client.post(
+            "/documents",
+            json=other_payload,
+            headers=_headers(),
+        )
+        response = client.post(
+            "/documents/access-preflight",
+            json={
+                "document_ids": [
+                    other_response.json()["document_id"],
+                    "doc_missing",
+                    allowed_response.json()["document_id"],
+                ]
+            },
+            headers=_headers(caller_service="lotus-gateway"),
+        )
+    finally:
+        app.dependency_overrides.clear()
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["result_state"] == "complete"
+    assert body["preflight_only"] is True
+    assert [item["state"] for item in body["items"]] == [
+        "denied",
+        "missing",
+        "allowed",
+    ]
+    assert "storage_key" not in str(body)
+    assert "storage" not in str(body)
+
+
+def test_batch_access_preflight_requires_trusted_scope(tmp_path: Path) -> None:
+    service = _service(tmp_path)
+    app.dependency_overrides[archive_service] = lambda: service
+    client = TestClient(app)
+    headers = _headers(caller_service="lotus-gateway")
+    headers.pop("X-Tenant-Id")
+    headers.pop("X-Region")
+    try:
+        response = client.post(
+            "/documents/access-preflight",
+            json={"document_ids": ["doc_missing"]},
+            headers=headers,
+        )
+    finally:
+        app.dependency_overrides.clear()
+
+    assert response.status_code == 401
+    assert response.json()["error"]["code"] == "caller_scope_missing"
+
+
+def test_batch_access_preflight_rejects_nonopaque_and_duplicate_ids(tmp_path: Path) -> None:
+    service = _service(tmp_path)
+    app.dependency_overrides[archive_service] = lambda: service
+    client = TestClient(app)
+    try:
+        path_response = client.post(
+            "/documents/access-preflight",
+            json={"document_ids": ["archive/path"]},
+            headers=_headers(caller_service="lotus-gateway"),
+        )
+        duplicate_response = client.post(
+            "/documents/access-preflight",
+            json={"document_ids": ["doc_duplicate", "doc_duplicate"]},
+            headers=_headers(caller_service="lotus-gateway"),
+        )
+    finally:
+        app.dependency_overrides.clear()
+
+    assert path_response.status_code == 422
+    assert duplicate_response.status_code == 422
+
+
+def test_document_metadata_route_enforces_tenant_and_region_scope(tmp_path: Path) -> None:
+    service = _service(tmp_path)
+    app.dependency_overrides[archive_service] = lambda: service
+    client = TestClient(app)
+    try:
+        create_response = client.post("/documents", json=_payload(), headers=_headers())
+        document_id = create_response.json()["document_id"]
+        mismatched_headers = _headers(caller_service="lotus-gateway")
+        mismatched_headers["X-Tenant-Id"] = "tenant-other"
+        mismatched_headers["X-Region"] = "EMEA"
+        response = client.get(f"/documents/{document_id}", headers=mismatched_headers)
+    finally:
+        app.dependency_overrides.clear()
+
+    assert response.status_code == 403
+    assert response.json()["error"]["code"] == "authorization_failed"
 
 
 def test_document_api_denies_direct_workbench_archive_create(tmp_path: Path) -> None:

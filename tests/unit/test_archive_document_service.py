@@ -77,12 +77,19 @@ def _create_request_with_id(
     )
 
 
-def _caller(caller_service: str = "lotus-report") -> CallerContext:
+def _caller(
+    caller_service: str = "lotus-report",
+    *,
+    tenant_id: str | None = "tenant-private-bank",
+    region: str | None = "SG",
+) -> CallerContext:
     return CallerContext(
         caller_service=caller_service,
         actor_type="service",
         actor_id="report-worker",
         correlation_id="corr-service",
+        tenant_id=tenant_id,
+        region=region,
     )
 
 

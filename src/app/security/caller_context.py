@@ -8,12 +8,19 @@ CALLER_SERVICE_HEADER = "x-caller-service"
 ACTOR_TYPE_HEADER = "x-actor-type"
 ACTOR_ID_HEADER = "x-actor-id"
 TENANT_ID_HEADER = "x-tenant-id"
+REGION_HEADER = "x-region"
 
 
 class CallerContextMissingError(ValueError):
     def __init__(self, missing_headers: tuple[str, ...]) -> None:
         self.missing_headers = missing_headers
         super().__init__(f"Missing caller context headers: {', '.join(missing_headers)}")
+
+
+class CallerScopeMissingError(ValueError):
+    def __init__(self, missing_headers: tuple[str, ...]) -> None:
+        self.missing_headers = missing_headers
+        super().__init__(f"Missing caller scope headers: {', '.join(missing_headers)}")
 
 
 @dataclass(frozen=True)
@@ -23,6 +30,7 @@ class CallerContext:
     actor_id: str
     correlation_id: str
     tenant_id: str | None = None
+    region: str | None = None
 
 
 def caller_context_from_headers(
@@ -45,4 +53,5 @@ def caller_context_from_headers(
         actor_id=normalized[ACTOR_ID_HEADER],
         correlation_id=correlation_id,
         tenant_id=normalized.get(TENANT_ID_HEADER),
+        region=normalized.get(REGION_HEADER),
     )

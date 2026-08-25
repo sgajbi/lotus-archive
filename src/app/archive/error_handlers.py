@@ -25,7 +25,7 @@ from app.archive.idea_lifecycle_decisions.service import (
     LifecycleDecisionTenantError,
 )
 from app.contracts.errors import error_response
-from app.security.caller_context import CallerContextMissingError
+from app.security.caller_context import CallerContextMissingError, CallerScopeMissingError
 
 
 def register_archive_exception_handlers(
@@ -41,6 +41,18 @@ def register_archive_exception_handlers(
     ) -> JSONResponse:
         return error_response(
             code="caller_context_missing",
+            http_status=status.HTTP_401_UNAUTHORIZED,
+            correlation_id=correlation_id(request),
+            service=service_name,
+        )
+
+    @app.exception_handler(CallerScopeMissingError)
+    async def caller_scope_missing_exception_handler(
+        request: Request,
+        _exc: CallerScopeMissingError,
+    ) -> JSONResponse:
+        return error_response(
+            code="caller_scope_missing",
             http_status=status.HTTP_401_UNAUTHORIZED,
             correlation_id=correlation_id(request),
             service=service_name,

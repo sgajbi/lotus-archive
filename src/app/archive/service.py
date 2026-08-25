@@ -10,6 +10,14 @@ from app.archive.commands import (
     LegalHoldCreateCommand,
     LifecycleTransitionCommand,
 )
+from app.archive.access_preflight import (
+    ArchiveAccessPreflightItem,
+    ArchiveAccessPreflightResult,
+    ArchiveAccessReasonCode,
+    ArchiveAccessResultState,
+    ArchiveAccessState,
+    result_state_for_items,
+)
 from app.archive.archive_writer import ArchiveWriter
 from app.archive.audit import (
     AccessAuditEvent,
@@ -18,9 +26,14 @@ from app.archive.audit import (
     AuthorizationDecision,
     access_audit_event,
 )
-from app.archive.authorization import ArchiveAuthorizationPolicy, ArchivePermission
+from app.archive.authorization import (
+    ArchiveAuthorizationPolicy,
+    ArchivePermission,
+    require_caller_scope,
+)
 from app.archive.checksum import calculate_checksum
 from app.archive.exceptions import (
+    ArchiveDocumentLookupUnavailableError,
     DocumentChecksumMismatchError,
     DocumentNotFoundError,
     LegalHoldActiveError,
@@ -101,14 +114,12 @@ class ArchiveDocumentService:
         caller_context: CallerContext,
         trace_id: str,
     ) -> ArchiveDocumentMetadata:
-        self.authorization_policy.authorize(
+        metadata = self._get_authorized_document_metadata(
+            document_id=document_id,
             permission=ArchivePermission.READ_METADATA,
             caller_context=caller_context,
-            audit_repository=self.audit_repository,
             trace_id=trace_id,
-            document_id=document_id,
         )
-        metadata = self._get_existing_metadata(document_id)
         self._record_allowed(
             event_type=AccessEventType.METADATA_READ,
             caller_context=caller_context,
@@ -125,14 +136,12 @@ class ArchiveDocumentService:
         caller_context: CallerContext,
         trace_id: str,
     ) -> tuple[ArchiveDocumentMetadata, bytes]:
-        self.authorization_policy.authorize(
+        metadata = self._get_authorized_document_metadata(
+            document_id=document_id,
             permission=ArchivePermission.DOWNLOAD_BINARY,
             caller_context=caller_context,
-            audit_repository=self.audit_repository,
             trace_id=trace_id,
-            document_id=document_id,
         )
-        metadata = self._get_existing_metadata(document_id)
         try:
             content = self.storage.get(key=metadata.storage_key)
         except StorageReadFailedError:
@@ -379,14 +388,13 @@ class ArchiveDocumentService:
         caller_context: CallerContext,
         trace_id: str,
     ) -> ArchiveDocumentMetadata:
-        self.authorization_policy.authorize(
+        metadata = self._get_authorized_document_metadata(
+            document_id=document_id,
             permission=ArchivePermission.READ_METADATA,
             caller_context=caller_context,
-            audit_repository=self.audit_repository,
             trace_id=trace_id,
-            document_id=document_id,
         )
-        current = self._resolve_current_document(self._get_existing_metadata(document_id))
+        current = self._resolve_current_document(metadata)
         self._record_allowed(
             event_type=AccessEventType.CURRENT_DOCUMENT_READ,
             caller_context=caller_context,
@@ -394,6 +402,64 @@ class ArchiveDocumentService:
             document_id=document_id,
         )
         return current
+
+    @archive_metric("batch_access_preflight")
+    def preflight_document_access(
+        self,
+        *,
+        document_ids: tuple[str, ...],
+        caller_context: CallerContext,
+        trace_id: str,
+    ) -> ArchiveAccessPreflightResult:
+        self.authorization_policy.authorize(
+            permission=ArchivePermission.READ_BATCH_ACCESS_PREFLIGHT,
+            caller_context=caller_context,
+            audit_repository=self.audit_repository,
+            trace_id=trace_id,
+        )
+        require_caller_scope(caller_context)
+
+        try:
+            lookup = self.repository.get_by_document_ids(document_ids)
+        except ArchiveDocumentLookupUnavailableError:
+            items = tuple(
+                ArchiveAccessPreflightItem(
+                    document_id=document_id,
+                    state=ArchiveAccessState.UNAVAILABLE,
+                    reason_code=ArchiveAccessReasonCode.LOOKUP_UNAVAILABLE,
+                )
+                for document_id in document_ids
+            )
+            result = ArchiveAccessPreflightResult(
+                items=items,
+                result_state=ArchiveAccessResultState.UNAVAILABLE,
+            )
+            self._record_preflight_audit(
+                items=items,
+                caller_context=caller_context,
+                trace_id=trace_id,
+            )
+            return result
+
+        items = tuple(
+            self._preflight_item(
+                document_id=document_id,
+                metadata=lookup.documents.get(document_id),
+                unavailable=document_id in lookup.unavailable_document_ids,
+                caller_context=caller_context,
+            )
+            for document_id in document_ids
+        )
+        result = ArchiveAccessPreflightResult(
+            items=items,
+            result_state=result_state_for_items(items),
+        )
+        self._record_preflight_audit(
+            items=items,
+            caller_context=caller_context,
+            trace_id=trace_id,
+        )
+        return result
 
     @archive_metric("metadata_lookup")
     def list_document_source_events(
@@ -487,6 +553,84 @@ class ArchiveDocumentService:
         if metadata is None:
             raise DocumentNotFoundError("archive document was not found")
         return metadata
+
+    def _get_authorized_document_metadata(
+        self,
+        *,
+        document_id: str,
+        permission: ArchivePermission,
+        caller_context: CallerContext,
+        trace_id: str,
+    ) -> ArchiveDocumentMetadata:
+        self.authorization_policy.authorize(
+            permission=permission,
+            caller_context=caller_context,
+            audit_repository=self.audit_repository,
+            trace_id=trace_id,
+            document_id=document_id,
+        )
+        metadata = self._get_existing_metadata(document_id)
+        self.authorization_policy.authorize_document_scope(
+            metadata=metadata,
+            caller_context=caller_context,
+            audit_repository=self.audit_repository,
+            trace_id=trace_id,
+        )
+        return metadata
+
+    def _preflight_item(
+        self,
+        *,
+        document_id: str,
+        metadata: ArchiveDocumentMetadata | None,
+        unavailable: bool,
+        caller_context: CallerContext,
+    ) -> ArchiveAccessPreflightItem:
+        if unavailable:
+            return ArchiveAccessPreflightItem(
+                document_id=document_id,
+                state=ArchiveAccessState.UNAVAILABLE,
+                reason_code=ArchiveAccessReasonCode.LOOKUP_UNAVAILABLE,
+            )
+        if metadata is None:
+            return ArchiveAccessPreflightItem(
+                document_id=document_id,
+                state=ArchiveAccessState.MISSING,
+                reason_code=ArchiveAccessReasonCode.DOCUMENT_NOT_FOUND,
+            )
+        decision = self.authorization_policy.document_scope_decision(
+            metadata=metadata,
+            caller_context=caller_context,
+        )
+        return ArchiveAccessPreflightItem(
+            document_id=document_id,
+            state=decision.state,
+            reason_code=decision.reason_code,
+        )
+
+    def _record_preflight_audit(
+        self,
+        *,
+        items: tuple[ArchiveAccessPreflightItem, ...],
+        caller_context: CallerContext,
+        trace_id: str,
+    ) -> None:
+        for item in items:
+            self.audit_repository.record(
+                access_audit_event(
+                    event_type=AccessEventType.BATCH_ACCESS_PREFLIGHT,
+                    caller_context=caller_context,
+                    trace_id=trace_id,
+                    authorization_decision=(
+                        AuthorizationDecision.ALLOWED
+                        if item.state is ArchiveAccessState.ALLOWED
+                        else AuthorizationDecision.DENIED
+                    ),
+                    authorization_reason_code=item.reason_code.value,
+                    operation_reason_code=item.reason_code.value,
+                    document_id=item.document_id,
+                )
+            )
 
     def _apply_lifecycle_transition(
         self,

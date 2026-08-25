@@ -1,9 +1,16 @@
 from __future__ import annotations
 
 from datetime import date, datetime
+from typing import Literal
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
+from app.archive.access_preflight import (
+    ArchiveAccessPreflightResult,
+    ArchiveAccessReasonCode,
+    ArchiveAccessResultState,
+    ArchiveAccessState,
+)
 from app.archive.audit import AccessAuditEvent
 from app.archive.models import (
     ArchiveDocumentInput,
@@ -20,6 +27,82 @@ from app.archive.models import (
     ReviewedAdvisoryNarrativeArchiveSummary,
 )
 from app.archive.source_events import SOURCE_EVENT_FAMILY
+
+
+class ArchiveDocumentAccessPreflightRequest(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True)
+
+    document_ids: list[str] = Field(
+        min_length=1,
+        max_length=100,
+        description=(
+            "Ordered opaque archive document identifiers to evaluate. The request cannot grant "
+            "download access or provide document authority."
+        ),
+        examples=[["doc_001", "doc_002"]],
+    )
+
+    @field_validator("document_ids")
+    @classmethod
+    def _document_ids_must_be_bounded_and_unique(cls, values: list[str]) -> list[str]:
+        if any(not value or len(value) > 128 for value in values):
+            raise ValueError("document identifiers must be non-empty and at most 128 characters")
+        if any(any(character in value for character in ("/", "\\", "\x00")) for value in values):
+            raise ValueError("document identifiers must be opaque single-segment values")
+        if len(values) != len(set(values)):
+            raise ValueError("document identifiers must be unique")
+        return values
+
+
+class ArchiveDocumentAccessPreflightItem(BaseModel):
+    document_id: str = Field(description="Opaque archive document identifier evaluated.")
+    state: ArchiveAccessState = Field(
+        description=(
+            "Source-owned caller access posture. Allowed is advisory; the metadata and download "
+            "routes remain the final access boundary."
+        )
+    )
+    reason_code: ArchiveAccessReasonCode = Field(
+        description="Bounded support-safe reason for the per-document access posture."
+    )
+
+
+class ArchiveDocumentAccessPreflightResponse(BaseModel):
+    result_state: ArchiveAccessResultState = Field(
+        description=(
+            "Overall lookup posture: complete, partial when only some items are unavailable, or "
+            "unavailable when no item could be evaluated."
+        )
+    )
+    requested_count: int = Field(description="Number of unique document identifiers requested.")
+    returned_count: int = Field(description="Number of ordered per-document results returned.")
+    items: list[ArchiveDocumentAccessPreflightItem] = Field(
+        description="Ordered, bounded per-document access posture results."
+    )
+    preflight_only: Literal[True] = Field(
+        default=True,
+        description="This response is advisory and does not mint a link or authorize a download.",
+    )
+
+    @classmethod
+    def from_result(
+        cls,
+        result: ArchiveAccessPreflightResult,
+    ) -> ArchiveDocumentAccessPreflightResponse:
+        items = [
+            ArchiveDocumentAccessPreflightItem(
+                document_id=item.document_id,
+                state=item.state,
+                reason_code=item.reason_code,
+            )
+            for item in result.items
+        ]
+        return cls(
+            result_state=result.result_state,
+            requested_count=len(items),
+            returned_count=len(items),
+            items=items,
+        )
 
 
 class ArchiveDocumentCreateRequest(BaseModel):

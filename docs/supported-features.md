@@ -52,6 +52,9 @@ archive API surface:
 32. RFC-0002 reviewed Idea evidence-pack archive summaries for rendered proof-pack documents,
     preserving evidence ids, source-contract lineage, retention posture, source-event refs, and
     access-audit evidence without raw Idea evidence payloads or client-publication authority.
+33. Bounded caller-scoped archive access preflight for `lotus-gateway`, with ordered per-document
+    posture, tenant/region scope enforcement, partial/unavailable semantics, and no raw storage or
+    archive payload exposure.
 
 The current local runtime is intentionally non-durable unless a future production adapter is
 configured. Production-like profiles must not silently use in-memory metadata/audit repositories or
@@ -68,6 +71,7 @@ Workbench-facing archive retrieval is supported only through the `lotus-workbenc
 | Generated-document archival | `ready` | `POST /documents`, `ArchiveWriter`, metadata model, storage adapter, checksum validation, and idempotency tests. |
 | Controlled document metadata lookup | `ready` | `GET /documents/{document_id}` with caller-context enforcement, authorization, audit, and support-safe response model. |
 | Controlled document binary download | `ready` | `GET /documents/{document_id}/download` with caller-context enforcement, authorization, storage retrieval, checksum verification, and audit. |
+| Batch caller access preflight | `ready` | `POST /documents/access-preflight` evaluates up to 100 ordered document identifiers through one repository batch lookup and returns advisory `allowed`, `denied`, `missing`, or `unavailable` posture with bounded reason codes; it does not mint links or authorize downloads. |
 | Access audit for archive API actions | `ready` | In-memory first-wave access-audit repository and `GET /documents/{document_id}/access-events` for support investigation. |
 | Retention policy posture | `ready` | `GET /documents/{document_id}/retention` returns source-backed retention fields, purge posture, legal-hold posture, authorization, and audit. |
 | Purge eligibility and execution | `ready` | `POST /documents/{document_id}/purge-evaluation` and `POST /documents/{document_id}/purge` enforce retention expiry, support-safe reason codes, binary deletion through storage abstraction, idempotency after purge, and audit. |

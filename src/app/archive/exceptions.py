@@ -17,6 +17,10 @@ class DocumentNotFoundError(ArchiveError):
     pass
 
 
+class ArchiveDocumentLookupUnavailableError(ArchiveError):
+    pass
+
+
 class DocumentChecksumMismatchError(ArchiveError):
     pass
 
