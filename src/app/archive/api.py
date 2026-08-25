@@ -8,6 +8,8 @@ from fastapi import APIRouter, Depends, Header, Query, Request, Response, status
 from app.archive.api_models import (
     AccessEventListResponse,
     ArchiveDocumentCreateRequest,
+    ArchiveDocumentAccessPreflightRequest,
+    ArchiveDocumentAccessPreflightResponse,
     ArchiveDocumentResponse,
     ArchiveDocumentSourceEvent,
     ArchiveDocumentSourceEventsResponse,
@@ -188,6 +190,38 @@ async def create_document(
         trace_id=request_trace_id,
     )
     return ArchiveDocumentResponse.from_metadata(metadata)
+
+
+@router.post(
+    "/access-preflight",
+    response_model=ArchiveDocumentAccessPreflightResponse,
+    summary="Preflight caller access to archived documents",
+    description=(
+        "Evaluates a bounded ordered set of opaque archived document identifiers against the "
+        "trusted caller tenant and region context. The response distinguishes source archive "
+        "readiness from caller access posture, never returns archive payloads or storage paths, "
+        "and is advisory only: the single-document metadata and download routes remain the final "
+        "authorization boundary."
+    ),
+    responses={
+        200: {"description": "Bounded caller-scoped access posture."},
+        401: {"description": "Required caller identity or tenant/region scope is missing."},
+        403: {"description": "The caller is not authorized to request access preflight."},
+        422: {"description": "The document identifier set is malformed or exceeds its bound."},
+    },
+)
+async def preflight_document_access(
+    request_body: ArchiveDocumentAccessPreflightRequest,
+    service: ArchiveDocumentService = Depends(archive_service),
+    context: CallerContext = Depends(caller_context),
+    request_trace_id: str = Depends(trace_id),
+) -> ArchiveDocumentAccessPreflightResponse:
+    result = service.preflight_document_access(
+        document_ids=tuple(request_body.document_ids),
+        caller_context=context,
+        trace_id=request_trace_id,
+    )
+    return ArchiveDocumentAccessPreflightResponse.from_result(result)
 
 
 @router.get(

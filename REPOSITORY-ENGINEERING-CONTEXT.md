@@ -21,6 +21,7 @@ retention posture lookup, purge eligibility and execution, legal-hold set/releas
 blocking, lifecycle relationship APIs, current-document resolution, gateway-backed document
 resolution, archive-owned generated-document source events for downstream portfolio-memory
 consumers, gateway-backed document retrieval through `lotus-gateway`, Gateway-backed Workbench retrieval through the Workbench BFF,
+bounded caller-scoped batch access preflight for `lotus-gateway`,
 report-to-archive handoff through `lotus-report`, and
 archive-specific module-family/documentation structure. RFC-0040 proof-pack report artifacts and
 RFC-0041 rebalance-wave report artifacts are now covered by the generated-document lifecycle when
@@ -70,22 +71,24 @@ not call `lotus-archive` directly.
 14. `src/app/archive/service.py`: archive API orchestration, retrieval-time checksum
    verification, retention posture, purge eligibility/execution, legal-hold state changes,
    lifecycle relationship mutation, and current-document resolution.
-15. `src/app/archive/source_events.py`: bounded pull-only archive-owned generated-document and
+15. `src/app/archive/access_preflight.py`: bounded caller-scoped batch access states and result
+    semantics used by the Archive application service and API mapper.
+16. `src/app/archive/source_events.py`: bounded pull-only archive-owned generated-document and
    client-delivery lifecycle source-event projection for portfolio-memory consumers.
-16. `migrations/`: PostgreSQL metadata contract migrations.
-17. `src/app/contracts/`: API and contract models.
-18. `src/app/middleware/`: shared request middleware.
-19. `tests/unit`, `tests/integration`, `tests/e2e`: test pyramid baseline.
-20. `docs/architecture/`: archive service boundaries and structure.
-21. `docs/supported-features.md`: implementation-backed support posture.
-22. `docs/standards/`: repository standards placeholders to be replaced with service truth.
-23. `src/app/archive/metrics.py`: bounded archive operation, size, and supportability metrics.
-24. `src/app/archive/settings.py`: typed runtime profile, repository, storage, namespace, database,
+17. `migrations/`: PostgreSQL metadata contract migrations.
+18. `src/app/contracts/`: API and contract models.
+19. `src/app/middleware/`: shared request middleware.
+20. `tests/unit`, `tests/integration`, `tests/e2e`: test pyramid baseline.
+21. `docs/architecture/`: archive service boundaries and structure.
+22. `docs/supported-features.md`: implementation-backed support posture.
+23. `docs/standards/`: repository standards placeholders to be replaced with service truth.
+24. `src/app/archive/metrics.py`: bounded archive operation, size, and supportability metrics.
+25. `src/app/archive/settings.py`: typed runtime profile, repository, storage, namespace, database,
     and upload-size configuration.
-25. `src/app/archive/runtime.py`: process-local archive dependency composition and runtime posture.
-26. `src/app/archive/build_metadata.py`: source-safe runtime build, Git, CI, and image provenance
+26. `src/app/archive/runtime.py`: process-local archive dependency composition and runtime posture.
+27. `src/app/archive/build_metadata.py`: source-safe runtime build, Git, CI, and image provenance
     metadata exposed through `/version` and `/metadata.build`.
-27. `src/app/archive/idea_lifecycle_decisions/`: tenant-bound Archive lifecycle decision models,
+28. `src/app/archive/idea_lifecycle_decisions/`: tenant-bound Archive lifecycle decision models,
     durable idempotency adapter, Ed25519 signing/verification, and application service.
 
 ## Runtime And Integration Boundaries
@@ -128,8 +131,8 @@ workflow must request `--rebase`; merge commits and squash merges are disabled b
 ## Known Constraints And Implementation Notes
 
 1. this is the platform scaffold baseline plus RFC-0103 internal archive API, report handoff,
-   gateway retrieval support, and Gateway-backed Workbench retrieval support, not production
-   certification or customer-facing document delivery,
+   gateway retrieval support, bounded caller-scoped batch access preflight, and Gateway-backed
+   Workbench retrieval support, not production certification or customer-facing document delivery,
 2. standards placeholders in `docs/standards/` must be replaced with service truth as the service
    matures,
 3. keep business role, naming, docs, and tests aligned with actual implemented scope,
@@ -159,6 +162,12 @@ workflow must request `--rebase`; merge commits and squash merges are disabled b
 13. Local container builds may expose `image_digest_posture=not_published`. Do not claim production
     deployment certification until mainline release evidence is paired with digest-based deployment
     manifests and same-digest promotion evidence.
+14. `POST /documents/access-preflight` is an advisory, bounded source contract for
+    `lotus-gateway`. It requires trusted caller tenant and region context, evaluates up to 100
+    unique ordered document identifiers through one repository batch lookup, and returns only
+    bounded access states and reason codes. It does not mint links or replace the single-document
+    metadata/download authorization boundary. No database migration is needed for this in-process
+    repository-port contract.
 
 ## Context Maintenance Rule
 

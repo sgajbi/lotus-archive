@@ -9,7 +9,13 @@ from app.archive.audit import (
     AuthorizationDecision,
     access_audit_event,
 )
-from app.security.caller_context import CallerContext
+from app.archive.access_preflight import (
+    ArchiveAccessDecision,
+    ArchiveAccessReasonCode,
+    ArchiveAccessState,
+)
+from app.archive.models import ArchiveDocumentMetadata, PurgeStatus
+from app.security.caller_context import CallerContext, CallerScopeMissingError
 
 
 class ArchivePermission(StrEnum):
@@ -23,6 +29,7 @@ class ArchivePermission(StrEnum):
     MANAGE_LEGAL_HOLD = "manage_legal_hold"
     MANAGE_LIFECYCLE = "manage_lifecycle"
     READ_IDEA_LIFECYCLE_DECISION = "read_idea_lifecycle_decision"
+    READ_BATCH_ACCESS_PREFLIGHT = "read_batch_access_preflight"
 
 
 class AuthorizationFailedError(PermissionError):
@@ -41,6 +48,7 @@ class ArchiveAuthorizationPolicy:
     legal_hold_callers: frozenset[str] = frozenset({"lotus-report"})
     lifecycle_callers: frozenset[str] = frozenset({"lotus-report"})
     idea_lifecycle_decision_callers: frozenset[str] = frozenset({"lotus-idea", "lotus-report"})
+    batch_access_preflight_callers: frozenset[str] = frozenset({"lotus-gateway"})
 
     def authorize(
         self,
@@ -82,4 +90,80 @@ class ArchiveAuthorizationPolicy:
             return self.lifecycle_callers
         if permission is ArchivePermission.READ_IDEA_LIFECYCLE_DECISION:
             return self.idea_lifecycle_decision_callers
+        if permission is ArchivePermission.READ_BATCH_ACCESS_PREFLIGHT:
+            return self.batch_access_preflight_callers
         return self.audit_callers
+
+    def document_scope_decision(
+        self,
+        *,
+        metadata: ArchiveDocumentMetadata,
+        caller_context: CallerContext,
+    ) -> ArchiveAccessDecision:
+        if not caller_context.tenant_id or not caller_context.region:
+            return ArchiveAccessDecision(
+                state=ArchiveAccessState.DENIED,
+                reason_code=ArchiveAccessReasonCode.CALLER_SCOPE_MISMATCH,
+            )
+        if not metadata.tenant_id or not metadata.region:
+            return ArchiveAccessDecision(
+                state=ArchiveAccessState.UNAVAILABLE,
+                reason_code=ArchiveAccessReasonCode.DOCUMENT_SCOPE_UNAVAILABLE,
+            )
+        if (
+            metadata.tenant_id != caller_context.tenant_id
+            or metadata.region.casefold() != caller_context.region.casefold()
+        ):
+            return ArchiveAccessDecision(
+                state=ArchiveAccessState.DENIED,
+                reason_code=ArchiveAccessReasonCode.CALLER_SCOPE_MISMATCH,
+            )
+        if metadata.purge_status is PurgeStatus.PURGED:
+            return ArchiveAccessDecision(
+                state=ArchiveAccessState.UNAVAILABLE,
+                reason_code=ArchiveAccessReasonCode.DOCUMENT_PURGED,
+            )
+        return ArchiveAccessDecision(
+            state=ArchiveAccessState.ALLOWED,
+            reason_code=ArchiveAccessReasonCode.ACCESS_ALLOWED,
+        )
+
+    def authorize_document_scope(
+        self,
+        *,
+        metadata: ArchiveDocumentMetadata,
+        caller_context: CallerContext,
+        audit_repository: AccessAuditRepository,
+        trace_id: str,
+    ) -> None:
+        require_caller_scope(caller_context)
+        decision = self.document_scope_decision(
+            metadata=metadata,
+            caller_context=caller_context,
+        )
+        if decision.state is ArchiveAccessState.ALLOWED:
+            return
+        audit_repository.record(
+            access_audit_event(
+                event_type=AccessEventType.AUTHORIZATION_DENIED,
+                caller_context=caller_context,
+                trace_id=trace_id,
+                authorization_decision=AuthorizationDecision.DENIED,
+                authorization_reason_code=decision.reason_code.value,
+                document_id=metadata.document_id,
+            )
+        )
+        raise AuthorizationFailedError(decision.reason_code.value)
+
+
+def require_caller_scope(caller_context: CallerContext) -> None:
+    missing = tuple(
+        header
+        for header, value in (
+            ("x-tenant-id", caller_context.tenant_id),
+            ("x-region", caller_context.region),
+        )
+        if not value
+    )
+    if missing:
+        raise CallerScopeMissingError(missing)

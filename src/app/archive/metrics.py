@@ -56,6 +56,7 @@ IMPLEMENTED_ARCHIVE_OPERATIONS = frozenset(
     {
         "access_events_lookup",
         "archive_create",
+        "batch_access_preflight",
         "binary_download",
         "current_document_lookup",
         "legal_hold_release",
@@ -73,12 +74,15 @@ ARCHIVE_OPERATION_STATUSES = frozenset(
     {
         "active",
         "archived",
+        "complete",
         "clear",
         "eligible",
         "failed",
         "not_eligible",
+        "partial",
         "purged",
         "succeeded",
+        "unavailable",
     }
 )
 ARCHIVE_SUPPORTABILITY_STATES = frozenset({"ready", "degraded", "unavailable"})
@@ -251,6 +255,8 @@ def archive_metric(operation: str) -> Callable[[Callable[P, R]], Callable[P, R]]
 
 
 def _status_from_result(operation: str, result: object) -> str:
+    if operation == "batch_access_preflight" and hasattr(result, "result_state"):
+        return str(getattr(result, "result_state"))
     if operation == "retention_lookup":
         if hasattr(result, "legal_hold_status"):
             return str(getattr(result, "legal_hold_status"))

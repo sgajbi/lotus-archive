@@ -1,13 +1,25 @@
 from __future__ import annotations
 
-from typing import Protocol
+from dataclasses import dataclass
+from typing import Mapping, Protocol
 
 from app.archive.exceptions import DuplicateArchiveRequestConflict
 from app.archive.models import ArchiveDocumentMetadata, LegalHoldRecord, LifecycleRelationshipRecord
 
 
+@dataclass(frozen=True)
+class ArchiveDocumentBatchLookup:
+    documents: Mapping[str, ArchiveDocumentMetadata]
+    unavailable_document_ids: frozenset[str] = frozenset()
+
+
 class ArchiveDocumentRepository(Protocol):
     def get_by_document_id(self, document_id: str) -> ArchiveDocumentMetadata | None: ...
+
+    def get_by_document_ids(
+        self,
+        document_ids: tuple[str, ...],
+    ) -> ArchiveDocumentBatchLookup: ...
 
     def get_by_archive_request_id(
         self,
@@ -44,6 +56,18 @@ class InMemoryArchiveDocumentRepository:
 
     def get_by_document_id(self, document_id: str) -> ArchiveDocumentMetadata | None:
         return self._by_document_id.get(document_id)
+
+    def get_by_document_ids(
+        self,
+        document_ids: tuple[str, ...],
+    ) -> ArchiveDocumentBatchLookup:
+        return ArchiveDocumentBatchLookup(
+            documents={
+                document_id: self._by_document_id[document_id]
+                for document_id in document_ids
+                if document_id in self._by_document_id
+            }
+        )
 
     def get_by_archive_request_id(
         self,

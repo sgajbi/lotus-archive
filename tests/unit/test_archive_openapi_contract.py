@@ -7,6 +7,7 @@ def test_archive_document_api_openapi_contract_is_certification_ready() -> None:
 
     expected_operations = {
         ("/documents", "post"): "Archive a generated document",
+        ("/documents/access-preflight", "post"): "Preflight caller access to archived documents",
         ("/documents/{document_id}", "get"): "Get archived document metadata",
         ("/documents/{document_id}/current", "get"): "Get current document in lifecycle",
         ("/documents/{document_id}/source-events", "get"): ("List archived document source events"),
@@ -40,6 +41,15 @@ def test_archive_document_api_openapi_contract_is_certification_ready() -> None:
     assert "ArchiveDocumentCreateRequest" in str(create_operation["requestBody"])
     assert "201" in create_operation["responses"]
     assert "409" in create_operation["responses"]
+
+    preflight_operation = spec["paths"]["/documents/access-preflight"]["post"]
+    assert "ArchiveDocumentAccessPreflightRequest" in str(preflight_operation["requestBody"])
+    assert "ArchiveDocumentAccessPreflightResponse" in str(preflight_operation["responses"])
+    preflight_schema = spec["components"]["schemas"]["ArchiveDocumentAccessPreflightResponse"][
+        "properties"
+    ]
+    assert preflight_schema["preflight_only"]["const"] is True
+    assert preflight_schema["items"]["description"]
 
     purge_operation = spec["paths"]["/documents/{document_id}/purge"]["post"]
     assert "409" in purge_operation["responses"]
