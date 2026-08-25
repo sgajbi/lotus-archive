@@ -21,6 +21,10 @@ class ArchiveDocumentLookupUnavailableError(ArchiveError):
     pass
 
 
+class ArchiveDocumentLookupTimeoutError(ArchiveDocumentLookupUnavailableError):
+    pass
+
+
 class DocumentChecksumMismatchError(ArchiveError):
     pass
 

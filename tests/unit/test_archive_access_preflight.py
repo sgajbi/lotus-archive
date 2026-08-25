@@ -12,7 +12,10 @@ from app.archive.access_preflight import (
 )
 from app.archive.archive_writer import ArchiveWriter
 from app.archive.audit import InMemoryAccessAuditRepository
-from app.archive.exceptions import ArchiveDocumentLookupUnavailableError
+from app.archive.exceptions import (
+    ArchiveDocumentLookupTimeoutError,
+    ArchiveDocumentLookupUnavailableError,
+)
 from app.archive.repository import (
     ArchiveDocumentBatchLookup,
     InMemoryArchiveDocumentRepository,
@@ -62,6 +65,15 @@ class UnavailableArchiveRepository(CountingArchiveRepository):
     ) -> ArchiveDocumentBatchLookup:
         self.batch_lookups.append(document_ids)
         raise ArchiveDocumentLookupUnavailableError("archive lookup unavailable")
+
+
+class TimedOutArchiveRepository(UnavailableArchiveRepository):
+    def get_by_document_ids(
+        self,
+        document_ids: tuple[str, ...],
+    ) -> ArchiveDocumentBatchLookup:
+        self.batch_lookups.append(document_ids)
+        raise ArchiveDocumentLookupTimeoutError("archive lookup deadline exceeded")
 
 
 def _caller(
@@ -180,6 +192,21 @@ def test_preflight_fails_closed_when_archive_lookup_is_unavailable(tmp_path: Pat
     assert result.result_state is ArchiveAccessResultState.UNAVAILABLE
     assert all(item.state is ArchiveAccessState.UNAVAILABLE for item in result.items)
     assert all(item.reason_code.value == "lookup_unavailable" for item in result.items)
+
+
+def test_preflight_maps_archive_lookup_timeout_to_unavailable(tmp_path: Path) -> None:
+    repository = TimedOutArchiveRepository()
+    service = _service(tmp_path, repository)
+
+    result = service.preflight_document_access(
+        document_ids=("doc_timed_out",),
+        caller_context=_caller(),
+        trace_id="trace-preflight-timeout",
+    )
+
+    assert repository.batch_lookups == [("doc_timed_out",)]
+    assert result.result_state is ArchiveAccessResultState.UNAVAILABLE
+    assert result.items[0].reason_code.value == "lookup_unavailable"
 
 
 def test_result_state_is_unavailable_when_every_item_is_unavailable() -> None:
