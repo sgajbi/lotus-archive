@@ -104,9 +104,12 @@ The bounded caller-access preflight contract adds:
    `unavailable` posture with `complete`, `partial`, or `unavailable` batch state.
 4. One repository batch lookup is used for the complete request; the contract does not require
    one Archive call per document.
-5. The response is advisory only. It does not mint links or authorize metadata/download access,
+5. A repository adapter that cannot meet its bounded lookup deadline maps that failure to the
+   support-safe `unavailable` posture. The in-process Archive service owns no downstream network
+   timeout configuration; adapter-specific deadline enforcement remains at the adapter boundary.
+6. The response is advisory only. It does not mint links or authorize metadata/download access,
    which remains enforced by the single-document routes.
-6. No raw document bytes, storage paths, or sensitive authorization scope details are returned.
+7. No raw document bytes, storage paths, or sensitive authorization scope details are returned.
 
 RFC-0103 Slice 5 adds:
 

@@ -67,8 +67,8 @@ Lotus generated-document archive, retrieval, retention, legal hold, and access a
   `lotus-gateway` batch consumers. It requires trusted tenant and region context, performs one
   repository batch lookup, returns explicit complete/partial/unavailable and per-document
   allowed/denied/missing/unavailable states, and never returns storage paths or archive payloads.
-  The response is advisory; the single-document metadata and download routes remain the final
-  access boundary.
+  Adapter lookup timeout/deadline failures map to `unavailable`; the response is advisory and the
+  single-document metadata and download routes remain the final access boundary.
 - Workbench retrieval is supported only through the Workbench BFF and `lotus-gateway`; Workbench
   must not call `lotus-archive` directly.
 - `POST /documents/{document_id}/idea-lifecycle-decisions` is a limited, not-certified Archive

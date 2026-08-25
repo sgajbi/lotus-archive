@@ -166,8 +166,9 @@ workflow must request `--rebase`; merge commits and squash merges are disabled b
     `lotus-gateway`. It requires trusted caller tenant and region context, evaluates up to 100
     unique ordered document identifiers through one repository batch lookup, and returns only
     bounded access states and reason codes. It does not mint links or replace the single-document
-    metadata/download authorization boundary. No database migration is needed for this in-process
-    repository-port contract.
+    metadata/download authorization boundary. Adapter lookup timeout/deadline failures map to the
+    bounded `unavailable` posture; the in-process service owns no downstream network timeout
+    setting. No database migration is needed for this repository-port contract.
 
 ## Context Maintenance Rule
 
