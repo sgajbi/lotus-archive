@@ -169,6 +169,9 @@ workflow must request `--rebase`; merge commits and squash merges are disabled b
     metadata/download authorization boundary. Adapter lookup timeout/deadline failures map to the
     bounded `unavailable` posture; the in-process service owns no downstream network timeout
     setting. No database migration is needed for this repository-port contract.
+15. Release images build and install only the application wheel plus declared runtime
+    dependencies. Build-system and CI-tool pins must remain at vendor-fixed versions, and the
+    CRITICAL/HIGH image scan must pass before image signing or provenance attestation.
 
 ## Context Maintenance Rule
 

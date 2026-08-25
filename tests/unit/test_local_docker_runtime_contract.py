@@ -24,11 +24,27 @@ def test_dockerfile_builds_production_runtime_without_dev_dependencies() -> None
 
     assert "AS wheel-builder" in dockerfile
     assert "AS runtime" in dockerfile
-    assert "pip wheel --no-cache-dir --wheel-dir /wheels ." in dockerfile
-    assert "pip install --no-cache-dir /wheels/*.whl" in dockerfile
+    assert "pip wheel --no-cache-dir --no-deps --wheel-dir /wheels ." in dockerfile
+    assert "COPY --from=wheel-builder /wheels/lotus_archive-*.whl /wheels/" in dockerfile
+    assert (
+        "pip install --no-cache-dir --only-binary=:all: /wheels/lotus_archive-*.whl" in dockerfile
+    )
+    assert "pip install --no-cache-dir /wheels/*.whl" not in dockerfile
     assert ".[dev]" not in dockerfile
     assert "pip install --no-cache-dir -e" not in dockerfile
     assert "USER lotus" in dockerfile
+
+
+def test_runtime_security_pins_cover_image_and_audit_inputs() -> None:
+    pyproject = _read("pyproject.toml")
+    runtime_lock = _read("requirements/shared-runtime.lock.txt")
+    ci_lock = _read("requirements/ci-tooling.lock.txt")
+
+    assert '"cryptography==50.0.0"' in pyproject
+    assert "cryptography==50.0.0" in runtime_lock
+    assert "msgpack==1.2.1" in ci_lock
+    assert "setuptools==84.0.0" in ci_lock
+    assert "wheel==0.48.0" in ci_lock
 
 
 def test_dockerfile_exposes_source_safe_oci_and_runtime_metadata() -> None:
