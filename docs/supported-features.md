@@ -40,7 +40,8 @@ archive API surface:
 26. Runtime build metadata through `/version` with source-safe commit, repository, Git ref, CI run
     id, image reference, image digest, and digest posture fields.
 27. Governed `pip-audit` exception policy with owner, review date, rationale, dependency
-    constraint, removal condition, and CI-backed validation.
+    constraint, removal condition, and CI-backed validation; the release image also enforces a
+    hard CRITICAL/HIGH vulnerability scan before signing or attestation.
 28. Governed generated-report type validation for `portfolio_review`, `outcome_review`,
     `proof_pack`, and `rebalance_wave` archive records.
 29. RFC-0023 reviewed advisory narrative archive summaries for rendered portfolio-review
@@ -92,7 +93,7 @@ Workbench-facing archive retrieval is supported only through the `lotus-workbenc
 | Runtime build metadata | `ready` | `/version` and `/metadata.build` expose source-safe service version, repository URL, commit SHA, Git ref, build timestamp, CI run id, image reference, image digest, and digest posture. Docker builds inject matching OCI labels and runtime environment variables. |
 | Idea evidence lifecycle decision proof | `limited` | `POST /documents/{document_id}/idea-lifecycle-decisions` issues short-lived Ed25519-signed, tenant-bound projections for archived proof-pack records. SQLite replay/conflict, hold precedence, expiry/forgery rejection, audit, and failure atomicity are tested. Production durable persistence, managed keys/trust distribution, legal approval, and live mainline proof remain blocked. |
 | Production durable archive runtime | `limited` | Runtime settings now prevent silent in-memory/filesystem use in production-like profiles. PostgreSQL metadata/audit and S3-compatible storage adapters remain future implementation work before production durable support can be claimed. |
-| Production container provenance certification | `limited` | The runtime image is wheel-based, non-root, and carries OCI/runtime metadata. Mainline CI is configured for GHCR publication, immutable digest capture, vulnerability scan, signature, provenance attestation, verification, and release evidence. Deployment certification still requires digest-based deployment manifests and same-digest promotion evidence. |
+| Production container provenance certification | `limited` | The runtime image is wheel-based, non-root, contains only the application wheel and declared runtime dependencies, and carries OCI/runtime metadata. Mainline CI is configured for GHCR publication, immutable digest capture, hard CRITICAL/HIGH vulnerability scan, signature, provenance attestation, verification, and release evidence. Deployment certification still requires digest-based deployment manifests and same-digest promotion evidence. |
 | Dependency vulnerability exceptions | `ready` | `make security-audit` validates `security/pip-audit-exceptions.json` before invoking `pip-audit`. The current policy has no active exceptions after the Starlette runtime was lifted to the fixed line. Future exceptions must carry owner, review date, rationale, dependency constraint, removal condition, and compensating controls. |
 
 ## Not Yet Supported

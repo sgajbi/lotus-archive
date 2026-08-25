@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=70", "wheel"]
+requires = ["setuptools==84.0.0", "wheel==0.48.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -16,7 +16,7 @@ dependencies = [
   "pydantic-settings==2.14.2",
   "prometheus-client==0.25.0",
   "prometheus-fastapi-instrumentator==8.0.2",
-  "cryptography==49.0.0",
+  "cryptography==50.0.0",
 ]
 
 [project.optional-dependencies]

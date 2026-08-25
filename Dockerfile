@@ -4,7 +4,7 @@ WORKDIR /build
 COPY pyproject.toml README.md ./
 COPY src ./src
 RUN python -m pip install --no-cache-dir --upgrade pip \
-    && python -m pip wheel --no-cache-dir --wheel-dir /wheels .
+    && python -m pip wheel --no-cache-dir --no-deps --wheel-dir /wheels .
 
 FROM python:3.12-slim AS runtime
 
@@ -40,9 +40,9 @@ ENV LOTUS_ARCHIVE_SERVICE_NAME=lotus-archive \
     PYTHONUNBUFFERED=1
 
 WORKDIR /app
-COPY --from=wheel-builder /wheels /wheels
+COPY --from=wheel-builder /wheels/lotus_archive-*.whl /wheels/
 RUN python -m pip install --no-cache-dir --upgrade pip \
-    && python -m pip install --no-cache-dir /wheels/*.whl \
+    && python -m pip install --no-cache-dir --only-binary=:all: /wheels/lotus_archive-*.whl \
     && rm -rf /wheels \
     && useradd --create-home --shell /usr/sbin/nologin lotus
 
