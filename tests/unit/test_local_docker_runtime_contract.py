@@ -29,6 +29,7 @@ def test_dockerfile_builds_production_runtime_without_dev_dependencies() -> None
     assert (
         "pip install --no-cache-dir --only-binary=:all: /wheels/lotus_archive-*.whl" in dockerfile
     )
+    assert "pip uninstall --yes pip" in dockerfile
     assert "pip install --no-cache-dir /wheels/*.whl" not in dockerfile
     assert ".[dev]" not in dockerfile
     assert "pip install --no-cache-dir -e" not in dockerfile
@@ -110,9 +111,11 @@ def test_release_workflows_record_image_identity_evidence() -> None:
     workflow = yaml.safe_load(main_workflow)
     pr_gate_workflow = yaml.safe_load(pr_workflow)
     docker_job = workflow["jobs"]["docker-build"]
+    pr_docker_job = pr_gate_workflow["jobs"]["docker-build"]
     coverage_job = workflow["jobs"]["coverage-gate"]
     pr_coverage_job = pr_gate_workflow["jobs"]["coverage-gate"]
     steps = {step["name"]: step for step in docker_job["steps"] if "name" in step}
+    pr_docker_steps = {step["name"]: step for step in pr_docker_job["steps"] if "name" in step}
     coverage_steps = {step["name"]: step for step in coverage_job["steps"] if "name" in step}
     pr_coverage_steps = {step["name"]: step for step in pr_coverage_job["steps"] if "name" in step}
 
@@ -142,6 +145,11 @@ def test_release_workflows_record_image_identity_evidence() -> None:
     assert "actions/download-artifact" not in main_workflow
     assert "actions/download-artifact" not in pr_workflow
     assert steps["Build and push release image"]["run"] == "make docker-release-build"
+    assert "pip" in pr_docker_steps["Verify runtime dependency boundary"]["run"]
+    assert "msgpack" in pr_docker_steps["Verify runtime dependency boundary"]["run"]
+    assert "setuptools" in pr_docker_steps["Verify runtime dependency boundary"]["run"]
+    assert "wheel" in pr_docker_steps["Verify runtime dependency boundary"]["run"]
+    assert "cryptography" in pr_docker_steps["Verify runtime dependency boundary"]["run"]
     assert steps["Generate release metadata manifest"]["run"] == "make release-evidence"
     assert "sigstore/cosign-installer@v4.1.0" in main_workflow
     assert (

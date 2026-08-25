@@ -114,8 +114,10 @@ docker compose up --build
 
 `make docker-build` builds a production wheel-based local image tagged as `lotus-archive:ci-test`
 by default, installs only the application wheel plus declared runtime dependencies, and injects
-OCI label/runtime metadata. Build-only and development dependencies are not copied into the final
-runtime layer. `make docker-release-build` and
+OCI label/runtime metadata. The package installer is removed after installation so its vendored
+dependency metadata cannot become part of the runtime SBOM. Build-only and development dependencies
+are not copied into the final runtime layer. The PR Docker gate also inspects the built runtime and
+fails if the installer or CI-only packages are present. `make docker-release-build` and
 `make release-evidence` are reserved for CI-owned registry publication with immutable digest,
 BuildKit SBOM/provenance metadata, a hard CRITICAL/HIGH vulnerability scan, sign/attestation
 checks, and release evidence. Do not use local developer pushes for release registry paths.

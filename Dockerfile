@@ -43,6 +43,7 @@ WORKDIR /app
 COPY --from=wheel-builder /wheels/lotus_archive-*.whl /wheels/
 RUN python -m pip install --no-cache-dir --upgrade pip \
     && python -m pip install --no-cache-dir --only-binary=:all: /wheels/lotus_archive-*.whl \
+    && python -m pip uninstall --yes pip \
     && rm -rf /wheels \
     && useradd --create-home --shell /usr/sbin/nologin lotus
 

@@ -63,9 +63,10 @@ Lotus generated-document archive, retrieval, retention, legal hold, and access a
   manifests consume that digest and same-digest promotion evidence is available.
 - `lotus_archive_supportability_total` is implementation-backed with bounded `state`, `reason`,
   and `freshness_bucket` labels only, with recorder-level fallback for unknown label values.
-- Release images contain only the application wheel and declared runtime dependencies; build-system
-  and CI-tool pins are security-audited, and mainline blocks image signing/attestation on any
-  CRITICAL or HIGH vulnerability.
+- Release images contain only the application wheel and declared runtime dependencies; the package
+  installer is removed after installation so vendored dependency metadata cannot pollute the runtime
+  SBOM. Build-system and CI-tool pins are security-audited, and mainline blocks image
+  signing/attestation on any CRITICAL or HIGH vulnerability.
 - `POST /documents/access-preflight` provides a bounded, ordered caller-scoped Archive posture for
   `lotus-gateway` batch consumers. It requires trusted tenant and region context, performs one
   repository batch lookup, returns explicit complete/partial/unavailable and per-document
