@@ -121,6 +121,26 @@ build validation.
 Pull requests use rebase merge to preserve linear, non-squashed commit history. The PR auto-merge
 workflow must request `--rebase`; merge commits and squash merges are disabled by repository policy.
 
+`Main Releasability Gate` does not run on push. It is dispatched by
+`merged-pr-main-releasability.yml` after a pull request merges, against an immutable tag at the
+merge commit, and its first job refuses to continue unless the checked-out revision matches the
+`expected_sha` it was dispatched with.
+
+Three independent mechanisms could otherwise leave a `main` commit ungated, and all three are
+closed:
+
+1. PR auto-merge must run under `secrets.LOTUS_AUTOMERGE_TOKEN`, never `github.token`. GitHub does
+   not trigger workflow runs from events caused by `GITHUB_TOKEN`, so an automated merge under it
+   pushes to `main` without triggering anything.
+2. The dispatcher must exist, so the gate does not depend on the push trigger at all. A suppressed
+   push trigger is silent; a dispatcher that cannot dispatch is a failed run.
+3. Gate concurrency is keyed on `github.sha`, not `github.ref`. With `cancel-in-progress: true` a
+   branch-keyed group lets a second merge cancel the in-flight gate for the first commit, leaving
+   it with a cancelled run that is neither pass nor fail.
+
+Audit a merge with `gh run list --commit <full-sha>`; `--branch main` misses the run, because the
+dispatch ref is a tag rather than `main`.
+
 ## Standards And RFCs That Govern This Repository
 
 1. `lotus-platform/rfcs/RFC-0072-platform-wide-multi-lane-ci-validation-and-release-governance.md`
