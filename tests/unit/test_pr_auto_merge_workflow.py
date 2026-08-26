@@ -102,3 +102,42 @@ def test_main_releasability_concurrency_is_keyed_per_commit_not_per_branch() -> 
 
     assert "group: ${{ github.workflow }}-${{ github.sha }}" in workflow
     assert "group: ${{ github.workflow }}-${{ github.ref }}" not in workflow
+
+
+def test_release_verification_pins_the_identity_to_the_running_ref() -> None:
+    """Dispatching against a tag changes the signing identity's ref.
+
+    The gate signs the release image with a keyless OIDC identity whose SAN embeds the ref the
+    workflow ran on. While the gate ran on `push` that was always `refs/heads/main`; dispatched
+    against the immutable `main-releasability-<sha>` tag it is `refs/tags/...`, so a value pinned
+    to `refs/heads/main` fails verification — which is what broke `19fbef3d` on `main`.
+
+    The fix is *not* to widen the pattern. This workflow verifies an artifact **it just produced in
+    this same run**, so the exact ref it is running on is precisely the ref that signed. Using
+    `${GITHUB_REF}` is therefore stricter than the original literal, not looser: it admits exactly
+    one identity and it is always the right one.
+    """
+
+    workflow = (WORKFLOW_ROOT / "main-releasability.yml").read_text(encoding="utf-8")
+
+    identity_lines = [
+        line.strip()
+        for line in workflow.splitlines()
+        if "workflows/main-releasability.yml@" in line
+    ]
+    assert identity_lines, "expected at least one signing-identity assertion"
+    for line in identity_lines:
+        assert line.endswith('@${GITHUB_REF}"'), (
+            f"signing identity must track the running ref, found: {line}"
+        )
+        assert "refs/heads/main" not in line, (
+            "a hard-coded ref breaks whenever the gate is dispatched rather than pushed"
+        )
+
+    # Regex matching would allow a prefix or wildcard to creep in; exact identity cannot.
+    assert "--certificate-identity-regexp" not in workflow
+    assert "--cert-identity-regex" not in workflow
+
+    # The provenance source-ref must track the run too, or it contradicts the identity above.
+    assert '--source-ref "${GITHUB_REF}"' in workflow
+    assert '--source-ref "refs/heads/main"' not in workflow
