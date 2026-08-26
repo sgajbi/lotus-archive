@@ -65,8 +65,11 @@ Lotus generated-document archive, retrieval, retention, legal hold, and access a
   and `freshness_bucket` labels only, with recorder-level fallback for unknown label values.
 - Release images contain only the application wheel and declared runtime dependencies; the package
   installer is removed after installation so vendored dependency metadata cannot pollute the runtime
-  SBOM. Build-system and CI-tool pins are security-audited, and mainline blocks image
-  signing/attestation on any CRITICAL or HIGH vulnerability.
+  SBOM. Build-system and CI-tool pins are security-audited. **Pull requests and mainline both block
+  on any fixable CRITICAL or HIGH vulnerability** - the pull-request Docker job scans the image it
+  builds, so a vulnerable image is rejected in review rather than after merge, and mainline
+  additionally blocks image signing and attestation. Both lanes use identical severity and
+  `ignore-unfixed` settings, so a pull request cannot pass a bar the release lane would fail.
 - `POST /documents/access-preflight` provides a bounded, ordered caller-scoped Archive posture for
   `lotus-gateway` batch consumers. It requires trusted tenant and region context, performs one
   repository batch lookup, returns explicit complete/partial/unavailable and per-document
