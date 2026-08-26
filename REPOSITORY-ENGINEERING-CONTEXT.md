@@ -118,6 +118,14 @@ not call `lotus-archive` directly.
 typecheck, OpenAPI quality, unit/integration/e2e tests, coverage gate, security audit, and Docker
 build validation.
 
+The pull-request Docker job also scans the image it builds for `CRITICAL,HIGH` vulnerabilities with
+`ignore-unfixed: true`, and fails on a finding. It is held to the *same* posture as the release scan
+in `Main Releasability` - `tests/unit/test_pr_image_vulnerability_gate.py` compares the two lanes
+rather than asserting either alone, because a pull-request scan configured more leniently than the
+release lane is worse than none: it would report success on an image the release lane will reject.
+Signing, provenance attestation and publication remain main-only; the pull-request lane scans a
+locally built tag and pushes nothing. See issue #79.
+
 Pull requests use rebase merge to preserve linear, non-squashed commit history. The PR auto-merge
 workflow must request `--rebase`; merge commits and squash merges are disabled by repository policy.
 

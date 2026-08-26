@@ -183,3 +183,16 @@ jobs:
           if mismatches:
               raise SystemExit(f"Docker image label mismatch: {mismatches}")
           PY
+      - name: Scan the pull-request image for vulnerabilities
+        # Identical severity, vuln-type and ignore-unfixed posture to the Main Releasability scan,
+        # so a pull request cannot pass a weaker bar than the release lane applies after merge.
+        # Signing, provenance attestation and publication stay main-only; this scans the locally
+        # built image by tag and pushes nothing. See issue #79.
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref: ${{ env.LOTUS_ARCHIVE_IMAGE_REF }}
+          vuln-type: os,library
+          severity: CRITICAL,HIGH
+          ignore-unfixed: true
+          format: table
+          exit-code: "1"
