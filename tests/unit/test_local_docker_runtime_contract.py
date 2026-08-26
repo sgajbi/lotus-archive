@@ -165,8 +165,11 @@ def test_release_workflows_record_image_identity_evidence() -> None:
     }
     assert "--signer-workflow" not in steps["Verify GitHub provenance attestation"]["run"]
     assert "--cert-identity" in steps["Verify GitHub provenance attestation"]["run"]
+    # Pinned to the ref this run is on, not to a literal branch: the gate is dispatched against an
+    # immutable `main-releasability-<sha>` tag, and it verifies an artifact it produced in this
+    # same run, so ${GITHUB_REF} is both exact and always correct. See lotus-archive#82.
     assert (
-        '"https://github.com/${GITHUB_REPOSITORY}/.github/workflows/main-releasability.yml@refs/heads/main"'
+        '"https://github.com/${GITHUB_REPOSITORY}/.github/workflows/main-releasability.yml@${GITHUB_REF}"'
         in steps["Verify GitHub provenance attestation"]["run"]
     )
     assert (
@@ -177,7 +180,7 @@ def test_release_workflows_record_image_identity_evidence() -> None:
         '"${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/.github/workflows/main-releasability.yml"'
         not in steps["Verify GitHub provenance attestation"]["run"]
     )
-    assert '--source-ref "refs/heads/main"' in steps["Verify GitHub provenance attestation"]["run"]
+    assert '--source-ref "${GITHUB_REF}"' in steps["Verify GitHub provenance attestation"]["run"]
     assert '--source-digest "${GITHUB_SHA}"' in steps["Verify GitHub provenance attestation"]["run"]
     assert "image-build-metadata.json" in main_workflow
     assert "release-evidence.json" in main_workflow
