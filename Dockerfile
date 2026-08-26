@@ -39,6 +39,21 @@ ENV LOTUS_ARCHIVE_SERVICE_NAME=lotus-archive \
     LOTUS_ARCHIVE_IMAGE_DIGEST="${LOTUS_ARCHIVE_IMAGE_DIGEST}" \
     PYTHONUNBUFFERED=1
 
+# CVE-2026-14456 (HIGH): the python:3.12-slim base ships openssl 3.5.6-1~deb13u2 and Debian has
+# published 3.5.7-1~deb13u2. Upgraded here rather than waiting for the upstream image, because the
+# release and pull-request vulnerability gates both fail on it - see issue #85.
+#
+# Targeted, not a blanket `apt-get upgrade`: a distribution-wide upgrade in an image build changes
+# far more than the finding requires and makes the diff unreviewable. Remove this block once the
+# base image carries 3.5.7 or later; `tests/unit/test_openssl_runtime_upgrade.py` records how to
+# check, so it does not linger after it stops being needed.
+RUN apt-get update \
+    && apt-get install --yes --no-install-recommends --only-upgrade \
+        openssl libssl3t64 openssl-provider-legacy \
+    && dpkg --compare-versions "$(dpkg-query --show --showformat='${Version}' openssl)" ge \
+        "3.5.7-1~deb13u2" \
+    && rm -rf /var/lib/apt/lists/*
+
 WORKDIR /app
 COPY --from=wheel-builder /wheels/lotus_archive-*.whl /wheels/
 RUN python -m pip install --no-cache-dir --upgrade pip \
