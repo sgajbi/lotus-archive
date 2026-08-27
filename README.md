@@ -1,133 +1,95 @@
 # lotus-archive
 
-Lotus generated-document archive, retrieval, retention, legal hold, and access audit service
+The system of record for documents the Lotus platform has generated. Once `lotus-report` has
+assembled a client document and `lotus-render` has compiled it, `lotus-archive` holds custody: what
+was produced, from what evidence, who has looked at it, and whether it may be destroyed yet.
 
-## Current Posture
+It is not a general file store, a manual upload service, a delivery channel, or a renderer.
 
-`lotus-archive` is the governed service boundary for generated Lotus reporting documents. It is not
-a generic file store, manual upload service, customer delivery channel, or report-rendering service.
+> **Status: not deployable.** No production configuration can currently start — the settings
+> validator and the runtime composer accept disjoint configurations, because the PostgreSQL and S3
+> adapters are not implemented. In the one runnable profile, document bytes sit on a local
+> filesystem path and access audit is in-memory. See
+> [#90](https://github.com/sgajbi/lotus-archive/issues/90). The domain behaviour below is
+> implemented and tested; the durability it assumes is not.
 
-The current implementation supports the service scaffold, health/readiness, metadata, metrics,
-correlation, trace, and `traceparent` headers, structured route-template request logging, safe
-error envelopes, caller-context parsing, archive metadata model, migration contract, explicit
-runtime composition settings, filesystem-backed local-development storage adapter,
-checksum validation, idempotent archive-write domain service, archive create API, controlled
-metadata lookup, controlled binary download, access-audit recording for archive API actions,
-retention posture lookup, purge eligibility and execution, legal-hold set/release with purge
-blocking, lifecycle relationship APIs for supersession/correction/reissue, current-document
-resolution, archive-owned generated-document source events for downstream portfolio-memory
-consumers, report-to-archive handoff after successful PDF render, governed report-type
-validation for portfolio-review, outcome-review, proof-pack, and rebalance-wave artifacts,
-support-safe RFC-0023 reviewed advisory narrative archive summaries and RFC-0024 advisor proposal
-memo archive summaries for rendered portfolio-review documents, quality gates, archive-specific
-structure, gateway-backed document retrieval, and
-Gateway-backed Workbench archive retrieval. Product retrieval must flow through `lotus-gateway`;
-Workbench must not call `lotus-archive` directly.
+**Documentation lives in the [wiki](https://github.com/sgajbi/lotus-archive/wiki)**, authored in
+[`wiki/`](wiki/):
 
-`POST /documents/{document_id}/idea-lifecycle-decisions` provides a limited, not-certified
-Archive-owned proof boundary for Idea-linked proof-pack evidence. It validates caller and document
-tenant scope, derives hold/retention/purge posture from Archive state, persists idempotent decisions
-in a local SQLite ledger, and signs short-lived source-safe projections with Ed25519. Decisions
-never authorize disposal or move hold/purge authority to `lotus-idea`.
+| page | for |
+|---|---|
+| [Home](https://github.com/sgajbi/lotus-archive/wiki/Home) | what the service is for, what it accepts, what it does not own |
+| [Architecture](https://github.com/sgajbi/lotus-archive/wiki/Architecture) | module families, runtime composition, what is in memory |
+| [API Surface](https://github.com/sgajbi/lotus-archive/wiki/API-Surface) | all 22 operations, the archive contract, error codes |
+| [Document Lifecycle](https://github.com/sgajbi/lotus-archive/wiki/Document-Lifecycle) | retention, legal hold, purge, supersession, source events |
+| [Security and Controls](https://github.com/sgajbi/lotus-archive/wiki/Security-and-Controls) | caller identity, tenant scope, audit, checksums |
+| [Configuration](https://github.com/sgajbi/lotus-archive/wiki/Configuration) | every setting, and which combinations actually run |
+| [Operations](https://github.com/sgajbi/lotus-archive/wiki/Operations) | readiness, posture, metrics, common situations |
+| [Development and Testing](https://github.com/sgajbi/lotus-archive/wiki/Development-and-Testing) | building, testing, gates |
 
-RFC-0040 proof-pack report artifacts are supported when `lotus-report` supplies source-backed
-metadata with `report_type=proof_pack`, the `proof-pack` render template, and
-`dpm_proof_pack_report_input.v1` lineage. `lotus-archive` stores and governs the generated
-artifact; it does not recompute proof-pack evidence, source hashes, or report sections.
-
-RFC-0041 rebalance-wave report artifacts are supported when `lotus-report` supplies source-backed
-metadata with `report_type=rebalance_wave`, the `rebalance-wave` render template, and
-`dpm_wave_report_input.v1` lineage. `lotus-archive` stores and governs the generated artifact; it
-does not recompute wave membership, proof-pack posture, source hashes, or wave events.
-
-RFC-0023 advisor-review narrative report artifacts are supported when `lotus-report` supplies a
-portfolio-review archive request with a rendered reviewed advisory narrative summary. The archive
-record preserves package id, review id, approved advisor-use state, policy version, source hashes,
-guardrail posture, and rendered-page evidence without storing raw narrative sections separately or
-promoting client-ready commentary.
-
-RFC-0024 advisor proposal memo report artifacts are supported when `lotus-report` supplies a
-portfolio-review archive request with rendered advisor proposal memo metadata. The archive record
-preserves memo id, proposal/version id, review event, approved advisor-use posture, memo/source
-hashes, section counts, and source-event artifact refs without raw memo reconstruction or
-client-ready promotion.
-
-RFC-0108 archive supportability posture is published through `/metadata` as
-`archive.observability.archive_supportability` and counted through bounded
-`lotus_archive_supportability_total` observations. The posture covers retrieval, retention,
-legal-hold, access-audit, lifecycle, gateway retrieval, and Gateway-backed Workbench retrieval
-without document, storage, report, render, tenant, trace, or correlation labels.
-
-`/version` publishes source-safe Archive build metadata for operator diagnostics: service version,
-repository URL, commit SHA, Git ref, build timestamp, CI run id, image reference, image digest, and
-digest posture. Local images report `not_published`; mainline CI is configured to publish a
-GHCR image, capture its immutable digest, scan it, sign it, generate provenance attestation, and
-write release evidence. Production deployment certification remains blocked until deployment
-manifests consume the digest and same-digest environment promotion evidence exists.
-
-The default local runtime is explicit `local-development`: in-memory metadata/audit repositories
-plus filesystem object storage under the configured archive storage root. Production-like profiles
-must configure durable metadata/audit persistence and object storage; otherwise startup/readiness
-fails or reports unavailable instead of silently publishing non-durable archive support.
-
-`GET /documents/{document_id}/source-events` exposes the archive-owned
-`lotus-archive.generated_document_client_communication.v1` source-event family for downstream
-portfolio-memory consumers. It projects generated-document archive, supersession, correction, and
-client-delivery reissue lineage with portfolio/report/render/archive refs and checksum-backed
-hashes, but never raw document bytes, storage keys, raw report payloads, raw lifecycle reason text,
-or raw client references. The first-wave contract is pull-only through bounded `limit`/`offset`
-queries with deterministic event ordering, stable event ids, stable lifecycle reason codes, and
-report-input provenance such as `template_id` and `report_data_contract_version`.
-
-## Quick Start
+## Quick start
 
 ```powershell
 make install
-make lint
-make typecheck
-make openapi-gate
-make migration-gate
-make check
-make ci
+uvicorn app.main:app --reload --port 8320
 ```
+
+Nothing external is required. `/health/ready` reports `degraded` with reason
+`explicit_local_development_runtime` — that is the correct local state.
+
+## Validate a change
 
 ```powershell
-.venv\\Scripts\\python.exe -m pip install -e '.[dev]'
-.venv\\Scripts\\python.exe -m ruff check . && .venv\\Scripts\\python.exe -m ruff format --check .
-.venv\\Scripts\\python.exe -m mypy --config-file mypy.ini
-.venv\\Scripts\\python.exe scripts/openapi_quality_gate.py
-.venv\\Scripts\\python.exe -m pytest tests/unit tests/integration tests/e2e
-.venv\\Scripts\\python.exe scripts/coverage_gate.py
+make check   # lint, typecheck, openapi + migration gates, unit tests
+make ci      # the above plus integration, e2e, coverage and security audit
 ```
 
-## Run
+`make check` runs unit tests only. Note that CI does not currently invoke the migration gate
+([#92](https://github.com/sgajbi/lotus-archive/issues/92)).
 
-```powershell
-uvicorn app.main:app --reload --port 8150
-```
+## Scope
 
-## Docker
+`lotus-archive` accepts only Lotus-generated report documents of four governed types —
+`portfolio_review`, `outcome_review`, `proof_pack` and `rebalance_wave` — submitted by
+`lotus-report` after a successful PDF render. Report-to-archive handoff through `lotus-report` is
+the only write path.
 
-```powershell
-docker compose up --build
-```
+Product retrieval flows through `lotus-gateway`; Workbench retrieval is supported only through the
+Workbench BFF and the Gateway route, and Workbench must not call `lotus-archive` directly.
 
-`make docker-build` builds a production wheel-based local image tagged as `lotus-archive:ci-test`
-by default, installs only the application wheel plus declared runtime dependencies, and injects
-OCI label/runtime metadata. The package installer is removed after installation so its vendored
-dependency metadata cannot become part of the runtime SBOM. Build-only and development dependencies
-are not copied into the final runtime layer. The PR Docker gate also inspects the built runtime and
-fails if the installer or CI-only packages are present. `make docker-release-build` and
-`make release-evidence` are reserved for CI-owned registry publication with immutable digest,
-BuildKit SBOM/provenance metadata, a hard CRITICAL/HIGH vulnerability scan, sign/attestation
-checks, and release evidence. Do not use local developer pushes for release registry paths.
+`GET /documents/{document_id}/source-events` publishes a pull-only, bounded projection of
+archive-owned generated-document and client-delivery lifecycle evidence for downstream
+portfolio-memory consumers. It preserves report-input provenance and stable reason codes, and omits
+document bytes, storage keys, raw report payloads, raw lifecycle reason text and raw client
+references. The client-communication contract identifier is
+`lotus-archive.generated_document_client_communication.v1`.
 
-## Standards
+`POST /documents/{document_id}/idea-lifecycle-decisions` is a limited, **not-certified** Archive
+producer boundary for Idea-linked proof-pack evidence: tenant-bound, short-lived Ed25519-signed
+projections of retention, hold and purge posture with durable local replay protection. Decisions
+never authorise disposal. Managed keys, durable production persistence, consumer trust distribution
+and legal approval remain blockers ([#55](https://github.com/sgajbi/lotus-archive/issues/55)).
 
-- CI and governance: .github/workflows/
-- Engineering commands: Makefile
-- Platform standards docs: docs/standards/
-- Archive boundaries: docs/architecture/archive-service-boundaries.md
-- Canonical enterprise refactor playbook: ../lotus-platform/context/playbooks/ENTERPRISE-BACKEND-REFACTORING-INSTRUCTIONS.md
-- Dependency exception policy: security/pip-audit-exceptions.json and scripts/security_audit.py
-- Supported feature posture: docs/supported-features.md
+## Repository documentation
+
+Deep reference material that belongs next to the code:
+
+- [`docs/architecture/archive-service-boundaries.md`](docs/architecture/archive-service-boundaries.md)
+  — cross-service ownership decisions and the module-family contract
+- [`docs/supported-features.md`](docs/supported-features.md) — implementation-backed support posture
+  per capability
+- [`docs/runbooks/service-operations.md`](docs/runbooks/service-operations.md) — standard commands,
+  incident first checks, container provenance, key operations
+- [`docs/standards/`](docs/standards/) — platform standards this service is held to
+- [`AGENTS.md`](AGENTS.md) and [`REPOSITORY-ENGINEERING-CONTEXT.md`](REPOSITORY-ENGINEERING-CONTEXT.md)
+  — delivery posture, explicit runtime composition settings, and repository engineering context
+
+## Known gaps
+
+| gap | tracked |
+|---|---|
+| no durable adapters; no production profile can start | [#90](https://github.com/sgajbi/lotus-archive/issues/90) |
+| `/metadata` supportability is declared, not measured | [#91](https://github.com/sgajbi/lotus-archive/issues/91) |
+| migration gate never runs in CI | [#92](https://github.com/sgajbi/lotus-archive/issues/92) |
+| `tenant_id` optional on write, required on read | [#93](https://github.com/sgajbi/lotus-archive/issues/93) |
+| Idea lifecycle decisions not certified | [#55](https://github.com/sgajbi/lotus-archive/issues/55) |

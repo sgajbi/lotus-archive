@@ -1,176 +1,132 @@
-# lotus-archive Wiki
+# lotus-archive
 
-Lotus generated-document archive, retrieval, retention, legal hold, and access audit service
+The system of record for documents the Lotus platform has generated. Once `lotus-report` has
+produced a client document and `lotus-render` has compiled it, `lotus-archive` is what can still
+answer, years later: *what was produced, for whom, from what evidence, who has looked at it, and may
+it be destroyed yet.*
 
-## Reader Map
+## Why it exists
 
-| Need | Start here |
-| --- | --- |
-| Current capability and boundary | [Current posture](#current-posture) |
-| API and ownership decisions | [Archive service boundaries](../docs/architecture/archive-service-boundaries.md) |
-| Supported feature evidence | [Supported features](../docs/supported-features.md) |
-| Local validation and publication | [Repository context](../REPOSITORY-ENGINEERING-CONTEXT.md) |
+A private bank does not merely send documents; it must be able to account for them. A regulator asks
+which portfolio review a client received in Q3 and whether it was ever corrected. Legal asks for
+every document touching a matter to be frozen. Data protection asks that a document be destroyed
+once its retention period has run — and only then. Each of those questions is unanswerable if
+generated documents are scattered across the services that happened to produce them.
 
-## Current posture
+`lotus-archive` exists so that those questions have one place to be asked, with four properties that
+have to hold together:
 
-- Governed service boundary scaffold is in place.
-- Runtime composition is explicit. The local profile uses in-memory metadata/audit repositories and
-  filesystem object storage; production-like profiles must configure durable persistence/storage or
-  fail closed instead of silently publishing non-durable archive state.
-- Health, readiness, metadata, metrics, correlation/trace headers, safe error envelopes, structured
-  route-template request logging, metadata model, migration contract, filesystem-backed
-  local-development storage,
-  checksum validation, idempotent archive-write domain behavior, internal archive create API,
-  controlled metadata lookup, checksum-verified binary download, access-audit recording, retention
-  posture lookup, purge eligibility and execution, and legal-hold set/release with purge blocking
-  are available.
-- Lifecycle relationship APIs for supersession, correction, reissue, and current-document
-  resolution are available.
-- `GET /documents/{document_id}/source-events` projects archive-owned generated-document and
-  client-delivery reissue lineage for downstream portfolio-memory consumers without raw document
-  bytes, storage keys, raw report payloads, raw lifecycle reason text, or raw client references.
-  The contract is pull-only with bounded `limit`/`offset` replay, stable reason codes, and
-  report-input provenance so consumers can cite archive document evidence without treating archive
-  as transaction, position, calculation, or methodology authority.
-- Report-to-archive handoff after successful PDF render is available through `lotus-report`.
-- RFC-0042 outcome-review report artifacts are governed by the same generated-document archive,
-  retrieval, retention, legal-hold, access-audit, purge, and lifecycle posture when `lotus-report`
-  supplies `report_type=outcome_review` metadata.
-- RFC-0040 proof-pack report artifacts are governed by the same archive lifecycle when
-  `lotus-report` supplies `report_type=proof_pack`, the `proof-pack` render template, and
-  `dpm_proof_pack_report_input.v1` metadata.
-- RFC-0002 reviewed Idea evidence-pack artifacts are governed by the same archive lifecycle when
-  `lotus-report` supplies a rendered `proof-pack` artifact with support-safe `idea_evidence_pack`
-  metadata. Archive preserves evidence ids, source-contract lineage, retention posture, source-event
-  refs, and access-audit evidence without raw Idea evidence payloads or client-publication
-  authority.
-- RFC-0041 rebalance-wave report artifacts are governed by the same archive lifecycle when
-  `lotus-report` supplies `report_type=rebalance_wave`, the `rebalance-wave` render template, and
-  `dpm_wave_report_input.v1` metadata.
-- RFC-0023 advisor-review narrative portfolio-review artifacts can preserve a support-safe
-  `reviewed_advisory_narrative` archive summary after `lotus-report` and `lotus-render` include the
-  rendered advisor-use narrative page. The archive summary stores lineage and posture, not raw
-  narrative sections, and does not promote client-ready commentary.
-- Archive metadata accepts only governed generated-report types: `portfolio_review`,
-  `outcome_review`, `proof_pack`, and `rebalance_wave`.
-- `/metadata` publishes RFC-0108 `archive.observability.archive_supportability` posture covering
-  retrieval, retention, legal hold, access audit, lifecycle, gateway retrieval, and Gateway-backed
-  Workbench retrieval.
-- `/version` publishes source-safe Archive build metadata: service version, repository URL, commit
-  SHA, Git ref, build timestamp, CI run id, image reference, image digest, and digest posture.
-  Local images report `not_published`; mainline CI records registry digest, scan, signature, and
-  attestation evidence. Production deployment certification remains blocked until deployment
-  manifests consume that digest and same-digest promotion evidence is available.
-- `lotus_archive_supportability_total` is implementation-backed with bounded `state`, `reason`,
-  and `freshness_bucket` labels only, with recorder-level fallback for unknown label values.
-- Release images contain only the application wheel and declared runtime dependencies; the package
-  installer is removed after installation so vendored dependency metadata cannot pollute the runtime
-  SBOM. Build-system and CI-tool pins are security-audited. **Pull requests and mainline both block
-  on any fixable CRITICAL or HIGH vulnerability** - the pull-request Docker job scans the image it
-  builds, so a vulnerable image is rejected in review rather than after merge, and mainline
-  additionally blocks image signing and attestation. Both lanes use identical severity and
-  `ignore-unfixed` settings, so a pull request cannot pass a bar the release lane would fail.
-- `POST /documents/access-preflight` provides a bounded, ordered caller-scoped Archive posture for
-  `lotus-gateway` batch consumers. It requires trusted tenant and region context, performs one
-  repository batch lookup, returns explicit complete/partial/unavailable and per-document
-  allowed/denied/missing/unavailable states, and never returns storage paths or archive payloads.
-  Adapter lookup timeout/deadline failures map to `unavailable`; the response is advisory and the
-  single-document metadata and download routes remain the final access boundary.
-- Workbench retrieval is supported only through the Workbench BFF and `lotus-gateway`; Workbench
-  must not call `lotus-archive` directly.
-- `POST /documents/{document_id}/idea-lifecycle-decisions` is a limited, not-certified Archive
-  producer boundary for Idea-linked proof-pack evidence. It issues tenant-bound, short-lived
-  Ed25519-signed retention/hold/purge projections with durable local replay protection. Decisions
-  never authorize disposal; managed keys, durable production persistence, consumer trust
-  distribution, legal approval, and live evidence remain blockers.
-- This service is limited to Lotus-generated document archive scope. It is not a generic file store
-  or manual upload service.
-- Wiki source lives in-repo and must be published through lotus-platform automation.
+- **Custody is provable.** Every document carries a SHA-256 checksum verified at write, the render
+  and report identifiers it came from, and the snapshot it was built on. The document can be tied
+  back to its evidence without trusting the service that produced it.
+- **Access leaves a trace.** Metadata reads, binary downloads, purge evaluations, legal-hold changes
+  and denied attempts all record an access event. Who looked is part of the record, not a log line.
+- **Destruction is governed, not incidental.** A document is destroyed only when its retention has
+  elapsed and no legal hold is active, and the decision is recorded whichever way it goes. Absence of
+  a retention date means *never*, not *now*.
+- **Correction is additive.** A document is never edited. Supersession, correction and reissue create
+  new documents and append a relationship, so the history of what a client was told stays intact.
 
-## Proof-Pack Archive Flow
+The service is deliberately narrow to make those properties defensible. It is **not** a general file
+store, not a manual upload surface, not a delivery channel, and not a renderer.
 
-```mermaid
-sequenceDiagram
-    participant Manage as lotus-manage
-    participant Report as lotus-report
-    participant Render as lotus-render
-    participant Archive as lotus-archive
-    participant Gateway as lotus-gateway
-    participant Workbench as lotus-workbench BFF
+## Current status — read this before planning a deployment
 
-    Manage->>Report: DpmProofPackReportInput
-    Report->>Render: proof-pack template package
-    Render-->>Report: deterministic PDF artifact
-    Report->>Archive: POST /documents report_type=proof_pack
-    Archive-->>Report: document_id and checksum
-    Archive-->>Manage: source-event refs for portfolio memory
-    Gateway->>Archive: controlled metadata/download
-    Workbench->>Gateway: BFF document retrieval
-```
+`lotus-archive` **cannot currently run in a production configuration.** This is a delivery gap, not
+a configuration task:
 
-## Idea Evidence-Pack Archive Flow
+- the settings validator rejects the in-memory repository and filesystem storage for any profile
+  other than `local-development` or `test`
+- the runtime composer rejects everything *except* the in-memory repository and filesystem storage,
+  because the PostgreSQL and S3 adapters are not implemented
+
+The two are mutually exclusive, so no value of `LOTUS_ARCHIVE_RUNTIME_PROFILE=production` produces a
+running service. Two consequences follow in the one runnable configuration: **archived bytes sit on
+a local filesystem path** (defaulting to the OS temp directory) and **access audit records are
+in-memory and do not survive a restart**. Tracked as
+[#90](https://github.com/sgajbi/lotus-archive/issues/90); see
+[Configuration](./Configuration.md#what-can-actually-run) for the detail.
+
+Everything below describes behaviour that is implemented and exercised by tests. It runs. It is not
+yet deployable.
+
+## Who uses it
+
+| Reader | What matters | Start here |
+|---|---|---|
+| Business, risk and compliance | what is retained, what blocks destruction, what a correction does to the record | [Document Lifecycle](./Document-Lifecycle.md) |
+| Integration engineers | the 22 operations, the archive contract, who may call what | [API Surface](./API-Surface.md) |
+| Security and audit | how a caller is identified, what is scoped, what is recorded | [Security and Controls](./Security-and-Controls.md) |
+| Operations | readiness, posture, incident checks | [Operations](./Operations.md) |
+| Engineers on the repo | structure, gates, what CI runs | [Architecture](./Architecture.md), [Development and Testing](./Development-and-Testing.md) |
+
+Callers are services, never people directly. `lotus-report` writes; `lotus-gateway` reads on behalf
+of the product; `lotus-idea` reads a narrow lifecycle projection. **Workbench must never call
+`lotus-archive` directly** — retrieval goes through the Workbench BFF and `lotus-gateway`.
+
+## What it accepts
+
+Only Lotus-generated report documents, of four governed types:
+
+| `report_type` | produced from | template |
+|---|---|---|
+| `portfolio_review` | client portfolio review | `portfolio-review` |
+| `outcome_review` | post-trade outcome review | `outcome-review` |
+| `proof_pack` | pre-trade proof pack, including reviewed Idea evidence | `proof-pack` |
+| `rebalance_wave` | rebalance wave evidence | `rebalance-wave` |
+
+Anything else is rejected at validation. Three optional support-safe summaries may accompany a
+document — reviewed advisory narrative, advisor proposal memo, and Idea evidence pack — each pinned
+by validation to the report type and template it belongs with, and each storing lineage and posture
+rather than the underlying content. See [API Surface](./API-Surface.md#the-archive-contract).
+
+## What it does not own
+
+- **the document's content** — `lotus-report` assembles it, `lotus-render` compiles it
+- **retention policy** — the retaining period arrives on the document; archive enforces it, and does
+  not compute it
+- **delivery to clients** — archive records that a document exists, not that anyone received it
+- **client-publication authority** — an Idea evidence pack is archived with that authority withheld
+  and archiving does not grant it
+- **disposal authority for downstream consumers** — the Idea lifecycle decision endpoint projects
+  archive posture; it never authorises destruction
+
+## Where a document comes from
 
 ```mermaid
-sequenceDiagram
-    participant Idea as lotus-idea
-    participant Report as lotus-report
-    participant Render as lotus-render
-    participant Archive as lotus-archive
-    participant Gateway as lotus-gateway
-
-    Idea->>Report: reviewed IdeaEvidencePacket refs
-    Report->>Render: proof-pack package with Idea source lineage
-    Render-->>Report: deterministic PDF artifact
-    Report->>Archive: POST /documents report_type=proof_pack + idea_evidence_pack summary
-    Archive-->>Report: document_id, checksum, retention posture
-    Archive-->>Gateway: controlled metadata/download/source-event evidence
+flowchart LR
+  RPT["lotus-report<br/>assembles report data"] --> RND["lotus-render<br/>compiles the PDF"]
+  RND --> RPT
+  RPT -- "POST /documents" --> ARC["lotus-archive<br/>custody · audit · retention"]
+  ARC -- "document_id + checksum" --> RPT
+  GW["lotus-gateway"] -- "metadata · download" --> ARC
+  WB["Workbench BFF"] --> GW
+  IDEA["lotus-idea"] -- "lifecycle decision" --> ARC
 ```
 
-## Rebalance-Wave Archive Flow
+The sequence matters: a document reaches the archive only after it has been rendered, so what is
+archived is the artefact a client could receive — not a description of one. Per-report-type flows are
+in [Document Lifecycle](./Document-Lifecycle.md#how-each-report-type-arrives).
 
-```mermaid
-sequenceDiagram
-    participant Manage as lotus-manage
-    participant Report as lotus-report
-    participant Render as lotus-render
-    participant Archive as lotus-archive
-    participant Gateway as lotus-gateway
-    participant Workbench as lotus-workbench BFF
+## Known gaps
 
-    Manage->>Report: DpmWaveReportInput
-    Report->>Render: rebalance-wave template package
-    Render-->>Report: deterministic PDF artifact
-    Report->>Archive: POST /documents report_type=rebalance_wave
-    Archive-->>Report: document_id and checksum
-    Archive-->>Manage: source-event refs for portfolio memory
-    Gateway->>Archive: controlled metadata/download
-    Workbench->>Gateway: BFF document retrieval
-```
+Recorded so that absence is not mistaken for capability.
 
-## Reviewed Advisory Narrative Archive Flow
+| gap | consequence | tracked |
+|---|---|---|
+| no durable adapters | no production profile can start; bytes are local, audit is in-memory | [#90](https://github.com/sgajbi/lotus-archive/issues/90) |
+| supportability is declared, not measured | `/metadata` reports `ready` and `accessAuditSupported: true` regardless of whether anything works | [#91](https://github.com/sgajbi/lotus-archive/issues/91) |
+| migration gate never runs in CI | the schema contract is checked only if a developer runs `make check` locally | [#92](https://github.com/sgajbi/lotus-archive/issues/92) |
+| `tenant_id` optional on write, required on read | a document archived without one is stored and then permanently unreadable | [#93](https://github.com/sgajbi/lotus-archive/issues/93) |
+| Idea lifecycle decisions not certified | managed keys, durable persistence, consumer trust distribution and legal approval remain open | [#55](https://github.com/sgajbi/lotus-archive/issues/55) |
 
-```mermaid
-sequenceDiagram
-    participant Advise as lotus-advise
-    participant Report as lotus-report
-    participant Render as lotus-render
-    participant Archive as lotus-archive
-    participant Gateway as lotus-gateway
+## The pages
 
-    Advise->>Report: reviewed advisory narrative package
-    Advise->>Report: advisor proposal memo package
-    Report->>Render: portfolio-review data with reviewed narrative payload
-    Report->>Render: portfolio-review data with advisor memo payload
-    Render-->>Report: PDF with advisor-use narrative page
-    Render-->>Report: PDF with advisor-use memo page
-    Report->>Archive: POST /documents reviewed_advisory_narrative / advisor_proposal_memo summary
-    Archive-->>Report: document_id and checksum
-    Gateway->>Archive: controlled metadata/download
-```
-
-## Operator links
-
-- `README.md`
-- `docs/architecture/archive-service-boundaries.md`
-- `docs/supported-features.md`
-- `docs/runbooks/service-operations.md`
+1. [Architecture](./Architecture.md) — module families, runtime composition, what is in memory
+2. [API Surface](./API-Surface.md) — all 22 operations and the archive contract
+3. [Document Lifecycle](./Document-Lifecycle.md) — retention, legal hold, purge, supersession
+4. [Security and Controls](./Security-and-Controls.md) — caller identity, scope, audit, checksums
+5. [Configuration](./Configuration.md) — every setting, and what can actually run
+6. [Operations](./Operations.md) — readiness, posture, metrics, incident checks
+7. [Development and Testing](./Development-and-Testing.md) — building, testing, gates
+8. [Glossary](./Glossary.md) — the vocabulary and where each term is defined
