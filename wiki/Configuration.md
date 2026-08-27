@@ -90,7 +90,7 @@ key or an unnamed one.
 The ledger defaults to the temp directory, so replay protection is not durable in the runnable
 configuration either. The capability is not certified — see
 [#55](https://github.com/sgajbi/lotus-archive/issues/55) and
-[Document Lifecycle](./Document-Lifecycle.md#idea-lifecycle-decisions).
+[Document Lifecycle](Document-Lifecycle#idea-lifecycle-decisions).
 
 ## Deployment
 
@@ -110,6 +110,6 @@ Container images are built and scanned in CI today, and provenance is published 
 
 ## Read next
 
-1. [Architecture](./Architecture.md) — what each adapter is and where it plugs in
-2. [Operations](./Operations.md) — how the posture surfaces report all of this
-3. [Security and Controls](./Security-and-Controls.md) — the secret and its validation
+1. [Architecture](Architecture) — what each adapter is and where it plugs in
+2. [Operations](Operations) — how the posture surfaces report all of this
+3. [Security and Controls](Security-and-Controls) — the secret and its validation

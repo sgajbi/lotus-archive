@@ -45,7 +45,7 @@ running service. Two consequences follow in the one runnable configuration: **ar
 a local filesystem path** (defaulting to the OS temp directory) and **access audit records are
 in-memory and do not survive a restart**. Tracked as
 [#90](https://github.com/sgajbi/lotus-archive/issues/90); see
-[Configuration](./Configuration.md#what-can-actually-run) for the detail.
+[Configuration](Configuration#what-can-actually-run) for the detail.
 
 Everything below describes behaviour that is implemented and exercised by tests. It runs. It is not
 yet deployable.
@@ -54,11 +54,11 @@ yet deployable.
 
 | Reader | What matters | Start here |
 |---|---|---|
-| Business, risk and compliance | what is retained, what blocks destruction, what a correction does to the record | [Document Lifecycle](./Document-Lifecycle.md) |
-| Integration engineers | the 22 operations, the archive contract, who may call what | [API Surface](./API-Surface.md) |
-| Security and audit | how a caller is identified, what is scoped, what is recorded | [Security and Controls](./Security-and-Controls.md) |
-| Operations | readiness, posture, incident checks | [Operations](./Operations.md) |
-| Engineers on the repo | structure, gates, what CI runs | [Architecture](./Architecture.md), [Development and Testing](./Development-and-Testing.md) |
+| Business, risk and compliance | what is retained, what blocks destruction, what a correction does to the record | [Document Lifecycle](Document-Lifecycle) |
+| Integration engineers | the 22 operations, the archive contract, who may call what | [API Surface](API-Surface) |
+| Security and audit | how a caller is identified, what is scoped, what is recorded | [Security and Controls](Security-and-Controls) |
+| Operations | readiness, posture, incident checks | [Operations](Operations) |
+| Engineers on the repo | structure, gates, what CI runs | [Architecture](Architecture), [Development and Testing](Development-and-Testing) |
 
 Callers are services, never people directly. `lotus-report` writes; `lotus-gateway` reads on behalf
 of the product; `lotus-idea` reads a narrow lifecycle projection. **Workbench must never call
@@ -78,7 +78,7 @@ Only Lotus-generated report documents, of four governed types:
 Anything else is rejected at validation. Three optional support-safe summaries may accompany a
 document — reviewed advisory narrative, advisor proposal memo, and Idea evidence pack — each pinned
 by validation to the report type and template it belongs with, and each storing lineage and posture
-rather than the underlying content. See [API Surface](./API-Surface.md#the-archive-contract).
+rather than the underlying content. See [API Surface](API-Surface#the-archive-contract).
 
 ## What it does not own
 
@@ -106,7 +106,7 @@ flowchart LR
 
 The sequence matters: a document reaches the archive only after it has been rendered, so what is
 archived is the artefact a client could receive — not a description of one. Per-report-type flows are
-in [Document Lifecycle](./Document-Lifecycle.md#how-each-report-type-arrives).
+in [Document Lifecycle](Document-Lifecycle#how-each-report-type-arrives).
 
 ## Known gaps
 
@@ -122,11 +122,11 @@ Recorded so that absence is not mistaken for capability.
 
 ## The pages
 
-1. [Architecture](./Architecture.md) — module families, runtime composition, what is in memory
-2. [API Surface](./API-Surface.md) — all 22 operations and the archive contract
-3. [Document Lifecycle](./Document-Lifecycle.md) — retention, legal hold, purge, supersession
-4. [Security and Controls](./Security-and-Controls.md) — caller identity, scope, audit, checksums
-5. [Configuration](./Configuration.md) — every setting, and what can actually run
-6. [Operations](./Operations.md) — readiness, posture, metrics, incident checks
-7. [Development and Testing](./Development-and-Testing.md) — building, testing, gates
-8. [Glossary](./Glossary.md) — the vocabulary and where each term is defined
+1. [Architecture](Architecture) — module families, runtime composition, what is in memory
+2. [API Surface](API-Surface) — all 22 operations and the archive contract
+3. [Document Lifecycle](Document-Lifecycle) — retention, legal hold, purge, supersession
+4. [Security and Controls](Security-and-Controls) — caller identity, scope, audit, checksums
+5. [Configuration](Configuration) — every setting, and what can actually run
+6. [Operations](Operations) — readiness, posture, metrics, incident checks
+7. [Development and Testing](Development-and-Testing) — building, testing, gates
+8. [Glossary](Glossary) — the vocabulary and where each term is defined

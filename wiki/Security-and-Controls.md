@@ -158,6 +158,6 @@ until deployment manifests consume that digest and same-digest promotion evidenc
 
 ## Read next
 
-1. [API Surface](./API-Surface.md) — the operations these controls apply to
-2. [Document Lifecycle](./Document-Lifecycle.md) — what a purge and a legal hold actually do
-3. [Configuration](./Configuration.md) — the settings behind the fail-closed rules
+1. [API Surface](API-Surface) — the operations these controls apply to
+2. [Document Lifecycle](Document-Lifecycle) — what a purge and a legal hold actually do
+3. [Configuration](Configuration) — the settings behind the fail-closed rules

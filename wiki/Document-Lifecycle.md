@@ -2,7 +2,7 @@
 
 What happens to a generated document between the moment it is archived and the moment it is
 destroyed — and the rules that decide whether that moment ever arrives. This is the business
-behaviour of the service; the endpoints that expose it are in [API Surface](./API-Surface.md).
+behaviour of the service; the endpoints that expose it are in [API Surface](API-Surface).
 
 ## The one-way rules
 
@@ -168,6 +168,6 @@ control anyone should yet rely on.
 
 ## Read next
 
-1. [API Surface](./API-Surface.md) — the operations that expose all of the above
-2. [Security and Controls](./Security-and-Controls.md) — who may invoke them, and what is recorded
-3. [Glossary](./Glossary.md) — the vocabulary
+1. [API Surface](API-Surface) — the operations that expose all of the above
+2. [Security and Controls](Security-and-Controls) — who may invoke them, and what is recorded
+3. [Glossary](Glossary) — the vocabulary

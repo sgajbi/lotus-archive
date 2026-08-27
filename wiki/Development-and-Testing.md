@@ -13,7 +13,7 @@ docker compose up --build
 
 No external dependency is needed. The runnable configuration uses the in-memory repository and
 filesystem storage, so the service starts with nothing behind it — which is also why it is not yet
-deployable. See [Configuration](./Configuration.md#what-can-actually-run).
+deployable. See [Configuration](Configuration#what-can-actually-run).
 
 Expect `/health/ready` to report `degraded` with reason `explicit_local_development_runtime`. That
 is the correct local state, not a fault.
@@ -49,7 +49,7 @@ coverage data rather than a single run.
 Two test modules are worth knowing about before editing anything:
 
 - **`tests/unit/test_architecture_boundaries.py`** enforces the module-family boundaries described in
-  [Architecture](./Architecture.md#module-families). Structure drift fails the build rather than
+  [Architecture](Architecture#module-families). Structure drift fails the build rather than
   accumulating.
 - **`tests/unit/test_documentation_posture.py`** asserts specific content in `README.md`,
   `wiki/Home.md`, the runbook, `docs/supported-features.md` and the boundaries doc — including that
@@ -104,6 +104,6 @@ relative link resolves in-repo and 404s on the published wiki, which is flat.
 
 ## Read next
 
-1. [Architecture](./Architecture.md) — the structure the boundary tests enforce
-2. [Configuration](./Configuration.md) — why local is the only runnable profile
-3. [Operations](./Operations.md) — what the running service reports
+1. [Architecture](Architecture) — the structure the boundary tests enforce
+2. [Configuration](Configuration) — why local is the only runnable profile
+3. [Operations](Operations) — what the running service reports
