@@ -2,7 +2,7 @@
 
 Every operation `lotus-archive` publishes, taken from the generated OpenAPI document on `main`.
 There are **22**: sixteen on documents, six operational. The behaviour behind them is in
-[Document Lifecycle](./Document-Lifecycle.md).
+[Document Lifecycle](Document-Lifecycle).
 
 ## Documents
 
@@ -26,7 +26,7 @@ There are **22**: sixteen on documents, six operational. The behaviour behind th
 | `POST /documents/{id}/idea-lifecycle-decisions` | signed retention/hold/purge projection | `lotus-idea`, `lotus-report` |
 
 The caller column is the whole authorization model — see
-[Security and Controls](./Security-and-Controls.md#who-may-call-what). It is enforced against a
+[Security and Controls](Security-and-Controls#who-may-call-what). It is enforced against a
 header the caller sets about itself.
 
 ## Operational
@@ -45,7 +45,7 @@ run id, image reference, image digest and digest posture. A locally built image 
 `not_published`; mainline CI records registry digest, scan, signature and attestation evidence.
 
 Note that `/metadata`'s supportability block is a **static declaration**, not a measurement — see
-[Operations](./Operations.md#supportability-is-declared-not-measured).
+[Operations](Operations#supportability-is-declared-not-measured).
 
 ## The archive contract
 
@@ -141,6 +141,6 @@ identifiers do not leak into log aggregation.
 
 ## Read next
 
-1. [Document Lifecycle](./Document-Lifecycle.md) — what these operations mean in business terms
-2. [Security and Controls](./Security-and-Controls.md) — caller identity, scope and audit
-3. [Architecture](./Architecture.md) — how a request becomes a stored document
+1. [Document Lifecycle](Document-Lifecycle) — what these operations mean in business terms
+2. [Security and Controls](Security-and-Controls) — caller identity, scope and audit
+3. [Architecture](Architecture) — how a request becomes a stored document

@@ -20,7 +20,7 @@ flowchart TB
 ```
 
 The three cylinders are the whole persistence story, and all three are non-durable in the only
-runnable configuration — see [Configuration](./Configuration.md#what-can-actually-run).
+runnable configuration — see [Configuration](Configuration#what-can-actually-run).
 
 ## Module families
 
@@ -58,7 +58,7 @@ authoritative statement of the boundaries — including who owns what across ser
 6. **An access event is recorded** for the create.
 
 Idempotency is on `archive_request_id`: a repeat returns the existing document; a reuse with
-different content is a conflict. See [API Surface](./API-Surface.md#idempotency).
+different content is a conflict. See [API Surface](API-Surface#idempotency).
 
 ## Runtime composition
 
@@ -122,6 +122,6 @@ of log aggregation.
 
 ## Read next
 
-1. [API Surface](./API-Surface.md) — the operations this structure serves
-2. [Configuration](./Configuration.md) — what can be composed, and what cannot
-3. [Document Lifecycle](./Document-Lifecycle.md) — the domain rules the service layer implements
+1. [API Surface](API-Surface) — the operations this structure serves
+2. [Configuration](Configuration) — what can be composed, and what cannot
+3. [Document Lifecycle](Document-Lifecycle) — the domain rules the service layer implements

@@ -105,6 +105,6 @@ The ordered operational procedures are in the repository:
 
 ## Read next
 
-1. [Configuration](./Configuration.md) — the settings behind every posture value above
-2. [Security and Controls](./Security-and-Controls.md) — what the audit trail records
-3. [Document Lifecycle](./Document-Lifecycle.md) — why a purge was refused
+1. [Configuration](Configuration) — the settings behind every posture value above
+2. [Security and Controls](Security-and-Controls) — what the audit trail records
+3. [Document Lifecycle](Document-Lifecycle) — why a purge was refused
