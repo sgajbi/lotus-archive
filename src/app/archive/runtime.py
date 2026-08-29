@@ -3,12 +3,16 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from app.archive.archive_writer import ArchiveWriter
-from app.archive.audit import InMemoryAccessAuditRepository
-from app.archive.exceptions import RuntimeConfigurationError
-from app.archive.repository import InMemoryArchiveDocumentRepository
+from app.archive.audit import AccessAuditRepository, InMemoryAccessAuditRepository
+from app.archive.postgres_repository import (
+    PostgresAccessAuditRepository,
+    PostgresArchiveDocumentRepository,
+)
+from app.archive.repository import ArchiveDocumentRepository, InMemoryArchiveDocumentRepository
+from app.archive.s3_storage import S3ObjectStorage
 from app.archive.service import ArchiveDocumentService
 from app.archive.settings import ArchiveRuntimeSettings
-from app.archive.storage import FilesystemObjectStorage
+from app.archive.storage import FilesystemObjectStorage, ObjectStorage
 
 
 @dataclass(frozen=True)
@@ -24,21 +28,38 @@ class ArchiveRuntimePosture:
 
 
 def build_archive_service(settings: ArchiveRuntimeSettings) -> ArchiveDocumentService:
-    if settings.repository_mode != "in-memory":
-        raise RuntimeConfigurationError("PostgreSQL archive repository adapter is not available")
-    if settings.storage_mode != "filesystem":
-        raise RuntimeConfigurationError("S3 archive storage adapter is not available")
+    repository: ArchiveDocumentRepository
+    audit_repository: AccessAuditRepository
+    storage: ObjectStorage
+    if settings.repository_mode == "postgresql":
+        assert settings.database_url is not None
+        repository = PostgresArchiveDocumentRepository(settings.database_url)
+        audit_repository = PostgresAccessAuditRepository(settings.database_url)
+    else:
+        repository = InMemoryArchiveDocumentRepository()
+        audit_repository = InMemoryAccessAuditRepository()
 
-    repository = InMemoryArchiveDocumentRepository()
-    storage = FilesystemObjectStorage(
-        settings.storage_root,
-        namespace=settings.storage_namespace,
-    )
+    if settings.storage_mode == "s3":
+        assert settings.s3_bucket is not None
+        storage = S3ObjectStorage(
+            bucket=settings.s3_bucket,
+            namespace=settings.storage_namespace,
+            key_prefix=settings.s3_key_prefix,
+            region=settings.s3_region,
+            endpoint_url=settings.s3_endpoint_url,
+            server_side_encryption=settings.s3_server_side_encryption,
+            kms_key_id=settings.s3_kms_key_id,
+        )
+    else:
+        storage = FilesystemObjectStorage(
+            settings.storage_root,
+            namespace=settings.storage_namespace,
+        )
     return ArchiveDocumentService(
         writer=ArchiveWriter(repository=repository, storage=storage),
         repository=repository,
         storage=storage,
-        audit_repository=InMemoryAccessAuditRepository(),
+        audit_repository=audit_repository,
         max_decoded_document_bytes=settings.max_decoded_document_bytes,
     )
 
