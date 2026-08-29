@@ -767,9 +767,8 @@ class ArchiveDocumentService:
                 "updated_at": now,
             }
         )
-        origin_field = _TARGET_ORIGIN_FIELD.get(transition_type)
-        if origin_field is None:
-            raise UnsupportedLifecycleTransitionError("unsupported lifecycle transition")
+        # _validate_lifecycle_transition already rejected any type outside the mapping.
+        origin_field = _TARGET_ORIGIN_FIELD[transition_type]
         target = target.model_copy(update={"updated_at": now, origin_field: source.document_id})
         relationship = LifecycleRelationshipRecord(
             lifecycle_relationship_id=f"life_{uuid4().hex}",
@@ -849,11 +848,7 @@ class ArchiveDocumentService:
         )
         if existing_origin is not None:
             raise SupersessionConflictError("target document already has a lifecycle origin")
-        if transition_type not in {
-            LifecycleTransitionType.SUPERSEDE,
-            LifecycleTransitionType.CORRECT,
-            LifecycleTransitionType.REISSUE,
-        }:
+        if transition_type not in _TARGET_ORIGIN_FIELD:
             raise UnsupportedLifecycleTransitionError("unsupported lifecycle transition")
 
     def _resolve_current_document(
@@ -886,6 +881,10 @@ class ArchiveDocumentService:
         if metadata.retain_until_date > effective_date:
             metadata = self._update_purge_status(metadata, PurgeStatus.NOT_ELIGIBLE)
             return metadata, False, "retention_period_active"
+        if metadata.purge_status is PurgeStatus.ELIGIBLE:
+            # Re-evaluating an already-eligible document changes nothing; rewriting
+            # updated_at here would churn the record without a state change.
+            return metadata, True, "retention_elapsed"
         now = datetime.now(timezone.utc)
         metadata = metadata.model_copy(
             update={
