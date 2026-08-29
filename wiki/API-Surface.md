@@ -44,8 +44,8 @@ header the caller sets about itself.
 run id, image reference, image digest and digest posture. A locally built image reports
 `not_published`; mainline CI records registry digest, scan, signature and attestation evidence.
 
-Note that `/metadata`'s supportability block is a **static declaration**, not a measurement — see
-[Operations](Operations#supportability-is-declared-not-measured).
+`/metadata` keeps the build-time feature catalogue separate from measured repository, storage, and
+access-audit readiness. See [Operations](Operations#measured-supportability).
 
 ## The archive contract
 

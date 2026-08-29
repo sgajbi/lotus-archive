@@ -12,7 +12,7 @@ resolution, report-to-archive handoff through `lotus-report`, and product-facing
 the `lotus-gateway` document facade and `lotus-workbench` BFF. `/metadata` also publishes RFC-0108
 `archive.observability.archive_supportability` posture and the service emits bounded
 `lotus_archive_supportability_total` metric observations. Unknown supportability label values fall
-back to `unavailable`, `archive_capability_unavailable`, or `unknown` before they reach Prometheus;
+back to `unavailable`, `archive_repository_unavailable`, or `unknown` before they reach Prometheus;
 document ids, report/render ids, tenant ids, trace ids, correlation ids, storage keys, and client
 text must never be emitted as labels. Workbench archive retrieval must remain routed through the
 Workbench BFF and `lotus-gateway`; direct Workbench-to-archive calls are not a supported product
@@ -43,6 +43,12 @@ boundary.
 1. Check structured request logs for correlation ID, trace ID, method, path, status, and duration.
 2. Verify `/health/ready`, `/metadata` supportability state and reason, `/version` commit/image
    metadata, and metrics endpoint.
+   - `archive_repository_unavailable`: inspect PostgreSQL connectivity and the
+     `archive_documents` migration.
+   - `archive_storage_unavailable`: inspect filesystem access locally or S3 bucket access in the
+     durable profile.
+   - `archive_access_audit_unavailable`: inspect PostgreSQL connectivity and the
+     `archive_access_audit` migration.
 3. Run local parity check (make ci) before hotfix PR.
 
 ## Container Provenance Checks

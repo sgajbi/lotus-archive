@@ -10,7 +10,7 @@ rather than repeated here.
 |---|---|
 | `GET /health/live` | is the process up? — nothing else |
 | `GET /health/ready` | should this instance receive traffic? |
-| `GET /metadata` | what was composed, and what does the service claim to support? |
+| `GET /metadata` | what was composed, which dependencies respond, and what can operate now? |
 | `GET /metrics` | how much work, how fast, failing how? |
 | `GET /version` | which build is this, and what provenance does it carry? |
 
@@ -27,28 +27,31 @@ The posture states are:
 | `unavailable` | `durable_archive_runtime_missing` | a non-local profile without durable metadata or storage |
 | `ready` | `durable_archive_runtime_configured` | durable metadata **and** durable storage |
 
-`ready` is reachable for the production PostgreSQL + S3 composition. It records configured posture,
-not a live dependency probe; use the measured supportability work tracked by
-[#91](https://github.com/sgajbi/lotus-archive/issues/91) before routing production traffic.
-`degraded` remains expected for local and test profiles.
+`ready` is reachable for the production PostgreSQL + S3 composition. This route records configured
+posture, not a live dependency probe. Use the measured supportability block on `/metadata` alongside
+readiness when investigating a running instance. `degraded` remains expected for local and test
+profiles.
 
-### Supportability is declared, not measured
+### Measured supportability
 
 `/metadata` publishes an `archive.observability.archive_supportability` block with a state and
 per-capability flags — `retrievalSupported`, `retentionSupported`, `accessAuditSupported` and so on.
 
-**Only drain state is measured.** Every capability flag is a literal `true`, and the `unavailable`
-state is unreachable because it is gated on an empty feature list that is a non-empty module
-constant. The block records that the features were built, not that they work
-([#91](https://github.com/sgajbi/lotus-archive/issues/91)).
+The route resolves the same `ArchiveDocumentService` dependency used by the document APIs and
+performs bounded checks of its three adapters:
 
-Practically: `state: ready` and `accessAuditSupported: true` on this surface tell you nothing about
-whether the repository or storage is reachable. `/health/ready` is the surface that reflects the
-composed runtime. Use it, not the supportability block, to decide whether to route traffic.
+| measured dependency | durable check | capability impact when unavailable |
+|---|---|---|
+| metadata repository | reads the `archive_documents` schema | retrieval, retention, legal hold, lifecycle, Gateway and Workbench retrieval |
+| object storage | verifies S3 bucket access; local profiles verify filesystem access | retrieval, Gateway and Workbench retrieval |
+| access-audit repository | reads the `archive_access_audit` schema | access audit |
 
-The same block also publishes `runtimePosture` — the profile, the adapter modes and the durability
-booleans — which *is* derived from settings, with the caveat that `durable_audit` is derived from
-`repository_mode` rather than from the audit repository in use.
+An unavailable dependency produces `state: unavailable`, `freshnessBucket: unknown`, and one of
+`archive_repository_unavailable`, `archive_storage_unavailable`, or
+`archive_access_audit_unavailable`. Raw connection, bucket, storage-path, tenant, and document
+details are not returned. Drain state remains `degraded` with
+`archive_supportability_draining`. The `supportedArchiveFeatures` list is still a build-time
+catalogue and is not used as a health signal.
 
 ## Metrics
 
@@ -65,8 +68,9 @@ Metric contracts are validated when the application starts, so a malformed metri
 rather than shipping a broken series. Unknown label values fall back to a known value at the
 recorder rather than creating an unbounded number of series.
 
-Because supportability is static, `lotus_archive_supportability_total` will only ever record `ready`
-or `draining`. An alert on `state="unavailable"` from this metric can never fire.
+`lotus_archive_supportability_total` records the same bounded state, reason, and freshness emitted
+by `/metadata`, so operators can alert on a specific dependency class without introducing
+high-cardinality infrastructure or customer identifiers.
 
 ## Reading the audit trail
 
@@ -90,6 +94,7 @@ contract in `archive_access_audit`, indexed by document and creation time.
 | purge refused | `purge-evaluation` returns the reason: hold active, no retention date, or retention still running |
 | `409 document_checksum_mismatch` | stored bytes no longer match the recorded checksum — treat as an integrity incident, not a retry |
 | readiness `503` | draining, or a non-local profile that cannot compose a durable runtime |
+| metadata supportability `unavailable` | use the bounded reason to isolate repository, storage, or access-audit readiness before inspecting support-safe infrastructure diagnostics |
 
 ## Procedures
 

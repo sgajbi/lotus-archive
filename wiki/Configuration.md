@@ -28,8 +28,8 @@ The default local profile remains deliberately non-durable:
 The production combination is `production` + `postgresql` + `s3`, with a database URL, S3 bucket,
 and managed lifecycle-decision signing key. It composes PostgreSQL metadata and audit repositories
 plus S3-compatible object storage and reports `ready` with reason
-`durable_archive_runtime_configured`. Dependency probing remains tracked by
-[#91](https://github.com/sgajbi/lotus-archive/issues/91).
+`durable_archive_runtime_configured`. `/metadata` measures PostgreSQL document and audit schema
+access plus S3 bucket access on the same composed service.
 
 ## Runtime composition
 
@@ -100,8 +100,8 @@ The deployable durable composition requires:
 1. all PostgreSQL migrations applied, including `007_create_archive_access_audit.sql`
 2. an S3 bucket and provider credentials supplied through the standard AWS credential chain
 3. managed Ed25519 key material with a non-ephemeral key id
-4. dependency readiness evidence; `/metadata` probing is tracked by
-   [#91](https://github.com/sgajbi/lotus-archive/issues/91)
+4. dependency readiness evidence from `/metadata`, with repository, storage, and access-audit
+   posture all ready
 5. deployment manifests that consume the image digest published by `GET /version`, plus same-digest
    promotion evidence
 

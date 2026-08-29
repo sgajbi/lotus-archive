@@ -9,8 +9,7 @@ It is not a general file store, a manual upload service, a delivery channel, or 
 > **Durable runtime implemented.** A production profile composes PostgreSQL document metadata and
 > access audit with S3-compatible object storage. Local development remains intentionally
 > in-memory/filesystem. Production certification still requires operated migrations, managed
-> credentials and keys, measured dependency readiness ([#91](https://github.com/sgajbi/lotus-archive/issues/91)),
-> and completion of the separate Idea lifecycle-decision controls
+> credentials and keys, and completion of the separate Idea lifecycle-decision controls
 > ([#55](https://github.com/sgajbi/lotus-archive/issues/55)).
 
 **Documentation lives in the [wiki](https://github.com/sgajbi/lotus-archive/wiki)**, authored in
@@ -89,5 +88,4 @@ Deep reference material that belongs next to the code:
 
 | gap | tracked |
 |---|---|
-| `/metadata` supportability is declared, not measured | [#91](https://github.com/sgajbi/lotus-archive/issues/91) |
 | Idea lifecycle decisions not certified | [#55](https://github.com/sgajbi/lotus-archive/issues/55) |
