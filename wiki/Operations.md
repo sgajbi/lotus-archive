@@ -23,15 +23,14 @@ The posture states are:
 
 | state | reason | meaning |
 |---|---|---|
-| `degraded` | `explicit_local_development_runtime` | a local or test profile with non-durable adapters — **the normal state today** |
+| `degraded` | `explicit_local_development_runtime` | a local or test profile with non-durable adapters |
 | `unavailable` | `durable_archive_runtime_missing` | a non-local profile without durable metadata or storage |
 | `ready` | `durable_archive_runtime_configured` | durable metadata **and** durable storage |
 
-`ready` is currently unreachable: it requires adapters that do not exist, and the settings validator
-rejects the profiles that would ask for them
-([#90](https://github.com/sgajbi/lotus-archive/issues/90)). A healthy instance today reports
-`degraded`. Do not treat `degraded` as an incident signal in a local or test deployment; do treat it
-as the reason this service is not yet deployable.
+`ready` is reachable for the production PostgreSQL + S3 composition. It records configured posture,
+not a live dependency probe; use the measured supportability work tracked by
+[#91](https://github.com/sgajbi/lotus-archive/issues/91) before routing production traffic.
+`degraded` remains expected for local and test profiles.
 
 ### Supportability is declared, not measured
 
@@ -77,9 +76,8 @@ document". It returns every recorded event for the document, including refusals 
 fastest way to distinguish a caller allow-list problem from a tenant scope mismatch, since the HTTP
 response deliberately does not distinguish them.
 
-Remember that the audit repository is in-memory: events are lost on restart, so this is a live
-investigation tool today rather than a durable record
-([#90](https://github.com/sgajbi/lotus-archive/issues/90)).
+Local profiles keep audit events in memory. Production PostgreSQL mode persists the same event
+contract in `archive_access_audit`, indexed by document and creation time.
 
 ## Common situations
 

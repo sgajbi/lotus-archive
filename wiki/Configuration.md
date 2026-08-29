@@ -11,28 +11,25 @@ at settings load rather than degrading the service.
 
 ## What can actually run
 
-Read this before the tables. Two independent validations decide whether the service starts, and they
-accept **disjoint** sets of configurations:
+Read this before the tables. Settings validation and runtime composition enforce the same posture:
 
 | | `runtime_profile` | `repository_mode` | `storage_mode` | result |
 |---|---|---|---|---|
 | settings validator | `production` | `in-memory` | any | **rejected** — in-memory requires a local profile |
 | settings validator | `production` | any | `filesystem` | **rejected** — filesystem requires a local profile |
-| runtime composer | any | not `in-memory` | any | **rejected** — the PostgreSQL adapter does not exist |
-| runtime composer | any | any | not `filesystem` | **rejected** — the S3 adapter does not exist |
+| runtime composer | any | `in-memory` | `filesystem` | in-memory metadata/audit and local object storage |
+| runtime composer | any | `postgresql` | `s3` | durable metadata/audit and S3-compatible object storage |
 
-The only configuration that survives both is `local-development` or `test`, with `in-memory` and
-`filesystem`. **There is no production configuration that starts.** This is a delivery gap, not a
-deployment task — tracked as [#90](https://github.com/sgajbi/lotus-archive/issues/90).
-
-Two consequences in the configuration that does run:
+The default local profile remains deliberately non-durable:
 
 - archived bytes live under `storage_root`, which defaults to a path in the **OS temp directory**
-- access audit records are in-memory and **do not survive a restart**
+- access audit records are in-memory and do not survive a restart
 
-The runtime posture reported by `/health/ready` and `/metadata` reflects this honestly: it is
-`degraded` with reason `explicit_local_development_runtime`, and it can never be `ready`, because
-`ready` requires the durable adapters that cannot be built.
+The production combination is `production` + `postgresql` + `s3`, with a database URL, S3 bucket,
+and managed lifecycle-decision signing key. It composes PostgreSQL metadata and audit repositories
+plus S3-compatible object storage and reports `ready` with reason
+`durable_archive_runtime_configured`. Dependency probing remains tracked by
+[#91](https://github.com/sgajbi/lotus-archive/issues/91).
 
 ## Runtime composition
 
@@ -42,16 +39,21 @@ The runtime posture reported by `/health/ready` and `/metadata` reflects this ho
 | `LOTUS_ARCHIVE_REPOSITORY_MODE` | `in-memory` | `in-memory`, `postgresql` |
 | `LOTUS_ARCHIVE_STORAGE_MODE` | `filesystem` | `filesystem`, `s3` |
 | `LOTUS_ARCHIVE_DATABASE_URL` | *(unset)* | required when `repository_mode=postgresql` |
+| `LOTUS_ARCHIVE_S3_BUCKET` | *(unset)* | required when `storage_mode=s3` |
+| `LOTUS_ARCHIVE_S3_KEY_PREFIX` | `archive` | prefix inside the configured bucket |
+| `LOTUS_ARCHIVE_S3_REGION` | *(unset)* | AWS region or S3-compatible provider region |
+| `LOTUS_ARCHIVE_S3_ENDPOINT_URL` | *(unset)* | optional S3-compatible endpoint; omit for AWS |
+| `LOTUS_ARCHIVE_S3_SERVER_SIDE_ENCRYPTION` | `AES256` | `AES256` or `aws:kms` |
+| `LOTUS_ARCHIVE_S3_KMS_KEY_ID` | *(unset)* | required when encryption is `aws:kms` |
 
-The validator enforces three rules, all fail-closed in the direction of refusing to run rather than
+The validator enforces five rules, all fail-closed in the direction of refusing to run rather than
 running non-durably:
 
 1. a non-local profile may not use the in-memory repository
 2. a non-local profile may not use filesystem storage
 3. `postgresql` without a database URL is rejected
-
-The intent is sound — nothing silently publishes non-durable archive state. The gap is that the
-durable side of each rule is not implemented.
+4. `s3` without a bucket is rejected
+5. `aws:kms` encryption without a KMS key id is rejected
 
 ## Storage
 
@@ -94,19 +96,17 @@ configuration either. The capability is not certified — see
 
 ## Deployment
 
-There is no deployable production configuration today, so this section records what a deployment
-would need rather than describing one that exists:
+The deployable durable composition requires:
 
-1. a PostgreSQL repository adapter and an S3 storage adapter (neither is implemented)
-2. a durable access-audit repository — the only implementation is in-memory, and durability is
-   currently *inferred* from `repository_mode` rather than measured
-   ([#91](https://github.com/sgajbi/lotus-archive/issues/91))
+1. all PostgreSQL migrations applied, including `007_create_archive_access_audit.sql`
+2. an S3 bucket and provider credentials supplied through the standard AWS credential chain
 3. managed Ed25519 key material with a non-ephemeral key id
-4. deployment manifests that consume the image digest published by `GET /version`, plus same-digest
+4. dependency readiness evidence; `/metadata` probing is tracked by
+   [#91](https://github.com/sgajbi/lotus-archive/issues/91)
+5. deployment manifests that consume the image digest published by `GET /version`, plus same-digest
    promotion evidence
 
-Container images are built and scanned in CI today, and provenance is published through
-`/version`; what is missing is the runtime the image would run as.
+Container images are built and scanned in CI, and provenance is published through `/version`.
 
 ## Read next
 

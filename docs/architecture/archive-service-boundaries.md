@@ -62,9 +62,10 @@ archive core.
 
 ## Storage Posture
 
-The RFC target architecture is PostgreSQL metadata plus S3-compatible object storage behind an
-adapter. Development adapters are allowed only behind the same abstraction. Local filesystem storage
-must not become product architecture and must not be exposed as a direct path in APIs or logs.
+The production architecture is PostgreSQL metadata plus S3-compatible object storage behind narrow
+adapters; PostgreSQL also persists access audit. Development adapters remain behind the same ports.
+Local filesystem storage must not become product architecture and must not be exposed as a direct
+path in APIs or logs.
 
 RFC-0103 Slice 3 adds the first internal implementation of this posture:
 
@@ -72,9 +73,12 @@ RFC-0103 Slice 3 adds the first internal implementation of this posture:
    contract.
 2. `src/app/archive/models.py` defines the source-backed metadata model used by the service core.
 3. `src/app/archive/storage.py` defines the object-storage protocol and filesystem development
-   adapter.
+   adapter; `src/app/archive/s3_storage.py` implements checksum-evidenced, server-side-encrypted S3
+   storage.
 4. `src/app/archive/archive_writer.py` combines metadata validation, checksum enforcement,
    idempotency, repository persistence, and storage writes.
+5. `src/app/archive/postgres_repository.py` implements document, hold, lifecycle, and durable
+   access-audit persistence against the migration contract.
 
 These are internal service capabilities. They do not create public archive APIs or product-facing
 retrieval support.

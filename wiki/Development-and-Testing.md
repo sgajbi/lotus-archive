@@ -11,9 +11,9 @@ uvicorn app.main:app --reload --port 8320
 docker compose up --build
 ```
 
-No external dependency is needed. The runnable configuration uses the in-memory repository and
-filesystem storage, so the service starts with nothing behind it — which is also why it is not yet
-deployable. See [Configuration](Configuration#what-can-actually-run).
+No external dependency is needed for the default local profile; it uses the in-memory repository and
+filesystem storage. Durable adapter integration tests require PostgreSQL and set
+`LOTUS_ARCHIVE_TEST_DATABASE_URL`. See [Configuration](Configuration#what-can-actually-run).
 
 Expect `/health/ready` to report `degraded` with reason `explicit_local_development_runtime`. That
 is the correct local state, not a fault.

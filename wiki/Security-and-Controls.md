@@ -93,9 +93,10 @@ query is written against a vocabulary rather than against prose.
 
 `GET /documents/{document_id}/access-events` returns them for a document.
 
-**Access audit is currently in-memory and does not survive a restart** — `InMemoryAccessAuditRepository`
-is the only implementation. For a service whose purpose includes access audit, that is the most
-consequential open gap: see [#90](https://github.com/sgajbi/lotus-archive/issues/90).
+Local and test profiles use the in-memory audit repository. Production PostgreSQL mode persists the
+same support-safe event contract in `archive_access_audit`; a reconstructed service can retrieve the
+prior record. Denied attempts may reference a nonexistent document, so the audit table deliberately
+does not impose a document foreign key.
 
 ## Integrity of what is stored
 
@@ -133,8 +134,6 @@ required to be exactly 32 bytes.
 
 A non-local profile additionally refuses to start unless a real key is present **and** the signing
 key id is not an `ephemeral-local` one — so a production profile cannot run on the development key.
-Note that this validation is unreachable today for a different reason: no production profile can
-start at all ([#90](https://github.com/sgajbi/lotus-archive/issues/90)).
 
 Managed key custody, rotation and consumer trust distribution remain open
 ([#55](https://github.com/sgajbi/lotus-archive/issues/55)). Treat the signing capability as

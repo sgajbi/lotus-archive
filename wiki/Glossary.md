@@ -45,7 +45,7 @@ defined once elsewhere and summarised here for navigation — where the two diff
 | term | meaning | defined in |
 |---|---|---|
 | **runtime profile** | `local-development`, `test` or `production` — the posture the settings validator enforces against | [Configuration](Configuration#runtime-composition) |
-| **repository mode / storage mode** | which adapters to compose. Only `in-memory` and `filesystem` are implemented. | [Configuration](Configuration#what-can-actually-run) |
+| **repository mode / storage mode** | which adapters to compose: local `in-memory`/`filesystem`, or production `postgresql`/`s3` | [Configuration](Configuration#what-can-actually-run) |
 | **runtime posture** | the composed state reported by `/health/ready` and `/metadata`: `ready`, `degraded` or `unavailable` | [Operations](Operations#readiness) |
 | **supportability posture** | the `/metadata` capability block. A static declaration, not a measurement. | [Operations](Operations#supportability-is-declared-not-measured) |
 | **module family** | one of the seven structural boundaries the architecture tests enforce | [Architecture](Architecture#module-families) |
