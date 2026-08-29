@@ -86,7 +86,7 @@ contract in `archive_access_audit`, indexed by document and creation time.
 | caller gets `401 caller_context_missing` | the caller is not sending `x-caller-service` / `x-actor-type` / `x-actor-id` |
 | caller gets `401 caller_scope_missing` | a scoped read without `x-tenant-id` / `x-region` |
 | caller gets `403` on reads that used to work | tenant or region mismatch, or the document was purged — check the access events for the reason code |
-| every read of one document is refused | the document may have been archived without a `tenant_id` and is permanently unreadable ([#93](https://github.com/sgajbi/lotus-archive/issues/93)) |
+| every read of one historical document is refused | inspect the access event reason; `document_scope_unavailable` identifies incomplete scope on a historical or migrated record, while new writes require both tenant and region |
 | purge refused | `purge-evaluation` returns the reason: hold active, no retention date, or retention still running |
 | `409 document_checksum_mismatch` | stored bytes no longer match the recorded checksum — treat as an integrity incident, not a retry |
 | readiness `503` | draining, or a non-local profile that cannot compose a durable runtime |
