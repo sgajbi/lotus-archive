@@ -39,7 +39,10 @@ sourced from `lotus-idea`; Archive preserves evidence ids, source-contract linea
 posture, access-audit events, and source-event artifact refs without raw Idea evidence payloads or
 client-publication authority. RFC-0108 archive supportability now publishes `archive.observability.archive_supportability` through `/metadata` and
 `lotus_archive_supportability_total`, covering retrieval, retention, legal-hold, access-audit,
-lifecycle, gateway retrieval, and Gateway-backed Workbench retrieval with bounded labels only.
+lifecycle, gateway retrieval, and Gateway-backed Workbench retrieval with bounded labels only. The
+posture is measured from readiness checks on the same composed metadata repository, object storage,
+and access-audit repository used by document routes; the supported-feature list remains a separate
+build-time declaration.
 Archive runtime build metadata is exposed through `src/app/archive/build_metadata.py`, `/version`,
 and `/metadata.build`; Docker builds inject matching source-safe OCI labels and runtime environment
 variables. Mainline CI is configured to publish the release image to GHCR, capture the immutable
@@ -174,6 +177,8 @@ dispatch ref is a tag rather than `main`.
 6. in-memory metadata/audit repositories and filesystem object storage are allowed only for
    explicit local-development or test profiles. Production composes PostgreSQL metadata/audit and
    S3-compatible object storage and must fail closed when required configuration is absent.
+   Every composed adapter must retain a bounded `check_ready` probe so `/metadata` cannot regress
+   from measured runtime posture to a static capability declaration.
 7. request logs must use route templates rather than raw document or legal-hold paths.
 8. FastAPI API models must stay at the router boundary. `ArchiveDocumentService` consumes
    application commands from `src/app/archive/commands.py`, not `api_models.py`.

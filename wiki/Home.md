@@ -37,8 +37,10 @@ metadata, legal holds, lifecycle relationships and access audit; S3-compatible s
 bytes. The default local profile deliberately remains in-memory/filesystem and reports `degraded`.
 
 This is implementation readiness, not blanket production certification. Operated migrations,
-managed credentials and signing keys, deployment provenance, and measured dependency supportability
-remain required. See [Configuration](Configuration#what-can-actually-run) for the exact contract.
+managed credentials and signing keys, and deployment provenance remain deployment responsibilities.
+The service measures repository, storage, and access-audit readiness through `/metadata`; see
+[Operations](Operations#measured-supportability). See
+[Configuration](Configuration#what-can-actually-run) for the exact composition contract.
 
 Everything below describes behaviour that is implemented and exercised by tests. It runs. It is not
 yet deployable.
@@ -107,7 +109,6 @@ Recorded so that absence is not mistaken for capability.
 
 | gap | consequence | tracked |
 |---|---|---|
-| supportability is declared, not measured | `/metadata` reports `ready` and `accessAuditSupported: true` regardless of whether anything works | [#91](https://github.com/sgajbi/lotus-archive/issues/91) |
 | Idea lifecycle decisions not certified | managed keys, durable persistence, consumer trust distribution and legal approval remain open | [#55](https://github.com/sgajbi/lotus-archive/issues/55) |
 
 ## The pages

@@ -70,8 +70,9 @@ adapter. Local in-memory/filesystem adapters remain available only for explicit 
 
 `runtime_posture` reports what was composed — profile, modes, and three durability booleans — and
 derives a state. `durable_audit` follows `repository_mode` because the runtime composes the
-PostgreSQL audit repository with the PostgreSQL document repository. Live dependency measurement
-remains separate ([#91](https://github.com/sgajbi/lotus-archive/issues/91)).
+PostgreSQL audit repository with the PostgreSQL document repository. `/metadata` resolves this same
+composed service and separately measures document-repository, object-storage, and access-audit
+readiness; see [Operations](Operations#measured-supportability).
 
 ## What is in memory and what is on disk
 
