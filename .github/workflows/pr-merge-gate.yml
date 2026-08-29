@@ -133,33 +133,9 @@ jobs:
         run: make docker-build
       - name: Verify runtime dependency boundary
         run: |
-          docker run --rm --entrypoint python "${LOTUS_ARCHIVE_IMAGE_REF}" -c '
-          import importlib.metadata as metadata
-
-          installed = {
-              distribution.metadata["Name"].lower(): distribution.version
-              for distribution in metadata.distributions()
-          }
-          expected = {"cryptography": "50.0.0"}
-          forbidden = {"pip", "msgpack", "setuptools", "wheel"}
-          mismatches = {
-              name: {"expected": version, "actual": installed.get(name)}
-              for name, version in expected.items()
-              if installed.get(name) != version
-          }
-          unexpected = sorted(forbidden & installed.keys())
-          if mismatches or unexpected:
-              raise SystemExit(
-                  f"Runtime dependency boundary violation: mismatches={mismatches}, "
-                  f"unexpected={unexpected}"
-              )
-          try:
-              import pip
-          except ModuleNotFoundError:
-              pass
-          else:
-              raise SystemExit(f"Runtime package installer must be absent: {pip.__file__}")
-          '
+          docker run --rm --entrypoint python \
+            -v "${PWD}/scripts/runtime_dependency_boundary.py:/tmp/boundary.py:ro" \
+            "${LOTUS_ARCHIVE_IMAGE_REF}" /tmp/boundary.py
       - name: Verify Docker image metadata
         run: |
           docker image inspect "${LOTUS_ARCHIVE_IMAGE_REF}" --format '{{json .Config.Labels}}' > image-labels.json
