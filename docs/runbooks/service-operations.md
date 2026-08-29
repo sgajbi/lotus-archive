@@ -91,3 +91,20 @@ Incident checks must preserve these boundaries:
    consumer outcomes. Do not fall back to unsigned Archive state.
 5. Local ephemeral key material and SQLite ledgers are diagnostic only and must never be used as
    production evidence.
+
+## Re-running a Main Releasability gate
+
+Each merge to `main` dispatches the gate on an immutable `main-releasability-<sha>` tag, and the
+run deletes its own tag on completion (the `reclaim-dispatch-tag` job). GitHub's **Re-run** button
+therefore fails on a completed run: the ref it would check out no longer exists.
+
+To re-validate a revision, dispatch a fresh run instead:
+
+```bash
+gh workflow run main-releasability.yml --ref main -f expected_sha=<full-sha>
+```
+
+The `exact-revision-assertion` job verifies the checked-out revision against `expected_sha`, so an
+operator dispatch on `main` proves the same thing the tagged dispatch proved. Tag reclamation never
+changes a gate's verdict - every step of the reclaim job carries `continue-on-error` - so a
+leftover tag only means cleanup failed, not that the gate did.
