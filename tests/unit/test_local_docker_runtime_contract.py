@@ -36,6 +36,35 @@ def test_dockerfile_builds_production_runtime_without_dev_dependencies() -> None
     assert "USER lotus" in dockerfile
 
 
+def test_runtime_stage_performs_no_install_beyond_the_wheel_and_removes_the_installer() -> None:
+    """Assert absence, not just presence (issue #89).
+
+    The presence checks above can all pass while an extra `pip install setuptools==X` line ships
+    an installer back into the image. This test enumerates every pip invocation in the runtime
+    stage and requires it to be exactly the sanctioned sequence: upgrade pip, install the built
+    wheel, uninstall pip. Anything else - an additional install, a reordered uninstall - fails.
+    """
+    dockerfile = _read("Dockerfile")
+    runtime_stage = dockerfile.split("AS runtime", 1)[1]
+    pip_invocations = re.findall(r"python -m pip ([a-z]+)", runtime_stage)
+
+    assert pip_invocations == ["install", "install", "uninstall"], (
+        "The runtime stage must contain exactly three pip invocations - upgrade pip, install "
+        "the lotus_archive wheel, uninstall pip - in that order. Found: "
+        f"{pip_invocations}. An extra invocation can reintroduce an installer that the "
+        "dynamic image check (scripts/runtime_dependency_boundary.py) would only catch later."
+    )
+    line_pattern = re.compile(r"python -m pip install[^&\r\n]*")
+    install_targets = line_pattern.findall(runtime_stage)
+    assert any("--upgrade pip" in target for target in install_targets)
+    assert any("/wheels/lotus_archive-*.whl" in target for target in install_targets)
+    assert not any(
+        name in target
+        for target in install_targets
+        for name in ("setuptools", "wheel==", "msgpack")
+    )
+
+
 def test_runtime_security_pins_cover_image_and_audit_inputs() -> None:
     pyproject = _read("pyproject.toml")
     runtime_lock = _read("requirements/shared-runtime.lock.txt")
@@ -145,11 +174,23 @@ def test_release_workflows_record_image_identity_evidence() -> None:
     assert "actions/download-artifact" not in main_workflow
     assert "actions/download-artifact" not in pr_workflow
     assert steps["Build and push release image"]["run"] == "make docker-release-build"
-    assert "pip" in pr_docker_steps["Verify runtime dependency boundary"]["run"]
-    assert "msgpack" in pr_docker_steps["Verify runtime dependency boundary"]["run"]
-    assert "setuptools" in pr_docker_steps["Verify runtime dependency boundary"]["run"]
-    assert "wheel" in pr_docker_steps["Verify runtime dependency boundary"]["run"]
-    assert "cryptography" in pr_docker_steps["Verify runtime dependency boundary"]["run"]
+    # Both lanes must run the SAME boundary script, and the release lane must run it against
+    # the pushed digest before signing (issue #89). Asserting the shared script path in each
+    # step - rather than the check's vocabulary inline - is what keeps the two from drifting.
+    boundary_script = "scripts/runtime_dependency_boundary.py"
+    pr_boundary = pr_docker_steps["Verify runtime dependency boundary"]["run"]
+    assert boundary_script in pr_boundary
+    assert "${LOTUS_ARCHIVE_IMAGE_REF}" in pr_boundary
+    release_boundary = steps["Verify runtime dependency boundary on the release digest"]["run"]
+    assert boundary_script in release_boundary
+    assert "${RELEASE_IMAGE_NAME}@${LOTUS_ARCHIVE_IMAGE_DIGEST}" in release_boundary
+    step_names = list(steps)
+    assert step_names.index("Verify runtime dependency boundary on the release digest") < (
+        step_names.index("Sign release image digest")
+    ), "the boundary check must run before signing so a violation never ships signed"
+    script_text = _read("scripts/runtime_dependency_boundary.py")
+    for token in ("pip", "msgpack", "setuptools", "wheel", "cryptography"):
+        assert token in script_text
     assert steps["Generate release metadata manifest"]["run"] == "make release-evidence"
     assert "sigstore/cosign-installer@v4.1.0" in main_workflow
     assert (

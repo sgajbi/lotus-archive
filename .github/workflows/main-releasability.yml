@@ -218,6 +218,11 @@ jobs:
           ignore-unfixed: true
           format: table
           exit-code: "1"
+      - name: Verify runtime dependency boundary on the release digest
+        run: |
+          docker run --rm --entrypoint python \
+            -v "${PWD}/scripts/runtime_dependency_boundary.py:/tmp/boundary.py:ro" \
+            "${RELEASE_IMAGE_NAME}@${LOTUS_ARCHIVE_IMAGE_DIGEST}" /tmp/boundary.py
       - name: Sign release image digest
         run: cosign sign --yes "${RELEASE_IMAGE_NAME}@${LOTUS_ARCHIVE_IMAGE_DIGEST}"
       - name: Verify release image signature
