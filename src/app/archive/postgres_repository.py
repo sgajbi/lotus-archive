@@ -6,6 +6,7 @@ from typing import Any
 import psycopg
 from psycopg.errors import UniqueViolation
 from psycopg.rows import dict_row
+from psycopg_pool import ConnectionPool
 from psycopg.types.json import Jsonb
 
 from app.archive.audit import AccessAuditEvent
@@ -81,6 +82,8 @@ _RECORD_AUDIT_SQL = (
 )
 
 
+DEFAULT_POOL_MIN_SIZE = 1
+DEFAULT_POOL_MAX_SIZE = 10
 DEFAULT_CONNECT_TIMEOUT_SECONDS = 5
 DEFAULT_STATEMENT_TIMEOUT_MS = 30_000
 
@@ -119,6 +122,39 @@ def _document_values(metadata: ArchiveDocumentMetadata) -> tuple[object, ...]:
         else data[column]
         for column in _DOCUMENT_COLUMNS
     )
+
+
+def pooled_connection_factory(
+    dsn: str,
+    *,
+    connect_timeout_seconds: int = DEFAULT_CONNECT_TIMEOUT_SECONDS,
+    statement_timeout_ms: int = DEFAULT_STATEMENT_TIMEOUT_MS,
+    min_size: int = DEFAULT_POOL_MIN_SIZE,
+    max_size: int = DEFAULT_POOL_MAX_SIZE,
+) -> tuple[ConnectionFactory, Callable[[], None]]:
+    """One pool per DSN, shared by every repository built on it (issue #107).
+
+    Returns the connection factory plus the pool's close - the caller owns shutdown. The pool
+    opens in the background (open(wait=False)), so composition never blocks on an unreachable
+    database; the first connection() waits up to the checkout timeout and then fails, which
+    readiness reports honestly. Timeouts from #106 ride along on every pooled connection.
+    """
+    if not dsn.strip():
+        raise ValueError("PostgreSQL DSN must not be blank")
+    pool = ConnectionPool(
+        dsn,
+        min_size=min_size,
+        max_size=max_size,
+        open=False,
+        timeout=float(connect_timeout_seconds),
+        kwargs={
+            "row_factory": dict_row,
+            "connect_timeout": connect_timeout_seconds,
+            "options": f"-c statement_timeout={statement_timeout_ms}",
+        },
+    )
+    pool.open(wait=False)
+    return pool.connection, pool.close
 
 
 class PostgresArchiveDocumentRepository:
