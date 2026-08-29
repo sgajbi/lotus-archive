@@ -26,11 +26,22 @@ is the correct local state, not a fault.
 | `make typecheck` | mypy |
 | `make openapi-gate` | OpenAPI contract quality |
 | `make migration-gate` | migration contract validation |
+| `make code-health-gates` | the four gates below, as one target |
+| `make complexity-gate` | no rank D–F function; maximum cyclomatic complexity at or below the banked 17 |
+| `make source-size-gate` | no module past the banked 914 lines |
+| `make dead-code-gate` | no vulture finding at 80% confidence |
+| `make dependency-hygiene-gate` | no deptry finding; direct imports must be declared dependencies |
 | `make security-audit` | dependency vulnerability audit |
 | `make check` | lint, typecheck, both gates, **unit tests only** |
 | `make ci` | the above plus integration, e2e, coverage and security audit |
 | `make docker-build` / `make docker-release-build` | container builds |
 | `make release-evidence` | build provenance evidence |
+
+Code-health baselines are banked at the measured tree with no headroom, and
+`tests/unit/test_code_health_gates.py` asserts each threshold *equals* the measurement — an
+improvement cannot go unbanked and a threshold cannot drift above the tree. The same tests prove
+each gate can fail by running it one below its measured value, and all four run in every CI lane,
+not only from `make check`.
 
 `make test` is an alias for `make test-unit`, so `make check` does not exercise the integration or
 e2e suites. Run `make ci` before opening a PR that touches the archive path.
