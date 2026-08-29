@@ -713,10 +713,8 @@ class ArchiveDocumentService:
             trace_id=trace_id,
             document_id=source_document_id,
         )
-        original_source = self._get_existing_metadata(source_document_id)
-        original_target = self._get_existing_metadata(command.target_document_id)
-        source = original_source
-        target = original_target
+        source = self._get_existing_metadata(source_document_id)
+        target = self._get_existing_metadata(command.target_document_id)
         self._validate_lifecycle_transition(
             source=source,
             target=target,
@@ -751,26 +749,20 @@ class ArchiveDocumentService:
             requested_by=caller_context.actor_id,
         )
 
-        saved_relationship: LifecycleRelationshipRecord | None = None
-        try:
-            self.repository.save(source)
-            target = self.repository.save(target)
-            saved_relationship = self.repository.save_lifecycle_relationship(relationship)
-            self._record_allowed(
-                event_type=event_type,
-                caller_context=caller_context,
-                trace_id=trace_id,
-                document_id=source.document_id,
-                operation_reason_code="lifecycle_transition_recorded",
-            )
-        except Exception:
-            self.repository.save(original_source)
-            self.repository.save(original_target)
-            if saved_relationship is not None:
-                self.repository.delete_lifecycle_relationship(
-                    saved_relationship.lifecycle_relationship_id
-                )
-            raise
+        # One atomic unit in the repository: a crash between these writes would leave a
+        # half-linked chain that the validation guards make unrepairable through the API.
+        # The previous service-level compensation could not survive a process crash and
+        # failed for the same reasons the forward writes did.
+        saved_relationship = self.repository.apply_lifecycle_transition(
+            source, target, relationship
+        )
+        self._record_allowed(
+            event_type=event_type,
+            caller_context=caller_context,
+            trace_id=trace_id,
+            document_id=source.document_id,
+            operation_reason_code="lifecycle_transition_recorded",
+        )
         return saved_relationship, self._resolve_current_document(target)
 
     def _validate_lifecycle_transition(

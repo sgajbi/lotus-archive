@@ -32,7 +32,7 @@ from app.archive.exceptions import (
     UnsupportedLifecycleTransitionError,
 )
 from app.archive.models import LegalHoldStatus, LifecycleTransitionType, PurgeStatus
-from app.archive.models import LifecycleRelationshipRecord
+from app.archive.models import ArchiveDocumentMetadata, LifecycleRelationshipRecord
 from app.archive.repository import InMemoryArchiveDocumentRepository
 from app.archive.runtime import build_archive_service, runtime_posture
 from app.archive.service import ArchiveDocumentService
@@ -539,10 +539,17 @@ def test_supersession_preserves_history_and_resolves_current_document(tmp_path: 
     assert AccessEventType.CURRENT_DOCUMENT_READ in event_types
 
 
-def test_lifecycle_transition_rolls_back_when_relationship_save_fails(tmp_path: Path) -> None:
+def test_lifecycle_transition_persists_nothing_when_the_atomic_unit_fails(
+    tmp_path: Path,
+) -> None:
+    """The documents-plus-relationship unit is atomic in the repository (not compensated in
+    the service): if it fails, no document moved and no relationship exists."""
+
     class FailingRelationshipRepository(InMemoryArchiveDocumentRepository):
-        def save_lifecycle_relationship(
+        def apply_lifecycle_transition(
             self,
+            source: ArchiveDocumentMetadata,
+            target: ArchiveDocumentMetadata,
             relationship: LifecycleRelationshipRecord,
         ) -> LifecycleRelationshipRecord:
             raise RuntimeError("relationship store unavailable")
@@ -584,7 +591,13 @@ def test_lifecycle_transition_rolls_back_when_relationship_save_fails(tmp_path: 
     assert [event.event_type for event in events] == [AccessEventType.ARCHIVE_CREATE]
 
 
-def test_lifecycle_transition_rolls_back_when_audit_record_fails(tmp_path: Path) -> None:
+def test_audit_failure_after_a_committed_transition_raises_but_does_not_rewrite_history(
+    tmp_path: Path,
+) -> None:
+    """An audit write that fails AFTER the atomic transition committed must surface loudly -
+    but the transition stands. Un-superseding a document because logging failed would itself
+    falsify history; the audit gap is an operational alarm, not grounds to rewrite the chain."""
+
     class FailingAuditRepository(InMemoryAccessAuditRepository):
         def record(self, event: AccessAuditEvent) -> AccessAuditEvent:
             if event.event_type == AccessEventType.LIFECYCLE_SUPERSEDE:
@@ -621,9 +634,13 @@ def test_lifecycle_transition_rolls_back_when_audit_record_fails(tmp_path: Path)
             trace_id="trace-audit-transition",
         )
 
-    assert repository.get_by_document_id(historical.document_id) == historical
-    assert repository.get_by_document_id(current.document_id) == current
-    assert repository.list_lifecycle_relationships(historical.document_id) == []
+    superseded = repository.get_by_document_id(historical.document_id)
+    assert superseded is not None
+    assert superseded.superseded_by_document_id == current.document_id
+    replacement = repository.get_by_document_id(current.document_id)
+    assert replacement is not None
+    assert replacement.supersedes_document_id == historical.document_id
+    assert len(repository.list_lifecycle_relationships(historical.document_id)) == 1
 
 
 def test_correction_and_reissue_set_explicit_lifecycle_semantics(tmp_path: Path) -> None:

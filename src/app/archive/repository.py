@@ -46,6 +46,13 @@ class ArchiveDocumentRepository(Protocol):
         relationship: LifecycleRelationshipRecord,
     ) -> LifecycleRelationshipRecord: ...
 
+    def apply_lifecycle_transition(
+        self,
+        source: ArchiveDocumentMetadata,
+        target: ArchiveDocumentMetadata,
+        relationship: LifecycleRelationshipRecord,
+    ) -> LifecycleRelationshipRecord: ...
+
     def delete_lifecycle_relationship(self, lifecycle_relationship_id: str) -> None: ...
 
     def list_lifecycle_relationships(
@@ -129,6 +136,34 @@ class InMemoryArchiveDocumentRepository:
         self,
         relationship: LifecycleRelationshipRecord,
     ) -> LifecycleRelationshipRecord:
+        self._lifecycle_relationships[relationship.lifecycle_relationship_id] = relationship
+        return relationship
+
+    def apply_lifecycle_transition(
+        self,
+        source: ArchiveDocumentMetadata,
+        target: ArchiveDocumentMetadata,
+        relationship: LifecycleRelationshipRecord,
+    ) -> LifecycleRelationshipRecord:
+        """All three writes or none. A half-linked supersession chain is unrepairable through
+        the API - the validation guards would reject every retry - so the unit is atomic.
+        In-memory atomicity is snapshot-and-restore; the restore is pure dict assignment and
+        cannot itself fail."""
+        snapshot = {
+            document.document_id: document
+            for document in (
+                self._by_document_id.get(source.document_id),
+                self._by_document_id.get(target.document_id),
+            )
+            if document is not None
+        }
+        self.save(source)
+        try:
+            self.save(target)
+        except Exception:
+            for document_id, document in snapshot.items():
+                self._by_document_id[document_id] = document
+            raise
         self._lifecycle_relationships[relationship.lifecycle_relationship_id] = relationship
         return relationship
 

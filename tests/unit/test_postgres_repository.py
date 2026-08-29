@@ -419,3 +419,61 @@ def test_pooled_connection_factory_configures_and_opens_the_pool(
     assert kwargs["connect_timeout"] == 4  # type: ignore[index]
     assert kwargs["options"] == "-c statement_timeout=2500"  # type: ignore[index]
     assert callable(factory) and callable(close)
+
+
+def test_lifecycle_transition_is_one_transaction_with_guarded_document_writes() -> None:
+    """Both document upserts and the relationship insert share a single connection, and the
+    immutability guard applies inside the transaction too."""
+    from app.archive.models import LifecycleTransitionType, LifecycleRelationshipRecord
+
+    cursor = FakeCursor(rowcount=1)
+    repository = PostgresArchiveDocumentRepository(
+        "postgresql://unused",
+        connection_factory=ConnectionSequence(cursor),
+    )
+    source = _metadata("doc_source", "req-source")
+    target = _metadata("doc_target", "req-target")
+    relationship = LifecycleRelationshipRecord(
+        lifecycle_relationship_id="life_1",
+        source_document_id="doc_source",
+        target_document_id="doc_target",
+        transition_type=LifecycleTransitionType.SUPERSEDE,
+        transition_reason="Approved replacement",
+        transition_reason_code="document_superseded_by_newer_version",
+        requested_by="ops-user",
+    )
+
+    repository.apply_lifecycle_transition(source, target, relationship)
+
+    queries = [query for query, _ in cursor.executions]
+    assert len(queries) == 3, "exactly three statements, one connection"
+    assert "ON CONFLICT (document_id) DO UPDATE SET" in queries[0]
+    assert "ON CONFLICT (document_id) DO UPDATE SET" in queries[1]
+    assert "archive_lifecycle_relationships" in queries[2]
+
+
+def test_lifecycle_transition_raises_historical_integrity_inside_the_transaction() -> None:
+    from app.archive.exceptions import HistoricalIntegrityError
+    from app.archive.models import LifecycleTransitionType, LifecycleRelationshipRecord
+
+    cursor = FakeCursor(rowcount=0)
+    repository = PostgresArchiveDocumentRepository(
+        "postgresql://unused",
+        connection_factory=ConnectionSequence(cursor),
+    )
+    relationship = LifecycleRelationshipRecord(
+        lifecycle_relationship_id="life_2",
+        source_document_id="doc_source",
+        target_document_id="doc_target",
+        transition_type=LifecycleTransitionType.SUPERSEDE,
+        transition_reason="Approved replacement",
+        transition_reason_code="document_superseded_by_newer_version",
+        requested_by="ops-user",
+    )
+
+    with pytest.raises(HistoricalIntegrityError):
+        repository.apply_lifecycle_transition(
+            _metadata("doc_source", "req-source"),
+            _metadata("doc_target", "req-target"),
+            relationship,
+        )
