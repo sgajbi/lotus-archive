@@ -39,7 +39,7 @@ e2e suites. Run `make ci` before opening a PR that touches the archive path.
 
 | suite | scope |
 |---|---|
-| `tests/unit` | 26 modules — domain service, metadata model, writer, storage, repository, authorization, runtime composition, metrics, OpenAPI contract, migration contract, release evidence, documentation posture |
+| `tests/unit` | 29 modules — domain service, metadata model, writer, storage, repository, authorization, runtime composition, metrics, OpenAPI contract, migration contract, CI-gate liveness, release evidence, documentation posture |
 | `tests/integration` | documents API, Idea lifecycle decision API, health, request logging |
 | `tests/e2e` | smoke coverage of the full path |
 
@@ -63,25 +63,20 @@ Five workflows: feature lane, PR merge gate, main releasability, merged-PR main 
 PR auto-merge. The validating lanes run:
 
 ```
-pip check → make lint → make typecheck → make openapi-gate → make security-audit
+pip check → make lint → make typecheck → make openapi-gate → make migration-gate → make security-audit
           → pytest (unit | integration | e2e, in parallel)
           → combined coverage --fail-under=99
           → make docker-build / docker-release-build → make release-evidence
 ```
 
-### The hole: the migration gate never runs
+### Migration-contract enforcement
 
 `make migration-gate` runs `scripts/migration_gate.py` and is wired into both `make check` and
-`make ci`. **No workflow invokes any of those three targets** — every lane calls individual targets,
-and `migration-gate` is not among them. The string `migration` does not appear anywhere in
-`.github/workflows/`.
-
-The migration contract protects the PostgreSQL schema the durable path depends on. It is validated
-only when a developer runs `make check` locally. Tracked as
-[#92](https://github.com/sgajbi/lotus-archive/issues/92).
-
-This is worth stating plainly because a gate that is configured, correct and never executed reads
-exactly like a passing one.
+`make ci`. Feature, pull-request, and main releasability workflows also invoke it explicitly in the
+same blocking job as the OpenAPI and security controls, so durable PostgreSQL schema drift cannot
+pass by relying on a developer's local command. `tests/unit/test_ci_gate_liveness.py` derives every
+blocking `*-gate` dependency from the Makefile and requires each validating workflow to execute it;
+a newly advertised gate therefore fails CI until it is live.
 
 ## Image and supply chain
 

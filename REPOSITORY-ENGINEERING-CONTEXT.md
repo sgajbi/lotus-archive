@@ -118,7 +118,9 @@ not call `lotus-archive` directly.
 
 `lotus-archive` follows the standard Lotus backend lane model. Required baseline checks include lint,
 typecheck, OpenAPI quality, unit/integration/e2e tests, coverage gate, security audit, and Docker
-build validation.
+build validation. Feature, pull-request, and main releasability workflows execute the migration
+contract gate explicitly. `tests/unit/test_ci_gate_liveness.py` derives blocking `*-gate` targets
+from `make check` and `make ci` and fails if any validating workflow omits one.
 
 The pull-request Docker job also scans the image it builds for `CRITICAL,HIGH` vulnerabilities with
 `ignore-unfixed: true`, and fails on a finding. It is held to the *same* posture as the release scan

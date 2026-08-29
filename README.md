@@ -44,8 +44,9 @@ make check   # lint, typecheck, openapi + migration gates, unit tests
 make ci      # the above plus integration, e2e, coverage and security audit
 ```
 
-`make check` runs unit tests only. Note that CI does not currently invoke the migration gate
-([#92](https://github.com/sgajbi/lotus-archive/issues/92)).
+`make check` runs unit tests only. Feature, pull-request, and main releasability workflows invoke
+both the OpenAPI and migration contract gates explicitly; a liveness regression test prevents a
+gate advertised by `make check` or `make ci` from existing only on a developer machine.
 
 ## Scope
 
@@ -89,6 +90,5 @@ Deep reference material that belongs next to the code:
 | gap | tracked |
 |---|---|
 | `/metadata` supportability is declared, not measured | [#91](https://github.com/sgajbi/lotus-archive/issues/91) |
-| migration gate never runs in CI | [#92](https://github.com/sgajbi/lotus-archive/issues/92) |
 | `tenant_id` optional on write, required on read | [#93](https://github.com/sgajbi/lotus-archive/issues/93) |
 | Idea lifecycle decisions not certified | [#55](https://github.com/sgajbi/lotus-archive/issues/55) |
