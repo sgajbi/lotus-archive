@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import os
 from pathlib import Path
 from typing import Protocol
 
@@ -21,6 +22,8 @@ class StoredObject:
 class ObjectStorage(Protocol):
     provider: str
     namespace: str
+
+    def check_ready(self) -> None: ...
 
     def put(
         self,
@@ -43,6 +46,10 @@ class FilesystemObjectStorage:
         self.root = root
         self.namespace = namespace
         self.root.mkdir(parents=True, exist_ok=True)
+
+    def check_ready(self) -> None:
+        if not self.root.is_dir() or not os.access(self.root, os.R_OK | os.W_OK):
+            raise RuntimeError("archive_storage_unavailable")
 
     def put(
         self,

@@ -1,6 +1,3 @@
-import pytest
-
-from app.archive import service_profile
 from app.archive.service_profile import (
     ARCHIVE_MODULE_FAMILIES,
     SUPPORTED_ARCHIVE_FEATURES,
@@ -8,6 +5,17 @@ from app.archive.service_profile import (
     archive_supportability,
     service_posture,
 )
+
+
+def _supportability(**overrides: bool) -> dict[str, object]:
+    readiness = {
+        "is_draining": False,
+        "repository_ready": True,
+        "storage_ready": True,
+        "access_audit_ready": True,
+    }
+    readiness.update(overrides)
+    return archive_supportability(**readiness)
 
 
 def test_archive_module_families_are_explicit_and_unique() -> None:
@@ -53,7 +61,7 @@ def test_unsupported_capabilities_have_actionable_reasons() -> None:
 
 
 def test_archive_supportability_reports_ready_gateway_backed_workbench_posture() -> None:
-    supportability = archive_supportability(is_draining=False)
+    supportability = _supportability()
 
     assert supportability["featureKey"] == "archive.observability.archive_supportability"
     assert supportability["state"] == "ready"
@@ -66,6 +74,9 @@ def test_archive_supportability_reports_ready_gateway_backed_workbench_posture()
     assert supportability["documentLifecycleSupported"] is True
     assert supportability["gatewayRetrievalSupported"] is True
     assert supportability["workbenchRetrievalSupported"] is True
+    assert supportability["repositoryReady"] is True
+    assert supportability["storageReady"] is True
+    assert supportability["accessAuditReady"] is True
     supported_archive_features = supportability["supportedArchiveFeatures"]
     assert isinstance(supported_archive_features, list)
     assert supported_archive_features == list(SUPPORTED_ARCHIVE_FEATURES)
@@ -77,7 +88,7 @@ def test_archive_supportability_reports_ready_gateway_backed_workbench_posture()
 
 
 def test_archive_supportability_reports_draining_degradation() -> None:
-    supportability = archive_supportability(is_draining=True)
+    supportability = _supportability(is_draining=True)
 
     assert supportability["state"] == "degraded"
     assert supportability["reason"] == "archive_supportability_draining"
@@ -85,13 +96,37 @@ def test_archive_supportability_reports_draining_degradation() -> None:
     assert supportability["draining"] is True
 
 
-def test_archive_supportability_reports_unavailable_when_no_features(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    monkeypatch.setattr(service_profile, "SUPPORTED_ARCHIVE_FEATURES", ())
-
-    supportability = archive_supportability(is_draining=False)
+def test_archive_supportability_reports_repository_unavailable() -> None:
+    supportability = _supportability(repository_ready=False)
 
     assert supportability["state"] == "unavailable"
-    assert supportability["reason"] == "archive_capability_unavailable"
+    assert supportability["reason"] == "archive_repository_unavailable"
     assert supportability["freshnessBucket"] == "unknown"
+    assert supportability["retrievalSupported"] is False
+    assert supportability["retentionSupported"] is False
+    assert supportability["legalHoldSupported"] is False
+    assert supportability["documentLifecycleSupported"] is False
+    assert supportability["gatewayRetrievalSupported"] is False
+    assert supportability["workbenchRetrievalSupported"] is False
+
+
+def test_archive_supportability_reports_storage_unavailable() -> None:
+    supportability = _supportability(storage_ready=False)
+
+    assert supportability["state"] == "unavailable"
+    assert supportability["reason"] == "archive_storage_unavailable"
+    assert supportability["retrievalSupported"] is False
+    assert supportability["retentionSupported"] is True
+    assert supportability["legalHoldSupported"] is True
+    assert supportability["documentLifecycleSupported"] is True
+    assert supportability["gatewayRetrievalSupported"] is False
+    assert supportability["workbenchRetrievalSupported"] is False
+
+
+def test_archive_supportability_reports_access_audit_unavailable() -> None:
+    supportability = _supportability(access_audit_ready=False)
+
+    assert supportability["state"] == "unavailable"
+    assert supportability["reason"] == "archive_access_audit_unavailable"
+    assert supportability["accessAuditSupported"] is False
+    assert supportability["retrievalSupported"] is True

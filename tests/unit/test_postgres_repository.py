@@ -112,6 +112,25 @@ def test_postgres_repository_reads_single_and_batch_documents() -> None:
     assert repository.get_by_document_ids(()).documents == {}
 
 
+def test_postgres_repositories_measure_required_schema_readiness() -> None:
+    document_cursor = FakeCursor()
+    audit_cursor = FakeCursor()
+    document_repository = PostgresArchiveDocumentRepository(
+        "postgresql://unused",
+        connection_factory=ConnectionSequence(document_cursor),
+    )
+    audit_repository = PostgresAccessAuditRepository(
+        "postgresql://unused",
+        connection_factory=ConnectionSequence(audit_cursor),
+    )
+
+    document_repository.check_ready()
+    audit_repository.check_ready()
+
+    assert document_cursor.executions == [("SELECT 1 FROM archive_documents LIMIT 1", None)]
+    assert audit_cursor.executions == [("SELECT 1 FROM archive_access_audit LIMIT 1", None)]
+
+
 def test_postgres_repository_requires_dsn_and_uses_default_connection(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

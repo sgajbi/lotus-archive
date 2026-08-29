@@ -98,12 +98,20 @@ ArchiveSupportabilityState = Literal["ready", "degraded", "unavailable"]
 ArchiveSupportabilityReason = Literal[
     "archive_supportability_ready",
     "archive_supportability_draining",
-    "archive_capability_unavailable",
+    "archive_repository_unavailable",
+    "archive_storage_unavailable",
+    "archive_access_audit_unavailable",
 ]
 ArchiveSupportabilityFreshness = Literal["current", "unknown"]
 
 
-def archive_supportability(*, is_draining: bool) -> dict[str, object]:
+def archive_supportability(
+    *,
+    is_draining: bool,
+    repository_ready: bool,
+    storage_ready: bool,
+    access_audit_ready: bool,
+) -> dict[str, object]:
     supported_features = list(SUPPORTED_ARCHIVE_FEATURES)
     state: ArchiveSupportabilityState = "ready"
     reason: ArchiveSupportabilityReason = "archive_supportability_ready"
@@ -111,23 +119,36 @@ def archive_supportability(*, is_draining: bool) -> dict[str, object]:
     if is_draining:
         state = "degraded"
         reason = "archive_supportability_draining"
-    elif not supported_features:
+    elif not repository_ready:
         state = "unavailable"
-        reason = "archive_capability_unavailable"
+        reason = "archive_repository_unavailable"
         freshness_bucket = "unknown"
+    elif not storage_ready:
+        state = "unavailable"
+        reason = "archive_storage_unavailable"
+        freshness_bucket = "unknown"
+    elif not access_audit_ready:
+        state = "unavailable"
+        reason = "archive_access_audit_unavailable"
+        freshness_bucket = "unknown"
+
+    retrieval_supported = repository_ready and storage_ready
 
     return {
         "featureKey": "archive.observability.archive_supportability",
         "state": state,
         "reason": reason,
         "freshnessBucket": freshness_bucket,
-        "retrievalSupported": True,
-        "retentionSupported": True,
-        "legalHoldSupported": True,
-        "accessAuditSupported": True,
-        "documentLifecycleSupported": True,
-        "gatewayRetrievalSupported": True,
-        "workbenchRetrievalSupported": True,
+        "retrievalSupported": retrieval_supported,
+        "retentionSupported": repository_ready,
+        "legalHoldSupported": repository_ready,
+        "accessAuditSupported": access_audit_ready,
+        "documentLifecycleSupported": repository_ready,
+        "gatewayRetrievalSupported": retrieval_supported,
+        "workbenchRetrievalSupported": retrieval_supported,
+        "repositoryReady": repository_ready,
+        "storageReady": storage_ready,
+        "accessAuditReady": access_audit_ready,
         "supportedArchiveFeatures": supported_features,
         "unsupportedProductCapabilities": [
             {"capability": item.capability, "reason": item.reason}

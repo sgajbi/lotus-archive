@@ -14,6 +14,8 @@ class ArchiveDocumentBatchLookup:
 
 
 class ArchiveDocumentRepository(Protocol):
+    def check_ready(self) -> None: ...
+
     def get_by_document_id(self, document_id: str) -> ArchiveDocumentMetadata | None: ...
 
     def get_by_document_ids(
@@ -53,6 +55,9 @@ class InMemoryArchiveDocumentRepository:
         self._by_archive_request_id: dict[str, str] = {}
         self._legal_holds: dict[str, LegalHoldRecord] = {}
         self._lifecycle_relationships: dict[str, LifecycleRelationshipRecord] = {}
+
+    def check_ready(self) -> None:
+        return None
 
     def get_by_document_id(self, document_id: str) -> ArchiveDocumentMetadata | None:
         return self._by_document_id.get(document_id)

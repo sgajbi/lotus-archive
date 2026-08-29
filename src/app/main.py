@@ -1,13 +1,14 @@
-from fastapi import FastAPI, Request, Response, status
+from fastapi import Depends, FastAPI, Request, Response, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from prometheus_fastapi_instrumentator import Instrumentator
-from app.archive.api import router as archive_documents_router
+from app.archive.api import archive_service, router as archive_documents_router
 from app.archive.error_handlers import register_archive_exception_handlers
 from app.archive.metrics import record_archive_supportability, validate_archive_metric_contracts
 from app.archive.runtime import runtime_posture
 from app.archive.settings import ArchiveRuntimeSettings
 from app.archive.service_profile import archive_supportability, service_posture
+from app.archive.service import ArchiveDocumentService
 from app.archive.build_metadata import BuildMetadata, build_metadata
 from app.contracts.errors import error_response
 from app.middleware.correlation import CorrelationIdMiddleware, configure_request_logging
@@ -93,10 +94,16 @@ async def health_ready(response: Response) -> dict[str, str]:
 
 
 @app.get("/metadata")
-async def metadata() -> dict[str, object]:
+async def metadata(
+    service: ArchiveDocumentService = Depends(archive_service),
+) -> dict[str, object]:
     runtime = runtime_posture(app.state.archive_runtime_settings)
+    readiness = service.runtime_readiness()
     supportability = archive_supportability(
-        is_draining=bool(getattr(app.state, "is_draining", False))
+        is_draining=bool(getattr(app.state, "is_draining", False)),
+        repository_ready=readiness.repository_ready,
+        storage_ready=readiness.storage_ready,
+        access_audit_ready=readiness.access_audit_ready,
     )
     record_archive_supportability(
         state=str(supportability["state"]),
