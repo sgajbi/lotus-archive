@@ -181,7 +181,7 @@ def test_record_archive_supportability_sanitizes_labels_before_counter(
 
     assert captured == {
         "state": "unavailable",
-        "reason": "archive_capability_unavailable",
+        "reason": "archive_repository_unavailable",
         "freshness_bucket": "unknown",
     }
     assert "doc-private-client-statement" not in captured.values()

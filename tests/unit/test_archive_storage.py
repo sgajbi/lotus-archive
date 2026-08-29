@@ -35,6 +35,17 @@ def test_filesystem_storage_round_trips_content(tmp_path: Path) -> None:
     assert storage.get(key=stored.key) == content
 
 
+def test_filesystem_storage_readiness_measures_root_access(tmp_path: Path) -> None:
+    root = tmp_path / "objects"
+    storage = FilesystemObjectStorage(root)
+
+    storage.check_ready()
+    root.rmdir()
+
+    with pytest.raises(RuntimeError, match="archive_storage_unavailable"):
+        storage.check_ready()
+
+
 def test_filesystem_storage_rejects_missing_or_unsafe_reads(tmp_path: Path) -> None:
     storage = FilesystemObjectStorage(tmp_path)
 

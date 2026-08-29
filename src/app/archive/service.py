@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from base64 import b64decode
 from binascii import Error as Base64DecodeError
+from collections.abc import Callable
+from dataclasses import dataclass
 from datetime import date, datetime, timezone
 from uuid import uuid4
 
@@ -59,6 +61,21 @@ from app.archive.storage import ObjectStorage
 from app.security.caller_context import CallerContext
 
 
+@dataclass(frozen=True)
+class ArchiveRuntimeReadiness:
+    repository_ready: bool
+    storage_ready: bool
+    access_audit_ready: bool
+
+
+def _dependency_is_ready(check_ready: Callable[[], None]) -> bool:
+    try:
+        check_ready()
+    except Exception:
+        return False
+    return True
+
+
 class ArchiveDocumentService:
     def __init__(
         self,
@@ -76,6 +93,13 @@ class ArchiveDocumentService:
         self.audit_repository = audit_repository
         self.authorization_policy = authorization_policy or ArchiveAuthorizationPolicy()
         self.max_decoded_document_bytes = max_decoded_document_bytes
+
+    def runtime_readiness(self) -> ArchiveRuntimeReadiness:
+        return ArchiveRuntimeReadiness(
+            repository_ready=_dependency_is_ready(self.repository.check_ready),
+            storage_ready=_dependency_is_ready(self.storage.check_ready),
+            access_audit_ready=_dependency_is_ready(self.audit_repository.check_ready),
+        )
 
     def get_lifecycle_posture(self, document_id: str) -> ArchiveDocumentMetadata:
         metadata = self._refresh_legal_hold_summary(self._get_existing_metadata(document_id))

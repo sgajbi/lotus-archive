@@ -22,6 +22,8 @@ class ReadableBody(Protocol):
 
 
 class S3Client(Protocol):
+    def head_bucket(self, **kwargs: object) -> Mapping[str, object]: ...
+
     def put_object(self, **kwargs: object) -> Mapping[str, object]: ...
 
     def get_object(self, **kwargs: object) -> Mapping[str, object]: ...
@@ -55,6 +57,12 @@ class S3ObjectStorage:
             S3Client,
             boto3.client("s3", region_name=region, endpoint_url=endpoint_url),
         )
+
+    def check_ready(self) -> None:
+        try:
+            self._client.head_bucket(Bucket=self.bucket)
+        except (BotoCoreError, ClientError) as exc:
+            raise RuntimeError("archive_storage_unavailable") from exc
 
     def put(
         self,

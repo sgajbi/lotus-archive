@@ -61,6 +61,8 @@ class AccessAuditEvent(BaseModel):
 
 
 class AccessAuditRepository(Protocol):
+    def check_ready(self) -> None: ...
+
     def record(self, event: AccessAuditEvent) -> AccessAuditEvent: ...
 
     def list_by_document_id(self, document_id: str | None) -> list[AccessAuditEvent]: ...
@@ -69,6 +71,9 @@ class AccessAuditRepository(Protocol):
 class InMemoryAccessAuditRepository:
     def __init__(self) -> None:
         self._events: list[AccessAuditEvent] = []
+
+    def check_ready(self) -> None:
+        return None
 
     def record(self, event: AccessAuditEvent) -> AccessAuditEvent:
         self._events.append(event)

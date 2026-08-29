@@ -1,6 +1,9 @@
+from types import SimpleNamespace
+
 from fastapi.testclient import TestClient
 import pytest
 from app.main import app
+from app.archive.api import archive_service
 from app.archive.settings import ArchiveRuntimeSettings
 
 
@@ -115,6 +118,9 @@ def test_metadata_reports_archive_supportability() -> None:
     assert payload["supportability"]["documentLifecycleSupported"] is True
     assert payload["supportability"]["gatewayRetrievalSupported"] is True
     assert payload["supportability"]["workbenchRetrievalSupported"] is True
+    assert payload["supportability"]["repositoryReady"] is True
+    assert payload["supportability"]["storageReady"] is True
+    assert payload["supportability"]["accessAuditReady"] is True
     assert (
         "gateway_backed_document_retrieval" in payload["supportability"]["supportedArchiveFeatures"]
     )
@@ -124,6 +130,29 @@ def test_metadata_reports_archive_supportability() -> None:
     )
     assert payload["build"]["service"] == "lotus-archive"
     assert payload["build"]["image_digest_posture"] == "not_published"
+
+
+def test_metadata_reports_measured_repository_unavailability() -> None:
+    class UnavailableRepositoryService:
+        def runtime_readiness(self) -> SimpleNamespace:
+            return SimpleNamespace(
+                repository_ready=False,
+                storage_ready=True,
+                access_audit_ready=True,
+            )
+
+    app.dependency_overrides[archive_service] = lambda: UnavailableRepositoryService()
+    try:
+        response = TestClient(app).get("/metadata")
+    finally:
+        app.dependency_overrides.clear()
+
+    assert response.status_code == 200
+    supportability = response.json()["supportability"]
+    assert supportability["state"] == "unavailable"
+    assert supportability["reason"] == "archive_repository_unavailable"
+    assert supportability["repositoryReady"] is False
+    assert supportability["retrievalSupported"] is False
 
 
 def test_version_endpoint_reports_runtime_build_metadata(

@@ -88,6 +88,10 @@ class PostgresArchiveDocumentRepository:
     ) -> None:
         self._connect = connection_factory or _connection_factory(dsn)
 
+    def check_ready(self) -> None:
+        with self._connect() as connection, connection.cursor() as cursor:
+            cursor.execute("SELECT 1 FROM archive_documents LIMIT 1")
+
     def get_by_document_id(self, document_id: str) -> ArchiveDocumentMetadata | None:
         return self._fetch_document("document_id = %s", (document_id,))
 
@@ -205,6 +209,10 @@ class PostgresAccessAuditRepository:
         connection_factory: ConnectionFactory | None = None,
     ) -> None:
         self._connect = connection_factory or _connection_factory(dsn)
+
+    def check_ready(self) -> None:
+        with self._connect() as connection, connection.cursor() as cursor:
+            cursor.execute("SELECT 1 FROM archive_access_audit LIMIT 1")
 
     def record(self, event: AccessAuditEvent) -> AccessAuditEvent:
         with self._connect() as connection, connection.cursor() as cursor:

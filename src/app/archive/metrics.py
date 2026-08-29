@@ -90,7 +90,9 @@ ARCHIVE_SUPPORTABILITY_REASONS = frozenset(
     {
         "archive_supportability_ready",
         "archive_supportability_draining",
-        "archive_capability_unavailable",
+        "archive_repository_unavailable",
+        "archive_storage_unavailable",
+        "archive_access_audit_unavailable",
     }
 )
 ARCHIVE_SUPPORTABILITY_FRESHNESS_BUCKETS = frozenset({"current", "unknown"})
@@ -351,7 +353,7 @@ def _bounded_supportability_state(state: str) -> str:
 def _bounded_supportability_reason(reason: str) -> str:
     if reason in ARCHIVE_SUPPORTABILITY_REASONS:
         return reason
-    return "archive_capability_unavailable"
+    return "archive_repository_unavailable"
 
 
 def _bounded_supportability_freshness_bucket(freshness_bucket: str) -> str:

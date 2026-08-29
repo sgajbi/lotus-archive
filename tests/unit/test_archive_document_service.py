@@ -54,6 +54,30 @@ def _service(tmp_path: Path) -> ArchiveDocumentService:
     )
 
 
+def test_runtime_readiness_measures_each_composed_dependency(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    service = _service(tmp_path)
+
+    readiness = service.runtime_readiness()
+    assert readiness.repository_ready is True
+    assert readiness.storage_ready is True
+    assert readiness.access_audit_ready is True
+
+    def unavailable() -> None:
+        raise RuntimeError("dependency unavailable")
+
+    monkeypatch.setattr(service.repository, "check_ready", unavailable)
+    monkeypatch.setattr(service.storage, "check_ready", unavailable)
+    monkeypatch.setattr(service.audit_repository, "check_ready", unavailable)
+
+    readiness = service.runtime_readiness()
+    assert readiness.repository_ready is False
+    assert readiness.storage_ready is False
+    assert readiness.access_audit_ready is False
+
+
 def _create_request(content: bytes = b"portfolio review pdf bytes") -> ArchiveDocumentCreateCommand:
     return ArchiveDocumentCreateCommand(
         metadata=valid_metadata_input(),

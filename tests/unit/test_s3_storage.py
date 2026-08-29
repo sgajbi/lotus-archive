@@ -21,6 +21,13 @@ class FakeS3Client:
         self.get_response: Mapping[str, object] = {"Body": BytesIO(b"archived")}
         self.deleted_key: str | None = None
         self.error: ClientError | None = None
+        self.head_bucket_request: dict[str, object] | None = None
+
+    def head_bucket(self, **kwargs: object) -> Mapping[str, object]:
+        if self.error is not None:
+            raise self.error
+        self.head_bucket_request = kwargs
+        return {}
 
     def put_object(self, **kwargs: object) -> Mapping[str, object]:
         if self.error is not None:
@@ -73,6 +80,19 @@ def test_s3_storage_writes_checksum_and_encryption_evidence() -> None:
     assert client.put_request["ServerSideEncryption"] == "aws:kms"
     assert client.put_request["SSEKMSKeyId"] == "alias/lotus-archive"
     assert client.put_request["ChecksumSHA256"]
+
+
+def test_s3_storage_readiness_measures_bucket_access() -> None:
+    client = FakeS3Client()
+    storage = _storage(client)
+
+    storage.check_ready()
+
+    assert client.head_bucket_request == {"Bucket": "lotus-archive"}
+
+    client.error = ClientError({"Error": {"Code": "AccessDenied"}}, "HeadBucket")
+    with pytest.raises(RuntimeError, match="archive_storage_unavailable"):
+        storage.check_ready()
 
 
 def test_s3_storage_rejects_blank_bucket() -> None:
