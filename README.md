@@ -6,12 +6,12 @@ was produced, from what evidence, who has looked at it, and whether it may be de
 
 It is not a general file store, a manual upload service, a delivery channel, or a renderer.
 
-> **Status: not deployable.** No production configuration can currently start — the settings
-> validator and the runtime composer accept disjoint configurations, because the PostgreSQL and S3
-> adapters are not implemented. In the one runnable profile, document bytes sit on a local
-> filesystem path and access audit is in-memory. See
-> [#90](https://github.com/sgajbi/lotus-archive/issues/90). The domain behaviour below is
-> implemented and tested; the durability it assumes is not.
+> **Durable runtime implemented.** A production profile composes PostgreSQL document metadata and
+> access audit with S3-compatible object storage. Local development remains intentionally
+> in-memory/filesystem. Production certification still requires operated migrations, managed
+> credentials and keys, measured dependency readiness ([#91](https://github.com/sgajbi/lotus-archive/issues/91)),
+> and completion of the separate Idea lifecycle-decision controls
+> ([#55](https://github.com/sgajbi/lotus-archive/issues/55)).
 
 **Documentation lives in the [wiki](https://github.com/sgajbi/lotus-archive/wiki)**, authored in
 [`wiki/`](wiki/):
@@ -88,7 +88,6 @@ Deep reference material that belongs next to the code:
 
 | gap | tracked |
 |---|---|
-| no durable adapters; no production profile can start | [#90](https://github.com/sgajbi/lotus-archive/issues/90) |
 | `/metadata` supportability is declared, not measured | [#91](https://github.com/sgajbi/lotus-archive/issues/91) |
 | migration gate never runs in CI | [#92](https://github.com/sgajbi/lotus-archive/issues/92) |
 | `tenant_id` optional on write, required on read | [#93](https://github.com/sgajbi/lotus-archive/issues/93) |

@@ -13,14 +13,15 @@ flowchart TB
   API --> AUTHZ["ArchiveAuthorizationPolicy<br/>caller allow-list · tenant scope"]
   SVC --> AUTHZ
   SVC --> WRITER["ArchiveWriter<br/>checksum · idempotency · storage key"]
-  SVC --> REPO[("repository<br/>in-memory only")]
-  SVC --> STORE[("object storage<br/>filesystem only")]
-  SVC --> AUDIT[("access audit<br/>in-memory only")]
+  SVC --> REPO[("repository<br/>in-memory · PostgreSQL")]
+  SVC --> STORE[("object storage<br/>filesystem · S3")]
+  SVC --> AUDIT[("access audit<br/>in-memory · PostgreSQL")]
   API --> IDEA["idea_lifecycle_decisions<br/>Ed25519 signing · SQLite ledger"]
 ```
 
-The three cylinders are the whole persistence story, and all three are non-durable in the only
-runnable configuration — see [Configuration](Configuration#what-can-actually-run).
+The three cylinders are the persistence boundary. Local profiles use the development adapters;
+production composes PostgreSQL metadata/audit and S3-compatible object storage — see
+[Configuration](Configuration#what-can-actually-run).
 
 ## Module families
 
@@ -63,26 +64,27 @@ different content is a conflict. See [API Surface](API-Surface#idempotency).
 ## Runtime composition
 
 `build_archive_service` is the single composition point. It reads settings and wires the repository,
-storage, writer and audit repository into `ArchiveDocumentService`. It refuses to build anything but
-the in-memory repository and filesystem storage, because those are the only adapters that exist.
+storage, writer and audit repository into `ArchiveDocumentService`. PostgreSQL repository mode
+selects both durable document metadata and access audit; S3 storage mode selects the durable object
+adapter. Local in-memory/filesystem adapters remain available only for explicit local or test use.
 
 `runtime_posture` reports what was composed — profile, modes, and three durability booleans — and
-derives a state. One detail is worth knowing: **`durable_audit` is derived from `repository_mode`**,
-not from the audit repository actually in use, which is always in-memory. It reports metadata
-durability under an audit label ([#91](https://github.com/sgajbi/lotus-archive/issues/91)).
+derives a state. `durable_audit` follows `repository_mode` because the runtime composes the
+PostgreSQL audit repository with the PostgreSQL document repository. Live dependency measurement
+remains separate ([#91](https://github.com/sgajbi/lotus-archive/issues/91)).
 
 ## What is in memory and what is on disk
 
 | state | where it lives | survives restart |
 |---|---|---|
-| document metadata | in-memory repository | no |
-| document bytes | filesystem under `storage_root` (defaults to the temp directory) | on disk, but not shared or backed up |
-| access audit events | in-memory repository | no |
-| legal holds and lifecycle relationships | in-memory repository | no |
+| document metadata | local: memory; production: PostgreSQL | production: yes |
+| document bytes | local: filesystem; production: S3-compatible object storage | production: yes |
+| access audit events | local: memory; production: PostgreSQL | production: yes |
+| legal holds and lifecycle relationships | local: memory; production: PostgreSQL | production: yes |
 | Idea lifecycle decision ledger | local SQLite (defaults to the temp directory) | on disk |
 
-This table is the honest answer to "is `lotus-archive` an archive yet". The domain behaviour is
-implemented and tested; the durability the domain assumes is not.
+The separate Idea lifecycle-decision ledger remains SQLite-backed and not production-certified;
+that limitation is tracked by #55 and does not change the generated-document custody adapters.
 
 ## Boundaries
 
@@ -115,7 +117,8 @@ of log aggregation.
 | domain service | `src/app/archive/service.py` |
 | write path | `src/app/archive/archive_writer.py`, `checksum.py` |
 | authorization | `src/app/archive/authorization.py`, `src/app/security/caller_context.py` |
-| persistence adapters | `src/app/archive/repository.py`, `storage.py`, `audit.py` |
+| persistence ports and local adapters | `src/app/archive/repository.py`, `storage.py`, `audit.py` |
+| durable adapters | `src/app/archive/postgres_repository.py`, `s3_storage.py` |
 | runtime and settings | `src/app/archive/runtime.py`, `settings.py`, `service_profile.py` |
 | Idea lifecycle decisions | `src/app/archive/idea_lifecycle_decisions/` |
 | errors | `src/app/archive/exceptions.py`, `error_handlers.py`, `src/app/contracts/errors.py` |

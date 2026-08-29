@@ -59,9 +59,11 @@ not call `lotus-archive` directly.
 4. `src/app/security/caller_context.py`: caller-context parser for future protected archive APIs.
 5. `src/app/archive/models.py`: archive document metadata contract.
 6. `src/app/archive/commands.py`: application-layer command inputs mapped from API DTOs.
-7. `src/app/archive/storage.py`: object-storage protocol and filesystem development adapter.
+7. `src/app/archive/storage.py`: object-storage protocol and filesystem development adapter;
+   `src/app/archive/s3_storage.py` is the durable S3-compatible adapter.
 8. `src/app/archive/repository.py`: archive document repository protocol and in-memory test
-   implementation.
+   implementation; `src/app/archive/postgres_repository.py` owns durable metadata and access-audit
+   adapters.
 9. `src/app/archive/archive_writer.py`: checksum-backed idempotent archive-write domain service.
 10. `src/app/archive/api.py`: archive create, metadata lookup, binary download, and access-event
    API router.
@@ -75,7 +77,7 @@ not call `lotus-archive` directly.
     semantics used by the Archive application service and API mapper.
 16. `src/app/archive/source_events.py`: bounded pull-only archive-owned generated-document and
    client-delivery lifecycle source-event projection for portfolio-memory consumers.
-17. `migrations/`: PostgreSQL metadata contract migrations.
+17. `migrations/`: PostgreSQL metadata, lifecycle, legal-hold, and access-audit migrations.
 18. `src/app/contracts/`: API and contract models.
 19. `src/app/middleware/`: shared request middleware.
 20. `tests/unit`, `tests/integration`, `tests/e2e`: test pyramid baseline.
@@ -168,8 +170,8 @@ dispatch ref is a tag rather than `main`.
 5. supportability metrics must remain bounded to state, reason, and freshness bucket only; do not
    add document, report, render, storage, tenant, trace, or correlation labels.
 6. in-memory metadata/audit repositories and filesystem object storage are allowed only for
-   explicit local-development or test profiles. Production-like profiles must fail closed or report
-   unavailable until durable metadata/audit and object-storage adapters exist.
+   explicit local-development or test profiles. Production composes PostgreSQL metadata/audit and
+   S3-compatible object storage and must fail closed when required configuration is absent.
 7. request logs must use route templates rather than raw document or legal-hold paths.
 8. FastAPI API models must stay at the router boundary. `ArchiveDocumentService` consumes
    application commands from `src/app/archive/commands.py`, not `api_models.py`.

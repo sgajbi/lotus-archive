@@ -32,20 +32,13 @@ store, not a manual upload surface, not a delivery channel, and not a renderer.
 
 ## Current status — read this before planning a deployment
 
-`lotus-archive` **cannot currently run in a production configuration.** This is a delivery gap, not
-a configuration task:
+`lotus-archive` now has a coherent durable production composition: PostgreSQL owns document
+metadata, legal holds, lifecycle relationships and access audit; S3-compatible storage owns document
+bytes. The default local profile deliberately remains in-memory/filesystem and reports `degraded`.
 
-- the settings validator rejects the in-memory repository and filesystem storage for any profile
-  other than `local-development` or `test`
-- the runtime composer rejects everything *except* the in-memory repository and filesystem storage,
-  because the PostgreSQL and S3 adapters are not implemented
-
-The two are mutually exclusive, so no value of `LOTUS_ARCHIVE_RUNTIME_PROFILE=production` produces a
-running service. Two consequences follow in the one runnable configuration: **archived bytes sit on
-a local filesystem path** (defaulting to the OS temp directory) and **access audit records are
-in-memory and do not survive a restart**. Tracked as
-[#90](https://github.com/sgajbi/lotus-archive/issues/90); see
-[Configuration](Configuration#what-can-actually-run) for the detail.
+This is implementation readiness, not blanket production certification. Operated migrations,
+managed credentials and signing keys, deployment provenance, and measured dependency supportability
+remain required. See [Configuration](Configuration#what-can-actually-run) for the exact contract.
 
 Everything below describes behaviour that is implemented and exercised by tests. It runs. It is not
 yet deployable.
@@ -114,7 +107,6 @@ Recorded so that absence is not mistaken for capability.
 
 | gap | consequence | tracked |
 |---|---|---|
-| no durable adapters | no production profile can start; bytes are local, audit is in-memory | [#90](https://github.com/sgajbi/lotus-archive/issues/90) |
 | supportability is declared, not measured | `/metadata` reports `ready` and `accessAuditSupported: true` regardless of whether anything works | [#91](https://github.com/sgajbi/lotus-archive/issues/91) |
 | migration gate never runs in CI | the schema contract is checked only if a developer runs `make check` locally | [#92](https://github.com/sgajbi/lotus-archive/issues/92) |
 | `tenant_id` optional on write, required on read | a document archived without one is stored and then permanently unreadable | [#93](https://github.com/sgajbi/lotus-archive/issues/93) |

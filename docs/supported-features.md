@@ -56,11 +56,13 @@ archive API surface:
 33. Bounded caller-scoped archive access preflight for `lotus-gateway`, with ordered per-document
     posture, tenant/region scope enforcement, partial/unavailable semantics, and no raw storage or
     archive payload exposure.
+34. Production runtime composition with PostgreSQL document metadata, legal-hold, lifecycle and
+    access-audit persistence plus checksum-evidenced, server-side-encrypted S3-compatible object
+    storage.
 
-The current local runtime is intentionally non-durable unless a future production adapter is
-configured. Production-like profiles must not silently use in-memory metadata/audit repositories or
-temporary filesystem object storage; readiness and runtime dependency composition fail closed when
-durable archive persistence and object storage are missing.
+The current local runtime is intentionally non-durable. Production-like profiles must not silently
+use in-memory metadata/audit repositories or temporary filesystem object storage; they require the
+PostgreSQL and S3 adapters plus their mandatory configuration.
 
 Workbench-facing archive retrieval is supported only through the `lotus-workbench` BFF and
 `lotus-gateway`. Workbench must not call `lotus-archive` directly.
@@ -73,7 +75,7 @@ Workbench-facing archive retrieval is supported only through the `lotus-workbenc
 | Controlled document metadata lookup | `ready` | `GET /documents/{document_id}` with caller-context enforcement, authorization, audit, and support-safe response model. |
 | Controlled document binary download | `ready` | `GET /documents/{document_id}/download` with caller-context enforcement, authorization, storage retrieval, checksum verification, and audit. |
 | Batch caller access preflight | `ready` | `POST /documents/access-preflight` evaluates up to 100 ordered document identifiers through one repository batch lookup and returns advisory `allowed`, `denied`, `missing`, or `unavailable` posture with bounded reason codes; it does not mint links or authorize downloads. |
-| Access audit for archive API actions | `ready` | In-memory first-wave access-audit repository and `GET /documents/{document_id}/access-events` for support investigation. |
+| Access audit for archive API actions | `ready` | Local/test profiles use the in-memory repository; PostgreSQL mode persists the same event contract in `archive_access_audit`. `GET /documents/{document_id}/access-events` supports investigation without exposing raw payloads. |
 | Retention policy posture | `ready` | `GET /documents/{document_id}/retention` returns source-backed retention fields, purge posture, legal-hold posture, authorization, and audit. |
 | Purge eligibility and execution | `ready` | `POST /documents/{document_id}/purge-evaluation` and `POST /documents/{document_id}/purge` enforce retention expiry, support-safe reason codes, binary deletion through storage abstraction, idempotency after purge, and audit. |
 | Legal hold set/release with purge blocking | `ready` | `POST /documents/{document_id}/legal-holds`, `DELETE /documents/{document_id}/legal-holds/{legal_hold_id}`, legal-hold repository model, migration contract, metadata summary refresh, purge blocking, and audit. |
@@ -92,7 +94,7 @@ Workbench-facing archive retrieval is supported only through the `lotus-workbenc
 | Archive supportability posture | `ready` | `/metadata` publishes `archive.observability.archive_supportability`, sourced from supported archive feature posture and drain state, with bounded `lotus_archive_supportability_total` metric observations. The feature posture is a module constant rather than a runtime probe, so drain state is the only measured input: the per-capability flags are literals and the `unavailable` state is unreachable. Use `/health/ready` to decide whether to route traffic. Tracked as [#91](https://github.com/sgajbi/lotus-archive/issues/91). |
 | Runtime build metadata | `ready` | `/version` and `/metadata.build` expose source-safe service version, repository URL, commit SHA, Git ref, build timestamp, CI run id, image reference, image digest, and digest posture. Docker builds inject matching OCI labels and runtime environment variables. |
 | Idea evidence lifecycle decision proof | `limited` | `POST /documents/{document_id}/idea-lifecycle-decisions` issues short-lived Ed25519-signed, tenant-bound projections for archived proof-pack records. SQLite replay/conflict, hold precedence, expiry/forgery rejection, audit, and failure atomicity are tested. Production durable persistence, managed keys/trust distribution, legal approval, and live mainline proof remain blocked. |
-| Production durable archive runtime | `limited` | Runtime settings prevent silent in-memory/filesystem use in production-like profiles. PostgreSQL metadata/audit and S3-compatible storage adapters remain future implementation work before production durable support can be claimed. Note that the two validations are currently mutually exclusive: the settings validator rejects in-memory/filesystem for a production profile, and `build_archive_service` rejects everything else, so **no production configuration starts at all**. Access audit is in-memory in every runnable configuration. Tracked as [#90](https://github.com/sgajbi/lotus-archive/issues/90). |
+| Production durable archive runtime | `ready` | Runtime settings and `build_archive_service` align on PostgreSQL metadata/audit plus S3-compatible storage. Migration `007` persists access audit; adapter tests cover failure mapping and configuration, and a PostgreSQL reconstruction integration test proves metadata and audit survive repository restart. Deployment certification still requires operated migrations, managed credentials/keys, and measured supportability (#91). |
 | Production container provenance certification | `limited` | The runtime image is wheel-based, non-root, contains only the application wheel and declared runtime dependencies, removes the package installer after installation, and carries OCI/runtime metadata. Mainline CI is configured for GHCR publication, immutable digest capture, hard CRITICAL/HIGH vulnerability scan, signature, provenance attestation, verification, and release evidence. Deployment certification still requires digest-based deployment manifests and same-digest promotion evidence. |
 | Dependency vulnerability exceptions | `ready` | `make security-audit` validates `security/pip-audit-exceptions.json` before invoking `pip-audit`. The current policy has no active exceptions after the Starlette runtime was lifted to the fixed line. Future exceptions must carry owner, review date, rationale, dependency constraint, removal condition, and compensating controls. |
 
