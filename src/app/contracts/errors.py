@@ -27,6 +27,9 @@ SAFE_ERROR_MESSAGES: dict[str, str] = {
     "document_not_found": "The requested archived document was not found.",
     "document_binary_missing": "The archived document binary could not be found.",
     "document_checksum_mismatch": "The archived document failed integrity verification.",
+    "historical_integrity_violation": (
+        "The write attempted to change immutable archived-document history."
+    ),
     "duplicate_archive_request": "The archive request conflicts with an existing document.",
     "metadata_validation_failed": "The archive metadata could not be validated.",
     "storage_read_failed": "The archived document could not be read.",

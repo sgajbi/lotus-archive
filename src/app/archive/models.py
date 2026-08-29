@@ -272,6 +272,27 @@ class ArchiveDocumentInput(BaseModel):
         return self
 
 
+# The only fields a persisted document may change after creation. Everything else - identity,
+# provenance, content identity, tenant scope, creation time - is the historical truth this
+# service exists to keep, and both repositories refuse to update it (HistoricalIntegrityError).
+# The goal's answerability chain (what it is, who produced it, when, which version) depends on
+# exactly the fields outside this set never moving.
+MUTABLE_DOCUMENT_FIELDS = frozenset(
+    {
+        "purge_status",
+        "purged_at",
+        "purge_eligible_at",
+        "legal_hold_status",
+        "legal_hold_count",
+        "superseded_by_document_id",
+        "supersedes_document_id",
+        "correction_of_document_id",
+        "reissue_of_document_id",
+        "updated_at",
+    }
+)
+
+
 class ArchiveDocumentMetadata(ArchiveDocumentInput):
     document_id: str = Field(min_length=1)
     storage_provider: str = Field(min_length=1)

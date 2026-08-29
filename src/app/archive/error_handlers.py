@@ -8,6 +8,7 @@ from fastapi.responses import JSONResponse
 from app.archive.authorization import AuthorizationFailedError
 from app.archive.exceptions import (
     DocumentChecksumMismatchError,
+    HistoricalIntegrityError,
     DocumentNotFoundError,
     DuplicateArchiveRequestConflict,
     LegalHoldActiveError,
@@ -126,6 +127,18 @@ def register_archive_exception_handlers(
         return error_response(
             code="document_binary_missing",
             http_status=status.HTTP_404_NOT_FOUND,
+            correlation_id=correlation_id(request),
+            service=service_name,
+        )
+
+    @app.exception_handler(HistoricalIntegrityError)
+    async def historical_integrity_exception_handler(
+        request: Request,
+        _exc: HistoricalIntegrityError,
+    ) -> JSONResponse:
+        return error_response(
+            code="historical_integrity_violation",
+            http_status=status.HTTP_409_CONFLICT,
             correlation_id=correlation_id(request),
             service=service_name,
         )

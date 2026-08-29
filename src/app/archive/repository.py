@@ -3,8 +3,13 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Mapping, Protocol
 
-from app.archive.exceptions import DuplicateArchiveRequestConflict
-from app.archive.models import ArchiveDocumentMetadata, LegalHoldRecord, LifecycleRelationshipRecord
+from app.archive.exceptions import DuplicateArchiveRequestConflict, HistoricalIntegrityError
+from app.archive.models import (
+    MUTABLE_DOCUMENT_FIELDS,
+    ArchiveDocumentMetadata,
+    LegalHoldRecord,
+    LifecycleRelationshipRecord,
+)
 
 
 @dataclass(frozen=True)
@@ -89,6 +94,19 @@ class InMemoryArchiveDocumentRepository:
             raise DuplicateArchiveRequestConflict(
                 "archive_request_id already belongs to another document"
             )
+        existing = self._by_document_id.get(metadata.document_id)
+        if existing is not None:
+            changed_immutable = sorted(
+                field
+                for field in type(metadata).model_fields
+                if field not in MUTABLE_DOCUMENT_FIELDS
+                and getattr(existing, field) != getattr(metadata, field)
+            )
+            if changed_immutable:
+                raise HistoricalIntegrityError(
+                    "immutable document fields cannot change after archival: "
+                    + ", ".join(changed_immutable)
+                )
         self._by_document_id[metadata.document_id] = metadata
         self._by_archive_request_id[metadata.archive_request_id] = metadata.document_id
         return metadata
