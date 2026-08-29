@@ -257,6 +257,32 @@ class PostgresArchiveDocumentRepository:
             )
         return relationship
 
+    def apply_lifecycle_transition(
+        self,
+        source: ArchiveDocumentMetadata,
+        target: ArchiveDocumentMetadata,
+        relationship: LifecycleRelationshipRecord,
+    ) -> LifecycleRelationshipRecord:
+        """All three writes in ONE transaction. A crash or failure between them would leave a
+        half-linked supersession chain that the validation guards make unrepairable through the
+        API, so the database - not service-level compensation - owns the atomicity. The guarded
+        upsert applies to both documents, so history stays immutable inside the transaction too.
+        """
+        try:
+            with self._connect() as connection, connection.cursor() as cursor:
+                for metadata in (source, target):
+                    cursor.execute(_SAVE_DOCUMENT_SQL, _document_values(metadata))
+                    if cursor.rowcount == 0:
+                        raise HistoricalIntegrityError(
+                            "immutable document fields cannot change after archival"
+                        )
+                cursor.execute(_SAVE_LIFECYCLE_SQL, _values(relationship, _LIFECYCLE_COLUMNS))
+        except UniqueViolation as exc:
+            raise DuplicateArchiveRequestConflict(
+                "archive request or storage key already belongs to another document"
+            ) from exc
+        return relationship
+
     def delete_lifecycle_relationship(self, lifecycle_relationship_id: str) -> None:
         with self._connect() as connection, connection.cursor() as cursor:
             cursor.execute(
