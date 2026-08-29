@@ -6,6 +6,7 @@ from pathlib import PurePosixPath
 from typing import Protocol, cast
 
 import boto3  # type: ignore[import-untyped]
+from botocore.config import Config  # type: ignore[import-untyped]
 from botocore.exceptions import BotoCoreError, ClientError  # type: ignore[import-untyped]
 
 from app.archive.checksum import calculate_checksum
@@ -31,6 +32,20 @@ class S3Client(Protocol):
     def delete_object(self, **kwargs: object) -> Mapping[str, object]: ...
 
 
+def client_config(
+    *,
+    connect_timeout_seconds: float,
+    read_timeout_seconds: float,
+    max_attempts: int,
+) -> Config:
+    """Bounded, retry-limited S3 access: a hung endpoint fails the request, never holds it."""
+    return Config(
+        connect_timeout=connect_timeout_seconds,
+        read_timeout=read_timeout_seconds,
+        retries={"max_attempts": max_attempts, "mode": "standard"},
+    )
+
+
 class S3ObjectStorage:
     provider = "s3"
 
@@ -45,6 +60,9 @@ class S3ObjectStorage:
         server_side_encryption: str,
         kms_key_id: str | None,
         client: S3Client | None = None,
+        connect_timeout_seconds: float = 5.0,
+        read_timeout_seconds: float = 30.0,
+        max_attempts: int = 3,
     ) -> None:
         if not bucket.strip():
             raise ValueError("S3 bucket must not be blank")
@@ -55,7 +73,16 @@ class S3ObjectStorage:
         self._kms_key_id = kms_key_id
         self._client = client or cast(
             S3Client,
-            boto3.client("s3", region_name=region, endpoint_url=endpoint_url),
+            boto3.client(
+                "s3",
+                region_name=region,
+                endpoint_url=endpoint_url,
+                config=client_config(
+                    connect_timeout_seconds=connect_timeout_seconds,
+                    read_timeout_seconds=read_timeout_seconds,
+                    max_attempts=max_attempts,
+                ),
+            ),
         )
 
     def check_ready(self) -> None:

@@ -161,3 +161,57 @@ def test_lifecycle_decision_dependency_builds_and_caches_local_service(
     second = idea_lifecycle_decision_service(request)
 
     assert second is first
+
+
+def test_runtime_threads_operational_bounds_into_both_adapters(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The composed service must carry the configured timeouts, not module defaults."""
+    from base64 import b64encode
+
+    from pydantic import SecretStr
+
+    import app.archive.runtime as runtime_module
+    from app.archive.settings import ArchiveRuntimeSettings
+
+    captured: dict[str, dict[str, object]] = {}
+
+    class _Recorder:
+        def __init__(self, name: str):
+            self._name = name
+
+        def __call__(self, *args: object, **kwargs: object) -> object:
+            captured[self._name] = {"args": args, **kwargs}
+            return object()
+
+    monkeypatch.setattr(
+        runtime_module, "PostgresArchiveDocumentRepository", _Recorder("repository")
+    )
+    monkeypatch.setattr(runtime_module, "PostgresAccessAuditRepository", _Recorder("audit"))
+    monkeypatch.setattr(runtime_module, "S3ObjectStorage", _Recorder("storage"))
+    monkeypatch.setattr(runtime_module, "ArchiveWriter", _Recorder("writer"))
+    monkeypatch.setattr(runtime_module, "ArchiveDocumentService", _Recorder("service"))
+
+    settings = ArchiveRuntimeSettings(
+        runtime_profile="production",
+        repository_mode="postgresql",
+        storage_mode="s3",
+        database_url="postgresql://u:p@h/db",
+        database_connect_timeout_seconds=9,
+        database_statement_timeout_ms=4500,
+        s3_bucket="lotus-archive",
+        s3_connect_timeout_seconds=2.0,
+        s3_read_timeout_seconds=8.0,
+        s3_max_attempts=5,
+        idea_lifecycle_decision_private_key_base64=SecretStr(b64encode(b"0" * 32).decode()),
+        idea_lifecycle_decision_signing_key_id="managed-v1",
+    )
+    runtime_module.build_archive_service(settings)
+
+    assert captured["repository"]["connect_timeout_seconds"] == 9
+    assert captured["repository"]["statement_timeout_ms"] == 4500
+    assert captured["audit"]["connect_timeout_seconds"] == 9
+    assert captured["audit"]["statement_timeout_ms"] == 4500
+    assert captured["storage"]["connect_timeout_seconds"] == 2.0
+    assert captured["storage"]["read_timeout_seconds"] == 8.0
+    assert captured["storage"]["max_attempts"] == 5

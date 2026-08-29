@@ -321,3 +321,30 @@ def test_save_succeeds_when_the_guarded_upsert_updates_a_row() -> None:
     saved = repository.save(_metadata())
 
     assert saved.document_id == "doc_1"
+
+
+def test_connection_factory_bounds_connect_and_statement_time(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Failure containment: a hung PostgreSQL must fail the request, never hold it."""
+    import psycopg
+
+    from app.archive.postgres_repository import _connection_factory
+
+    captured: dict[str, object] = {}
+
+    def fake_connect(dsn: str, **kwargs: object) -> object:
+        captured["dsn"] = dsn
+        captured.update(kwargs)
+        return object()
+
+    monkeypatch.setattr(psycopg, "connect", fake_connect)
+    factory = _connection_factory(
+        "postgresql://example",
+        connect_timeout_seconds=7,
+        statement_timeout_ms=1234,
+    )
+    factory()
+
+    assert captured["connect_timeout"] == 7
+    assert captured["options"] == "-c statement_timeout=1234"
