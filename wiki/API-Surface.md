@@ -122,7 +122,7 @@ downstream should treat a preflight `allowed` as authorisation.
 | `409` | `document_checksum_mismatch` | stored bytes do not match the recorded checksum |
 | `409` | `legal_hold_active` | a hold blocks the purge |
 | `409` | `purge_not_eligible` | retention has not elapsed, or no retention date exists |
-| `409` | `supersession_conflict` | the transition would branch or cycle the chain |
+| `409` | `supersession_conflict` | the transition would branch or cycle the chain; an identical retry of an already-applied transition is not a conflict — it returns the recorded relationship |
 | `409` | `unsupported_lifecycle_transition` | self-transition, purged document, or unknown type |
 | `409` | `lifecycle_decision_idempotency_conflict` | decision key reused with different inputs |
 | `422` | `validation_failed` | request body failed schema validation |

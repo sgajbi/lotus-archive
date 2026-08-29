@@ -94,6 +94,7 @@ contract in `archive_access_audit`, indexed by document and creation time.
 |---|---|
 | caller gets `401 caller_context_missing` | the caller is not sending `x-caller-service` / `x-actor-type` / `x-actor-id` |
 | caller gets `401 caller_scope_missing` | a scoped read without `x-tenant-id` / `x-region` |
+| a retried write appears to "succeed twice" | expected: create, legal-hold set, lifecycle transitions, purge, and hold release all converge on the already-applied result for an identical retry — check the access event reason code (`legal_hold_already_active`, `lifecycle_transition_already_recorded`, `already_purged`) |
 | caller gets `403` on reads that used to work | tenant or region mismatch, or the document was purged — check the access events for the reason code |
 | every read of one historical document is refused | inspect the access event reason; `document_scope_unavailable` identifies incomplete scope on a historical or migrated record, while new writes require both tenant and region |
 | purge refused | `purge-evaluation` returns the reason: hold active, no retention date, or retention still running |

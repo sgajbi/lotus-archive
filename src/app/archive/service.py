@@ -70,6 +70,13 @@ class ArchiveRuntimeReadiness:
     access_audit_ready: bool
 
 
+_TARGET_ORIGIN_FIELD: dict[LifecycleTransitionType, str] = {
+    LifecycleTransitionType.SUPERSEDE: "supersedes_document_id",
+    LifecycleTransitionType.CORRECT: "correction_of_document_id",
+    LifecycleTransitionType.REISSUE: "reissue_of_document_id",
+}
+
+
 def _dependency_is_ready(check_ready: Callable[[], None]) -> bool:
     try:
         check_ready()
@@ -357,6 +364,24 @@ class ArchiveDocumentService:
             document_id=document_id,
         )
         metadata = self._get_existing_metadata(document_id)
+        for existing in self.repository.list_legal_holds(document_id):
+            if (
+                existing.hold_status is LegalHoldStatus.ACTIVE
+                and existing.authority_reference == command.authority_reference
+                and existing.hold_reason == command.hold_reason
+            ):
+                # A retry of an identical request converges on the hold it already
+                # created. Minting a second hold here would leave a duplicate the
+                # caller never saw an id for, blocking purge after they release
+                # the one they know about.
+                self._record_allowed(
+                    event_type=AccessEventType.LEGAL_HOLD_SET,
+                    caller_context=caller_context,
+                    trace_id=trace_id,
+                    document_id=document_id,
+                    operation_reason_code="legal_hold_already_active",
+                )
+                return existing
         legal_hold = LegalHoldRecord(
             legal_hold_id=f"hold_{uuid4().hex}",
             document_id=document_id,
@@ -715,6 +740,20 @@ class ArchiveDocumentService:
         )
         source = self._get_existing_metadata(source_document_id)
         target = self._get_existing_metadata(command.target_document_id)
+        already_applied = self._find_applied_transition(
+            source=source,
+            target=target,
+            transition_type=transition_type,
+        )
+        if already_applied is not None:
+            self._record_allowed(
+                event_type=event_type,
+                caller_context=caller_context,
+                trace_id=trace_id,
+                document_id=source.document_id,
+                operation_reason_code="lifecycle_transition_already_recorded",
+            )
+            return already_applied, self._resolve_current_document(target)
         self._validate_lifecycle_transition(
             source=source,
             target=target,
@@ -728,17 +767,10 @@ class ArchiveDocumentService:
                 "updated_at": now,
             }
         )
-        target_updates: dict[str, object] = {"updated_at": now}
-        if transition_type is LifecycleTransitionType.SUPERSEDE:
-            target_updates["supersedes_document_id"] = source.document_id
-        elif transition_type is LifecycleTransitionType.CORRECT:
-            target_updates["correction_of_document_id"] = source.document_id
-        elif transition_type is LifecycleTransitionType.REISSUE:
-            target_updates["reissue_of_document_id"] = source.document_id
-        else:
+        origin_field = _TARGET_ORIGIN_FIELD.get(transition_type)
+        if origin_field is None:
             raise UnsupportedLifecycleTransitionError("unsupported lifecycle transition")
-
-        target = target.model_copy(update=target_updates)
+        target = target.model_copy(update={"updated_at": now, origin_field: source.document_id})
         relationship = LifecycleRelationshipRecord(
             lifecycle_relationship_id=f"life_{uuid4().hex}",
             source_document_id=source.document_id,
@@ -764,6 +796,36 @@ class ArchiveDocumentService:
             operation_reason_code="lifecycle_transition_recorded",
         )
         return saved_relationship, self._resolve_current_document(target)
+
+    def _find_applied_transition(
+        self,
+        *,
+        source: ArchiveDocumentMetadata,
+        target: ArchiveDocumentMetadata,
+        transition_type: LifecycleTransitionType,
+    ) -> LifecycleRelationshipRecord | None:
+        """The recorded relationship when exactly this transition already holds, else None.
+
+        A retry is recognized only when the whole chain agrees: the source points at this
+        target, the target carries this transition's origin field back at the source, and
+        the relationship record exists. Anything less is a genuine conflict and falls
+        through to the validation guards.
+        """
+        origin_field = _TARGET_ORIGIN_FIELD.get(transition_type)
+        if origin_field is None:
+            return None
+        if source.superseded_by_document_id != target.document_id:
+            return None
+        if getattr(target, origin_field) != source.document_id:
+            return None
+        for relationship in self.repository.list_lifecycle_relationships(source.document_id):
+            if (
+                relationship.source_document_id == source.document_id
+                and relationship.target_document_id == target.document_id
+                and relationship.transition_type is transition_type
+            ):
+                return relationship
+        return None
 
     def _validate_lifecycle_transition(
         self,
