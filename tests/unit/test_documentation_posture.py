@@ -35,7 +35,8 @@ def test_supported_features_baseline_blocks_direct_workbench_overclaim() -> None
     assert "| Gateway-backed document retrieval | `ready` |" in supported_features
     assert "| Gateway-backed Workbench document retrieval | `ready` |" in supported_features
     assert "| Reviewed advisory narrative archive summary | `ready` |" in supported_features
-    assert "| Production durable archive runtime | `limited` |" in supported_features
+    assert "| Production durable archive runtime | `ready` |" in supported_features
+    assert "PostgreSQL metadata/audit plus S3-compatible storage" in supported_features
     assert "| Dependency vulnerability exceptions | `ready` |" in supported_features
     assert "| Report-to-archive handoff | `not_supported` |" not in supported_features
     assert "| Direct Workbench archive calls | `not_supported` |" in supported_features
