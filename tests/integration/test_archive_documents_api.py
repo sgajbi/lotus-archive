@@ -547,9 +547,15 @@ def test_batch_access_preflight_is_ordered_bounded_and_advisory(tmp_path: Path) 
     assert body["preflight_only"] is True
     assert [item["state"] for item in body["items"]] == [
         "denied",
-        "missing",
+        "denied",
         "allowed",
     ]
+    # Wire-level existence-oracle invariant (issue #88): a cross-tenant id and a non-existent id
+    # produce identical items apart from the id itself.
+    cross_tenant_item = {**body["items"][0], "document_id": ""}
+    missing_item = {**body["items"][1], "document_id": ""}
+    assert cross_tenant_item == missing_item
+    assert body["items"][0]["reason_code"] == "not_accessible"
     assert "storage_key" not in str(body)
     assert "storage" not in str(body)
 
@@ -1258,3 +1264,24 @@ def test_reviewed_advisory_narrative_archive_summary_is_preserved_and_source_saf
         "content_hash": "sha256:" + "a" * 64,
     } in created_event["artifact_refs"]
     assert "portfolio review pdf bytes with advisory narrative" not in str(created_event)
+
+
+def test_batch_access_preflight_requires_caller_identity(tmp_path: Path) -> None:
+    """Absent identity headers must fail closed on this route specifically (issue #88)."""
+    service = _service(tmp_path)
+    app.dependency_overrides[archive_service] = lambda: service
+    client = TestClient(app)
+    headers = _headers(caller_service="lotus-gateway")
+    for header in ("X-Caller-Service", "X-Actor-Type", "X-Actor-Id"):
+        headers.pop(header)
+    try:
+        response = client.post(
+            "/documents/access-preflight",
+            json={"document_ids": ["doc_missing"]},
+            headers=headers,
+        )
+    finally:
+        app.dependency_overrides.clear()
+
+    assert response.status_code == 401
+    assert response.json()["error"]["code"] == "caller_context_missing"

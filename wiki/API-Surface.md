@@ -94,7 +94,13 @@ memory.
 `POST /documents/access-preflight` answers, for a list of document ids, whether this caller would be
 allowed each one. It requires trusted tenant and region context, performs a single repository batch
 lookup, and returns results in the order requested with per-document `allowed` / `denied` /
-`missing` / `unavailable` states. Adapter lookup timeouts map to `unavailable`.
+`unavailable` states. Adapter lookup timeouts map to `unavailable`.
+
+A `denied` item is **deliberately identical** for an id that does not exist and an id that exists in
+another tenant or region — both carry reason `not_accessible` — so a batch of ids cannot be used to
+partition another tenant's archive into "exists" and "does not exist". The granular distinction
+(`document_not_found` versus `caller_scope_mismatch`) is recorded in the access audit, where an
+investigator can read it; it never reaches the response.
 
 It returns **no storage paths and no payloads**, and it is **advisory**: the single-document metadata
 and download routes apply the same scope check independently and remain the access boundary. Nothing

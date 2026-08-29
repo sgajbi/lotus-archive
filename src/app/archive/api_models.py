@@ -6,6 +6,8 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from app.archive.access_preflight import (
+    MAX_PREFLIGHT_DOCUMENT_IDS,
+    RESPONSE_REASON_CODES,
     ArchiveAccessPreflightResult,
     ArchiveAccessReasonCode,
     ArchiveAccessResultState,
@@ -34,7 +36,7 @@ class ArchiveDocumentAccessPreflightRequest(BaseModel):
 
     document_ids: list[str] = Field(
         min_length=1,
-        max_length=100,
+        max_length=MAX_PREFLIGHT_DOCUMENT_IDS,
         description=(
             "Ordered opaque archive document identifiers to evaluate. The request cannot grant "
             "download access or provide document authority."
@@ -63,8 +65,25 @@ class ArchiveDocumentAccessPreflightItem(BaseModel):
         )
     )
     reason_code: ArchiveAccessReasonCode = Field(
-        description="Bounded support-safe reason for the per-document access posture."
+        description=(
+            "Bounded support-safe reason for the per-document access posture. Responses carry "
+            "only access_allowed, not_accessible, lookup_unavailable, or document_purged: a "
+            "denied item is deliberately identical for a non-existent id and an id outside the "
+            "caller's tenant/region, so the endpoint cannot be used as an existence oracle. "
+            "Granular reasons are recorded in the access audit, not returned."
+        )
     )
+
+    @field_validator("reason_code")
+    @classmethod
+    def _reason_code_must_be_response_safe(
+        cls, value: ArchiveAccessReasonCode
+    ) -> ArchiveAccessReasonCode:
+        if value not in RESPONSE_REASON_CODES:
+            raise ValueError(
+                f"preflight responses must not carry audit-only reason codes; got {value.value}"
+            )
+        return value
 
 
 class ArchiveDocumentAccessPreflightResponse(BaseModel):
