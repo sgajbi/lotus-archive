@@ -332,8 +332,8 @@ def test_complexity_findings_include_nested_class_methods() -> None:
     closures; a top-level-only parse leaves them invisible to the gate. Carried
     back from lotus-report#199, where two rank-D class methods were unseen."""
 
-    sys.path.insert(0, str(ROOT / "scripts"))
-    from python_complexity_inventory import parse_complexity_payload
+    module = runpy.run_path(str(ROOT / "scripts" / "python_complexity_inventory.py"))
+    parse_complexity_payload = module["parse_complexity_payload"]
 
     payload = {
         "src/app/example.py": [
