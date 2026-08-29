@@ -9,8 +9,9 @@ from psycopg.rows import dict_row
 from psycopg.types.json import Jsonb
 
 from app.archive.audit import AccessAuditEvent
-from app.archive.exceptions import DuplicateArchiveRequestConflict
+from app.archive.exceptions import DuplicateArchiveRequestConflict, HistoricalIntegrityError
 from app.archive.models import (
+    MUTABLE_DOCUMENT_FIELDS,
     ArchiveDocumentMetadata,
     LegalHoldRecord,
     LifecycleRelationshipRecord,
@@ -28,18 +29,44 @@ _LIFECYCLE_COLUMNS = tuple(LifecycleRelationshipRecord.model_fields)
 _AUDIT_COLUMNS = tuple(AccessAuditEvent.model_fields)
 
 
-def _insert_sql(table: str, columns: tuple[str, ...], *, conflict_key: str) -> str:
-    assignments = ", ".join(
-        f"{column} = EXCLUDED.{column}" for column in columns if column != conflict_key
+def _insert_sql(
+    table: str,
+    columns: tuple[str, ...],
+    *,
+    conflict_key: str,
+    mutable_columns: frozenset[str] | None = None,
+) -> str:
+    updatable = tuple(
+        column
+        for column in columns
+        if column != conflict_key and (mutable_columns is None or column in mutable_columns)
     )
-    return (
+    assignments = ", ".join(f"{column} = EXCLUDED.{column}" for column in updatable)
+    sql = (
         f"INSERT INTO {table} ({', '.join(columns)}) "
         f"VALUES ({', '.join(['%s'] * len(columns))}) "
         f"ON CONFLICT ({conflict_key}) DO UPDATE SET {assignments}"
     )
+    if mutable_columns is not None:
+        # The update applies only when every immutable column is unchanged. A conflicting write
+        # that tries to move identity, provenance, content identity or tenant scope resolves the
+        # conflict by updating nothing, which save() detects via rowcount and raises
+        # HistoricalIntegrityError - race-safe in a single round trip.
+        guards = " AND ".join(
+            f"{table}.{column} IS NOT DISTINCT FROM EXCLUDED.{column}"
+            for column in columns
+            if column != conflict_key and column not in mutable_columns
+        )
+        sql += f" WHERE {guards}"
+    return sql
 
 
-_SAVE_DOCUMENT_SQL = _insert_sql("archive_documents", _DOCUMENT_COLUMNS, conflict_key="document_id")
+_SAVE_DOCUMENT_SQL = _insert_sql(
+    "archive_documents",
+    _DOCUMENT_COLUMNS,
+    conflict_key="document_id",
+    mutable_columns=MUTABLE_DOCUMENT_FIELDS,
+)
 _SAVE_LEGAL_HOLD_SQL = _insert_sql(
     "archive_legal_holds", _LEGAL_HOLD_COLUMNS, conflict_key="legal_hold_id"
 )
@@ -129,6 +156,10 @@ class PostgresArchiveDocumentRepository:
         try:
             with self._connect() as connection, connection.cursor() as cursor:
                 cursor.execute(_SAVE_DOCUMENT_SQL, _document_values(metadata))
+                if cursor.rowcount == 0:
+                    raise HistoricalIntegrityError(
+                        "immutable document fields cannot change after archival"
+                    )
         except UniqueViolation as exc:
             raise DuplicateArchiveRequestConflict(
                 "archive request or storage key already belongs to another document"

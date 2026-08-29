@@ -49,6 +49,10 @@ class UnsupportedLifecycleTransitionError(ArchiveError):
     pass
 
 
+class HistoricalIntegrityError(ArchiveError):
+    """A write attempted to change a field that is immutable after a document is archived."""
+
+
 class StorageWriteFailedError(ArchiveError):
     pass
 

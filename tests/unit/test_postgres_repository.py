@@ -30,11 +30,13 @@ class FakeCursor:
         row: Mapping[str, object] | None = None,
         rows: list[Mapping[str, object]] | None = None,
         error: BaseException | None = None,
+        rowcount: int = 1,
     ) -> None:
         self.row = row
         self.rows = rows or []
         self.executions: list[tuple[str, object]] = []
         self.error = error
+        self.rowcount = rowcount
 
     def __enter__(self) -> FakeCursor:
         return self
@@ -264,3 +266,58 @@ def test_postgres_access_audit_repository_persists_and_lists_events() -> None:
 
     assert "INSERT INTO archive_access_audit" in record.executions[0][0]
     assert "IS NOT DISTINCT FROM %s" in listing.executions[0][0]
+
+
+def test_save_sql_updates_only_mutable_columns_and_guards_every_immutable_one() -> None:
+    """The upsert must not be able to rewrite history, column by column."""
+    from app.archive.models import MUTABLE_DOCUMENT_FIELDS
+    from app.archive.postgres_repository import _DOCUMENT_COLUMNS, _SAVE_DOCUMENT_SQL
+
+    set_clause = _SAVE_DOCUMENT_SQL.split("DO UPDATE SET ", 1)[1].split(" WHERE ", 1)[0]
+    updated = {part.split(" = ")[0].strip() for part in set_clause.split(", ")}
+    assert updated == MUTABLE_DOCUMENT_FIELDS, (
+        "the ON CONFLICT update must set exactly the registered mutable fields; "
+        f"unexpected={sorted(updated - MUTABLE_DOCUMENT_FIELDS)} "
+        f"missing={sorted(MUTABLE_DOCUMENT_FIELDS - updated)}"
+    )
+
+    guard_clause = _SAVE_DOCUMENT_SQL.split(" WHERE ", 1)[1]
+    immutable = [
+        column
+        for column in _DOCUMENT_COLUMNS
+        if column != "document_id" and column not in MUTABLE_DOCUMENT_FIELDS
+    ]
+    for column in immutable:
+        assert f"archive_documents.{column} IS NOT DISTINCT FROM EXCLUDED.{column}" in (
+            guard_clause
+        ), f"immutable column {column} is not guarded"
+
+
+def test_save_raises_historical_integrity_error_when_the_guard_blocks_the_update() -> None:
+    """rowcount 0 on the guarded upsert means an immutable field differed."""
+    from app.archive.exceptions import HistoricalIntegrityError
+
+    lookup_cursor = FakeCursor(row=None)
+    write_cursor = FakeCursor(rowcount=0)
+    repository = PostgresArchiveDocumentRepository(
+        "postgresql://unused",
+        connection_factory=ConnectionSequence(lookup_cursor, write_cursor),
+    )
+
+    with pytest.raises(HistoricalIntegrityError):
+        repository.save(_metadata())
+
+    assert write_cursor.executions, "the guarded upsert must have been attempted"
+
+
+def test_save_succeeds_when_the_guarded_upsert_updates_a_row() -> None:
+    lookup_cursor = FakeCursor(row=None)
+    write_cursor = FakeCursor(rowcount=1)
+    repository = PostgresArchiveDocumentRepository(
+        "postgresql://unused",
+        connection_factory=ConnectionSequence(lookup_cursor, write_cursor),
+    )
+
+    saved = repository.save(_metadata())
+
+    assert saved.document_id == "doc_1"
