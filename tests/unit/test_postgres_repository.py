@@ -348,3 +348,30 @@ def test_connection_factory_bounds_connect_and_statement_time(
 
     assert captured["connect_timeout"] == 7
     assert captured["options"] == "-c statement_timeout=1234"
+
+
+def test_audit_listing_pages_in_sql_not_in_python() -> None:
+    """The audit table grows for the life of a document; one page must not load every row."""
+    cursor = FakeCursor(rows=[])
+    repository = PostgresAccessAuditRepository(
+        "postgresql://unused",
+        connection_factory=ConnectionSequence(cursor),
+    )
+
+    repository.list_by_document_id("doc_1", limit=25, offset=50)
+
+    query, parameters = cursor.executions[0]
+    assert "LIMIT %s OFFSET %s" in query
+    assert parameters == ("doc_1", 25, 50)
+
+
+def test_audit_count_uses_a_count_query() -> None:
+    cursor = FakeCursor(row={"total": 7})
+    repository = PostgresAccessAuditRepository(
+        "postgresql://unused",
+        connection_factory=ConnectionSequence(cursor),
+    )
+
+    assert repository.count_by_document_id("doc_1") == 7
+    query, _ = cursor.executions[0]
+    assert "count(*)" in query

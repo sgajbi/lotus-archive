@@ -65,7 +65,15 @@ class AccessAuditRepository(Protocol):
 
     def record(self, event: AccessAuditEvent) -> AccessAuditEvent: ...
 
-    def list_by_document_id(self, document_id: str | None) -> list[AccessAuditEvent]: ...
+    def count_by_document_id(self, document_id: str | None) -> int: ...
+
+    def list_by_document_id(
+        self,
+        document_id: str | None,
+        *,
+        limit: int | None = None,
+        offset: int = 0,
+    ) -> list[AccessAuditEvent]: ...
 
 
 class InMemoryAccessAuditRepository:
@@ -79,8 +87,20 @@ class InMemoryAccessAuditRepository:
         self._events.append(event)
         return event
 
-    def list_by_document_id(self, document_id: str | None) -> list[AccessAuditEvent]:
-        return [event for event in self._events if event.document_id == document_id]
+    def list_by_document_id(
+        self,
+        document_id: str | None,
+        *,
+        limit: int | None = None,
+        offset: int = 0,
+    ) -> list[AccessAuditEvent]:
+        matching = [event for event in self._events if event.document_id == document_id]
+        if limit is None:
+            return matching[offset:]
+        return matching[offset : offset + limit]
+
+    def count_by_document_id(self, document_id: str | None) -> int:
+        return sum(event.document_id == document_id for event in self._events)
 
 
 def access_audit_event(

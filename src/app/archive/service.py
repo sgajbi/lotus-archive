@@ -206,7 +206,7 @@ class ArchiveDocumentService:
         trace_id: str,
         limit: int | None = None,
         offset: int = 0,
-    ) -> list[AccessAuditEvent]:
+    ) -> tuple[list[AccessAuditEvent], int]:
         self.authorization_policy.authorize(
             permission=ArchivePermission.READ_ACCESS_EVENTS,
             caller_context=caller_context,
@@ -221,8 +221,9 @@ class ArchiveDocumentService:
             trace_id=trace_id,
             document_id=document_id,
         )
-        events = self.audit_repository.list_by_document_id(document_id)
-        return events
+        events = self.audit_repository.list_by_document_id(document_id, limit=limit, offset=offset)
+        total = self.audit_repository.count_by_document_id(document_id)
+        return events, total
 
     @archive_metric("retention_lookup")
     def get_retention(

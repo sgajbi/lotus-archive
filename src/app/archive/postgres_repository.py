@@ -277,13 +277,32 @@ class PostgresAccessAuditRepository:
             cursor.execute(_RECORD_AUDIT_SQL, _values(event, _AUDIT_COLUMNS))
         return event
 
-    def list_by_document_id(self, document_id: str | None) -> list[AccessAuditEvent]:
+    def list_by_document_id(
+        self,
+        document_id: str | None,
+        *,
+        limit: int | None = None,
+        offset: int = 0,
+    ) -> list[AccessAuditEvent]:
+        """Page in SQL: the audit table grows for the life of a document, so reads must not
+        load every event to serve one page."""
         with self._connect() as connection, connection.cursor() as cursor:
             cursor.execute(
                 "SELECT * FROM archive_access_audit "
                 "WHERE document_id IS NOT DISTINCT FROM %s "
-                "ORDER BY created_at, audit_event_id",
-                (document_id,),
+                "ORDER BY created_at, audit_event_id "
+                "LIMIT %s OFFSET %s",
+                (document_id, limit, offset),
             )
             rows = cursor.fetchall()
         return [AccessAuditEvent.model_validate(row) for row in rows]
+
+    def count_by_document_id(self, document_id: str | None) -> int:
+        with self._connect() as connection, connection.cursor() as cursor:
+            cursor.execute(
+                "SELECT count(*) AS total FROM archive_access_audit "
+                "WHERE document_id IS NOT DISTINCT FROM %s",
+                (document_id,),
+            )
+            row = cursor.fetchone()
+        return int(row["total"]) if row is not None else 0
