@@ -409,16 +409,18 @@ async def list_access_events(
     context: CallerContext = Depends(caller_context),
     request_trace_id: str = Depends(trace_id),
 ) -> AccessEventListResponse:
-    events = service.list_access_events(
+    page, total_count = service.list_access_events(
         document_id=document_id,
         caller_context=context,
         trace_id=request_trace_id,
+        limit=limit,
+        offset=offset,
     )
-    page, next_offset = _page(events, limit=limit, offset=offset)
+    next_offset = offset + limit if offset + limit < total_count else None
     return AccessEventListResponse(
         document_id=document_id,
         returned_count=len(page),
-        total_count=len(events),
+        total_count=total_count,
         limit=limit,
         offset=offset,
         next_offset=next_offset,
