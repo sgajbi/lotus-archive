@@ -126,3 +126,26 @@ def test_lifecycle_relationship_migration_contains_required_fields() -> None:
     assert "CHECK (source_document_id <> target_document_id)" in migration
     assert "uq_archive_lifecycle_relationships_one_successor" in migration
     assert "uq_archive_lifecycle_relationships_one_origin" in migration
+
+
+def test_access_audit_migration_preserves_support_and_authorization_evidence() -> None:
+    migration = (ROOT / "migrations" / "007_create_archive_access_audit.sql").read_text(
+        encoding="utf-8"
+    )
+
+    for field in (
+        "audit_event_id",
+        "document_id",
+        "event_type",
+        "actor_type",
+        "actor_id",
+        "caller_service",
+        "authorization_decision",
+        "authorization_reason_code",
+        "operation_reason_code",
+        "correlation_id",
+        "trace_id",
+        "created_at",
+    ):
+        assert field in migration
+    assert "idx_archive_access_audit_document_created" in migration
