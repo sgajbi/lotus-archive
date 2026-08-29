@@ -55,12 +55,18 @@ fails the request rather than holding it. The defaults are deliberate ceilings, 
 |---|---|---|
 | `LOTUS_ARCHIVE_DATABASE_CONNECT_TIMEOUT_SECONDS` | `5` | 1–60 |
 | `LOTUS_ARCHIVE_DATABASE_STATEMENT_TIMEOUT_MS` | `30000` | 100–600000 |
+| `LOTUS_ARCHIVE_DATABASE_POOL_MIN_SIZE` | `1` | 0–10, must not exceed max |
+| `LOTUS_ARCHIVE_DATABASE_POOL_MAX_SIZE` | `10` | 1–50 |
 | `LOTUS_ARCHIVE_S3_CONNECT_TIMEOUT_SECONDS` | `5.0` | >0–60 |
 | `LOTUS_ARCHIVE_S3_READ_TIMEOUT_SECONDS` | `30.0` | >0–300 |
 | `LOTUS_ARCHIVE_S3_MAX_ATTEMPTS` | `3` | 1–10, botocore `standard` retry mode |
 
 The statement timeout is set per connection (`-c statement_timeout=...`), so a runaway query is
 cancelled by PostgreSQL itself rather than surviving a client-side disconnect.
+
+Both PostgreSQL repositories draw from **one shared connection pool** per DSN, opened in the
+background at composition so startup never blocks on an unreachable database, and closed on
+application shutdown. The connect-timeout doubles as the pool checkout wait.
 
 The validator enforces five rules, all fail-closed in the direction of refusing to run rather than
 running non-durably:

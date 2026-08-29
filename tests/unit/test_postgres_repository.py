@@ -375,3 +375,47 @@ def test_audit_count_uses_a_count_query() -> None:
     assert repository.count_by_document_id("doc_1") == 7
     query, _ = cursor.executions[0]
     assert "count(*)" in query
+
+
+def test_pooled_connection_factory_configures_and_opens_the_pool(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The pool must carry the #106 bounds, open in the background, and hand back its close."""
+    import app.archive.postgres_repository as module
+
+    captured: dict[str, object] = {}
+
+    class FakePool:
+        def __init__(self, conninfo: str, **kwargs: object) -> None:
+            captured["conninfo"] = conninfo
+            captured.update(kwargs)
+            self.opened_wait: bool | None = None
+
+        def open(self, wait: bool = True) -> None:
+            self.opened_wait = wait
+            captured["opened"] = True
+
+        def connection(self) -> object:  # pragma: no cover - identity only
+            return object()
+
+        def close(self) -> None:  # pragma: no cover - identity only
+            return None
+
+    monkeypatch.setattr(module, "ConnectionPool", FakePool)
+    factory, close = module.pooled_connection_factory(
+        "postgresql://example",
+        connect_timeout_seconds=4,
+        statement_timeout_ms=2500,
+        min_size=2,
+        max_size=6,
+    )
+
+    assert captured["opened"] is True
+    assert captured["min_size"] == 2
+    assert captured["max_size"] == 6
+    assert captured["open"] is False
+    assert captured["timeout"] == 4.0
+    kwargs = captured["kwargs"]
+    assert kwargs["connect_timeout"] == 4  # type: ignore[index]
+    assert kwargs["options"] == "-c statement_timeout=2500"  # type: ignore[index]
+    assert callable(factory) and callable(close)

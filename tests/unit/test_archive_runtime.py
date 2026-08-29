@@ -184,6 +184,11 @@ def test_runtime_threads_operational_bounds_into_both_adapters(
             captured[self._name] = {"args": args, **kwargs}
             return object()
 
+    def fake_pooled_factory(dsn: str, **kwargs: object) -> tuple[object, object]:
+        captured["pool"] = {"dsn": dsn, **kwargs}
+        return object(), lambda: None
+
+    monkeypatch.setattr(runtime_module, "pooled_connection_factory", fake_pooled_factory)
     monkeypatch.setattr(
         runtime_module, "PostgresArchiveDocumentRepository", _Recorder("repository")
     )
@@ -208,10 +213,66 @@ def test_runtime_threads_operational_bounds_into_both_adapters(
     )
     runtime_module.build_archive_service(settings)
 
-    assert captured["repository"]["connect_timeout_seconds"] == 9
-    assert captured["repository"]["statement_timeout_ms"] == 4500
-    assert captured["audit"]["connect_timeout_seconds"] == 9
-    assert captured["audit"]["statement_timeout_ms"] == 4500
+    # The database bounds now travel on the shared pool (issue #107), not the repositories.
+    assert captured["pool"]["connect_timeout_seconds"] == 9
+    assert captured["pool"]["statement_timeout_ms"] == 4500
     assert captured["storage"]["connect_timeout_seconds"] == 2.0
     assert captured["storage"]["read_timeout_seconds"] == 8.0
     assert captured["storage"]["max_attempts"] == 5
+
+
+def test_postgres_composition_shares_one_pool_and_wires_shutdown(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Both repositories must draw from the same pool, and close() must release it (issue #107)."""
+    from base64 import b64encode
+
+    from pydantic import SecretStr
+
+    import app.archive.runtime as runtime_module
+    from app.archive.settings import ArchiveRuntimeSettings
+
+    captured: dict[str, dict[str, object]] = {}
+    closed: list[str] = []
+
+    def fake_pooled_factory(dsn: str, **kwargs: object) -> tuple[object, object]:
+        captured["pool"] = {"dsn": dsn, **kwargs}
+        factory = object()
+        return factory, lambda: closed.append("pool")
+
+    class _Recorder:
+        def __init__(self, name: str):
+            self._name = name
+
+        def __call__(self, *args: object, **kwargs: object) -> object:
+            captured[self._name] = {"args": args, **kwargs}
+            return object()
+
+    monkeypatch.setattr(runtime_module, "pooled_connection_factory", fake_pooled_factory)
+    monkeypatch.setattr(
+        runtime_module, "PostgresArchiveDocumentRepository", _Recorder("repository")
+    )
+    monkeypatch.setattr(runtime_module, "PostgresAccessAuditRepository", _Recorder("audit"))
+    monkeypatch.setattr(runtime_module, "S3ObjectStorage", _Recorder("storage"))
+    monkeypatch.setattr(runtime_module, "ArchiveWriter", _Recorder("writer"))
+
+    settings = ArchiveRuntimeSettings(
+        runtime_profile="production",
+        repository_mode="postgresql",
+        storage_mode="s3",
+        database_url="postgresql://u:p@h/db",
+        database_pool_min_size=2,
+        database_pool_max_size=7,
+        s3_bucket="lotus-archive",
+        idea_lifecycle_decision_private_key_base64=SecretStr(b64encode(b"0" * 32).decode()),
+        idea_lifecycle_decision_signing_key_id="managed-v1",
+    )
+    service = runtime_module.build_archive_service(settings)
+
+    assert captured["pool"]["min_size"] == 2
+    assert captured["pool"]["max_size"] == 7
+    assert (
+        captured["repository"]["connection_factory"] is captured["audit"]["connection_factory"]
+    ), "both repositories must share the single pool"
+    service.close()
+    assert closed == ["pool"]

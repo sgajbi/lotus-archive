@@ -8,3 +8,4 @@ cryptography==50.0.0
 boto3==1.43.73
 botocore==1.43.83
 psycopg[binary]==3.3.4
+psycopg_pool==3.3.1

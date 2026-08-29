@@ -88,12 +88,14 @@ class ArchiveDocumentService:
         audit_repository: AccessAuditRepository,
         authorization_policy: ArchiveAuthorizationPolicy | None = None,
         max_decoded_document_bytes: int = 10 * 1024 * 1024,
+        on_close: tuple[Callable[[], None], ...] = (),
     ) -> None:
         self.writer = writer
         self.repository = repository
         self.storage = storage
         self.audit_repository = audit_repository
         self.authorization_policy = authorization_policy or ArchiveAuthorizationPolicy()
+        self._on_close = on_close
         self.max_decoded_document_bytes = max_decoded_document_bytes
 
     def runtime_readiness(self) -> ArchiveRuntimeReadiness:
@@ -102,6 +104,11 @@ class ArchiveDocumentService:
             storage_ready=_dependency_is_ready(self.storage.check_ready),
             access_audit_ready=_dependency_is_ready(self.audit_repository.check_ready),
         )
+
+    def close(self) -> None:
+        """Release composed resources - today the shared PostgreSQL pool - at app shutdown."""
+        for release in self._on_close:
+            release()
 
     def get_lifecycle_posture(self, document_id: str) -> ArchiveDocumentMetadata:
         metadata = self._refresh_legal_hold_summary(self._get_existing_metadata(document_id))

@@ -29,6 +29,13 @@ Instrumentator().instrument(app).expose(app)
 app.include_router(archive_documents_router)
 
 
+@app.on_event("shutdown")
+async def _close_archive_service() -> None:
+    service = getattr(app.state, "archive_service", None)
+    if service is not None:
+        service.close()
+
+
 def _correlation_id(request: Request) -> str:
     return str(
         getattr(request.state, "correlation_id", request.headers.get("X-Correlation-Id", ""))

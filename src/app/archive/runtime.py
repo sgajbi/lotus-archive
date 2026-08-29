@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass
 
 from app.archive.archive_writer import ArchiveWriter
@@ -7,6 +8,7 @@ from app.archive.audit import AccessAuditRepository, InMemoryAccessAuditReposito
 from app.archive.postgres_repository import (
     PostgresAccessAuditRepository,
     PostgresArchiveDocumentRepository,
+    pooled_connection_factory,
 )
 from app.archive.repository import ArchiveDocumentRepository, InMemoryArchiveDocumentRepository
 from app.archive.s3_storage import S3ObjectStorage
@@ -31,18 +33,25 @@ def build_archive_service(settings: ArchiveRuntimeSettings) -> ArchiveDocumentSe
     repository: ArchiveDocumentRepository
     audit_repository: AccessAuditRepository
     storage: ObjectStorage
+    on_close: tuple[Callable[[], None], ...] = ()
     if settings.repository_mode == "postgresql":
         assert settings.database_url is not None
-        repository = PostgresArchiveDocumentRepository(
+        connection_factory, close_pool = pooled_connection_factory(
             settings.database_url,
             connect_timeout_seconds=settings.database_connect_timeout_seconds,
             statement_timeout_ms=settings.database_statement_timeout_ms,
+            min_size=settings.database_pool_min_size,
+            max_size=settings.database_pool_max_size,
+        )
+        repository = PostgresArchiveDocumentRepository(
+            settings.database_url,
+            connection_factory=connection_factory,
         )
         audit_repository = PostgresAccessAuditRepository(
             settings.database_url,
-            connect_timeout_seconds=settings.database_connect_timeout_seconds,
-            statement_timeout_ms=settings.database_statement_timeout_ms,
+            connection_factory=connection_factory,
         )
+        on_close = (close_pool,)
     else:
         repository = InMemoryArchiveDocumentRepository()
         audit_repository = InMemoryAccessAuditRepository()
@@ -72,6 +81,7 @@ def build_archive_service(settings: ArchiveRuntimeSettings) -> ArchiveDocumentSe
         storage=storage,
         audit_repository=audit_repository,
         max_decoded_document_bytes=settings.max_decoded_document_bytes,
+        on_close=on_close,
     )
 
 

@@ -22,6 +22,7 @@ dependencies = [
   # dependency, pinned to the version the boto3 pin resolves.
   "botocore==1.43.83",
   "psycopg[binary]==3.3.4",
+  "psycopg_pool==3.3.1",
 ]
 
 [project.optional-dependencies]

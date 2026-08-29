@@ -30,6 +30,8 @@ class ArchiveRuntimeSettings(BaseSettings):
     database_url: str | None = Field(default=None)
     database_connect_timeout_seconds: int = Field(default=5, ge=1, le=60)
     database_statement_timeout_ms: int = Field(default=30_000, ge=100, le=600_000)
+    database_pool_min_size: int = Field(default=1, ge=0, le=10)
+    database_pool_max_size: int = Field(default=10, ge=1, le=50)
     s3_bucket: str | None = Field(default=None, min_length=3)
     s3_key_prefix: str = Field(default="archive", min_length=1)
     s3_region: str | None = Field(default=None, min_length=1)
@@ -50,6 +52,8 @@ class ArchiveRuntimeSettings(BaseSettings):
 
     @model_validator(mode="after")
     def validate_runtime_posture(self) -> ArchiveRuntimeSettings:
+        if self.database_pool_min_size > self.database_pool_max_size:
+            raise RuntimeConfigurationError("database pool min size cannot exceed max size")
         local_profile = self.runtime_profile in {"local-development", "test"}
         if not local_profile and self.repository_mode == "in-memory":
             raise RuntimeConfigurationError(
