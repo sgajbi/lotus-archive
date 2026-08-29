@@ -6,4 +6,5 @@ pydantic-settings==2.14.2
 prometheus-fastapi-instrumentator==8.0.2
 cryptography==50.0.0
 boto3==1.43.73
+botocore==1.43.83
 psycopg[binary]==3.3.4

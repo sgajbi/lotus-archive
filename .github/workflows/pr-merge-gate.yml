@@ -45,6 +45,8 @@ jobs:
         run: make typecheck
       - name: OpenAPI Gate
         run: make openapi-gate
+      - name: Code Health Gates
+        run: make code-health-gates
       - name: Migration Gate
         run: make migration-gate
       - name: Security Audit

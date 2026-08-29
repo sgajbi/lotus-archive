@@ -18,6 +18,9 @@ dependencies = [
   "prometheus-fastapi-instrumentator==8.0.2",
   "cryptography==50.0.0",
   "boto3==1.43.73",
+  # botocore is imported directly (s3_storage: Config, exceptions), so it is a direct
+  # dependency, pinned to the version the boto3 pin resolves.
+  "botocore==1.43.83",
   "psycopg[binary]==3.3.4",
 ]
 
@@ -30,11 +33,28 @@ dev = [
   "pytest-cov==7.1.0",
   "httpx2==2.5.0",
   "coverage==7.13.5",
+  "radon==6.0.1",
+  "vulture==2.16",
+  "deptry==0.25.1",
   "pip-audit==2.10.0",
   "msgpack==1.2.1",
   "PyYAML==6.0.3",
   "types-PyYAML==6.0.12.20260518",
 ]
+
+[tool.deptry]
+# `app` is this repository's own package under `src`, not a third-party distribution. Without this
+# deptry reports every internal import as DEP003 "transitive dependency" - 102 findings, all false -
+# which is how a dependency gate ends up being switched off instead of configured.
+known_first_party = ["app", "scripts", "tests"]
+# The `dev` extra holds tooling, so it must not be judged against runtime imports.
+optional_dependencies_dev_groups = ["dev"]
+# `uvicorn` is the ASGI server, invoked from the command line and never imported - structural, no
+# expiry. `coverage` is a dev tool imported by a dev script under `scripts/`, which deptry judges
+# as production code. Both entries match lotus-render and lotus-risk.
+# `pip` is probed by scripts/runtime_dependency_boundary.py precisely to assert its ABSENCE
+# from the runtime image; the import is the check, so it can never be a declared dependency.
+per_rule_ignores = { DEP002 = ["uvicorn"], DEP004 = ["coverage"], DEP003 = ["pip"] }
 
 [tool.ruff]
 line-length = 100

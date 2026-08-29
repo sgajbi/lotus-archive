@@ -1,4 +1,4 @@
-.PHONY: install lint monetary-float-guard typecheck openapi-gate migration-gate test test-unit test-integration test-e2e test-coverage coverage-gate security-audit check ci docker-build docker-release-build release-evidence clean
+.PHONY: install lint monetary-float-guard typecheck openapi-gate migration-gate complexity-gate source-size-gate dead-code-gate dependency-hygiene-gate code-health-gates test test-unit test-integration test-e2e test-coverage coverage-gate security-audit check ci docker-build docker-release-build release-evidence clean
 
 VENV_DIR ?= .venv
 LOTUS_ARCHIVE_VERSION ?= 0.1.0
@@ -70,9 +70,27 @@ coverage-gate:
 security-audit:
 	$(VENV_PYTHON) scripts/security_audit.py
 
-check: lint typecheck openapi-gate migration-gate test
+SOURCE_FILE_MAX_LINES ?= 914
+MAX_CYCLOMATIC_COMPLEXITY ?= 17
+MAX_HIGH_COMPLEXITY_FUNCTIONS ?= 0
 
-ci: lint typecheck openapi-gate migration-gate test-integration test-e2e test-coverage security-audit
+complexity-gate:
+	$(VENV_PYTHON) scripts/python_complexity_inventory.py --limit 20 --max-cc $(MAX_CYCLOMATIC_COMPLEXITY) --max-high-complexity $(MAX_HIGH_COMPLEXITY_FUNCTIONS)
+
+source-size-gate:
+	$(VENV_PYTHON) scripts/source_size_gate.py --max-lines=$(SOURCE_FILE_MAX_LINES)
+
+dead-code-gate:
+	$(VENV_PYTHON) scripts/dead_code_gate.py
+
+dependency-hygiene-gate:
+	$(VENV_PYTHON) -m deptry .
+
+code-health-gates: complexity-gate source-size-gate dead-code-gate dependency-hygiene-gate
+
+check: lint typecheck code-health-gates openapi-gate migration-gate test
+
+ci: lint typecheck code-health-gates openapi-gate migration-gate test-integration test-e2e test-coverage security-audit
 
 docker-build:
 	docker build $(DOCKER_BUILD_ARGS) -t $(LOTUS_ARCHIVE_IMAGE_REF) .
