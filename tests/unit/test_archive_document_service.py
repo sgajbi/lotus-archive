@@ -1040,3 +1040,215 @@ def test_purge_evaluation_reports_missing_retention_date(tmp_path: Path) -> None
     assert purge_eligible is False
     assert reason_code == "retain_until_date_missing"
     assert metadata.purge_status == PurgeStatus.NOT_ELIGIBLE
+
+
+def test_set_legal_hold_retry_converges_on_the_existing_active_hold(tmp_path: Path) -> None:
+    service = _service(tmp_path)
+    metadata = service.create_document(
+        command=_create_request(),
+        caller_context=_caller(),
+        trace_id="trace-create",
+    )
+    command = LegalHoldCreateCommand(
+        hold_reason="Regulatory review",
+        authority_reference="CASE-001",
+    )
+    first = service.set_legal_hold(
+        document_id=metadata.document_id,
+        command=command,
+        caller_context=_caller(),
+        trace_id="trace-hold",
+    )
+
+    retried = service.set_legal_hold(
+        document_id=metadata.document_id,
+        command=command,
+        caller_context=_caller(),
+        trace_id="trace-hold-retry",
+    )
+
+    assert retried.legal_hold_id == first.legal_hold_id
+    assert len(service.repository.list_legal_holds(metadata.document_id)) == 1
+    events = service.audit_repository.list_by_document_id(metadata.document_id)
+    assert events[-1].event_type == AccessEventType.LEGAL_HOLD_SET
+    assert events[-1].operation_reason_code == "legal_hold_already_active"
+
+
+def test_set_legal_hold_with_a_different_authority_creates_a_second_hold(tmp_path: Path) -> None:
+    service = _service(tmp_path)
+    metadata = service.create_document(
+        command=_create_request(),
+        caller_context=_caller(),
+        trace_id="trace-create",
+    )
+    first = service.set_legal_hold(
+        document_id=metadata.document_id,
+        command=LegalHoldCreateCommand(
+            hold_reason="Regulatory review",
+            authority_reference="CASE-001",
+        ),
+        caller_context=_caller(),
+        trace_id="trace-hold",
+    )
+
+    second = service.set_legal_hold(
+        document_id=metadata.document_id,
+        command=LegalHoldCreateCommand(
+            hold_reason="Regulatory review",
+            authority_reference="CASE-002",
+        ),
+        caller_context=_caller(),
+        trace_id="trace-hold-2",
+    )
+
+    assert second.legal_hold_id != first.legal_hold_id
+    assert len(service.repository.list_legal_holds(metadata.document_id)) == 2
+
+
+def test_set_legal_hold_after_release_creates_a_new_hold(tmp_path: Path) -> None:
+    service = _service(tmp_path)
+    metadata = service.create_document(
+        command=_create_request(),
+        caller_context=_caller(),
+        trace_id="trace-create",
+    )
+    command = LegalHoldCreateCommand(
+        hold_reason="Regulatory review",
+        authority_reference="CASE-001",
+    )
+    first = service.set_legal_hold(
+        document_id=metadata.document_id,
+        command=command,
+        caller_context=_caller(),
+        trace_id="trace-hold",
+    )
+    service.release_legal_hold(
+        document_id=metadata.document_id,
+        legal_hold_id=first.legal_hold_id,
+        release_reason="Review complete",
+        caller_context=_caller(),
+        trace_id="trace-release",
+    )
+
+    second = service.set_legal_hold(
+        document_id=metadata.document_id,
+        command=command,
+        caller_context=_caller(),
+        trace_id="trace-hold-again",
+    )
+
+    assert second.legal_hold_id != first.legal_hold_id
+    assert second.hold_status is LegalHoldStatus.ACTIVE
+
+
+def test_supersede_retry_echoes_the_recorded_relationship(tmp_path: Path) -> None:
+    service = _service(tmp_path)
+    historical = service.create_document(
+        command=_create_request_with_id("archive-request-historical"),
+        caller_context=_caller(),
+        trace_id="trace-create-old",
+    )
+    current = service.create_document(
+        command=_create_request_with_id("archive-request-current"),
+        caller_context=_caller(),
+        trace_id="trace-create-new",
+    )
+    command = LifecycleTransitionCommand(
+        target_document_id=current.document_id,
+        transition_reason="Quarterly report replaced by approved version",
+    )
+    relationship, _ = service.supersede_document(
+        document_id=historical.document_id,
+        command=command,
+        caller_context=_caller(),
+        trace_id="trace-supersede",
+    )
+
+    retried_relationship, retried_current = service.supersede_document(
+        document_id=historical.document_id,
+        command=command,
+        caller_context=_caller(),
+        trace_id="trace-supersede-retry",
+    )
+
+    assert retried_relationship.lifecycle_relationship_id == (
+        relationship.lifecycle_relationship_id
+    )
+    assert retried_current.document_id == current.document_id
+    assert len(service.repository.list_lifecycle_relationships(historical.document_id)) == 1
+    events = service.audit_repository.list_by_document_id(historical.document_id)
+    assert events[-1].event_type == AccessEventType.LIFECYCLE_SUPERSEDE
+    assert events[-1].operation_reason_code == "lifecycle_transition_already_recorded"
+
+
+def test_retrying_an_applied_transition_as_a_different_type_still_conflicts(
+    tmp_path: Path,
+) -> None:
+    service = _service(tmp_path)
+    historical = service.create_document(
+        command=_create_request_with_id("archive-request-historical"),
+        caller_context=_caller(),
+        trace_id="trace-create-old",
+    )
+    current = service.create_document(
+        command=_create_request_with_id("archive-request-current"),
+        caller_context=_caller(),
+        trace_id="trace-create-new",
+    )
+    command = LifecycleTransitionCommand(
+        target_document_id=current.document_id,
+        transition_reason="Quarterly report replaced by approved version",
+    )
+    service.correct_document(
+        document_id=historical.document_id,
+        command=command,
+        caller_context=_caller(),
+        trace_id="trace-correct",
+    )
+
+    with pytest.raises(SupersessionConflictError):
+        service.supersede_document(
+            document_id=historical.document_id,
+            command=command,
+            caller_context=_caller(),
+            trace_id="trace-supersede-conflict",
+        )
+
+
+def test_superseding_to_a_second_target_still_conflicts(tmp_path: Path) -> None:
+    service = _service(tmp_path)
+    historical = service.create_document(
+        command=_create_request_with_id("archive-request-historical"),
+        caller_context=_caller(),
+        trace_id="trace-create-old",
+    )
+    current = service.create_document(
+        command=_create_request_with_id("archive-request-current"),
+        caller_context=_caller(),
+        trace_id="trace-create-new",
+    )
+    rival = service.create_document(
+        command=_create_request_with_id("archive-request-rival"),
+        caller_context=_caller(),
+        trace_id="trace-create-rival",
+    )
+    service.supersede_document(
+        document_id=historical.document_id,
+        command=LifecycleTransitionCommand(
+            target_document_id=current.document_id,
+            transition_reason="Quarterly report replaced by approved version",
+        ),
+        caller_context=_caller(),
+        trace_id="trace-supersede",
+    )
+
+    with pytest.raises(SupersessionConflictError):
+        service.supersede_document(
+            document_id=historical.document_id,
+            command=LifecycleTransitionCommand(
+                target_document_id=rival.document_id,
+                transition_reason="Second replacement attempt",
+            ),
+            caller_context=_caller(),
+            trace_id="trace-supersede-rival",
+        )
