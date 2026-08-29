@@ -128,6 +128,29 @@ def test_makefile_tags_local_and_release_images_with_build_metadata() -> None:
     assert "scripts/generate_release_evidence.py" in makefile
 
 
+def test_dispatch_tags_are_reclaimed_and_builds_pull_fresh_bases() -> None:
+    """Pin the issue #87 fixes so neither can be silently removed.
+
+    The dispatcher mints an immutable main-releasability-<sha> tag per merge; the reclaim job is
+    what stops those accumulating forever. It must never change the gate's verdict, so every
+    fallible piece carries continue-on-error. And both image builds must --pull so scan freshness
+    is a property of the build, not of runner cache behaviour.
+    """
+    workflow = yaml.safe_load(_read(".github/workflows/main-releasability.yml"))
+    reclaim = workflow["jobs"]["reclaim-dispatch-tag"]
+
+    assert reclaim["continue-on-error"] is True
+    assert "always()" in reclaim["if"]
+    assert "startsWith(github.ref_name, 'main-releasability-')" in reclaim["if"]
+    steps = {step.get("name", step.get("uses", "")): step for step in reclaim["steps"]}
+    delete_step = steps["Delete consumed immutable dispatch tag"]
+    assert delete_step["continue-on-error"] is True
+    assert delete_step["run"] == "python scripts/reclaim_main_releasability_tag.py"
+
+    makefile = _read("Makefile")
+    assert "DOCKER_BUILD_ARGS := --pull " in makefile
+
+
 def test_release_workflows_record_image_identity_evidence() -> None:
     main_workflow = _read(".github/workflows/main-releasability.yml")
     pr_workflow = _read(".github/workflows/pr-merge-gate.yml")
