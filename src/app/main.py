@@ -7,7 +7,11 @@ from app.archive.error_handlers import register_archive_exception_handlers
 from app.archive.metrics import record_archive_supportability, validate_archive_metric_contracts
 from app.archive.runtime import runtime_posture
 from app.archive.settings import ArchiveRuntimeSettings
-from app.archive.service_profile import archive_supportability, service_posture
+from app.archive.service_profile import (
+    archive_supportability,
+    measured_unavailability_reason,
+    service_posture,
+)
 from app.archive.service import ArchiveDocumentService
 from app.archive.build_metadata import BuildMetadata, build_metadata
 from app.contracts.errors import error_response
@@ -90,13 +94,30 @@ async def health_live() -> dict[str, str]:
 
 
 @app.get("/health/ready")
-async def health_ready(response: Response) -> dict[str, str]:
+async def health_ready(
+    response: Response,
+    service: ArchiveDocumentService = Depends(archive_service),
+) -> dict[str, str]:
     if bool(getattr(app.state, "is_draining", False)):
         response.status_code = status.HTTP_503_SERVICE_UNAVAILABLE
         return {"status": "draining"}
     posture = runtime_posture(app.state.archive_runtime_settings)
     if posture.state == "unavailable":
         response.status_code = status.HTTP_503_SERVICE_UNAVAILABLE
+        return {"status": posture.state, "reason": posture.reason}
+    # Configuration says the runtime is composable; now measure whether the composed
+    # dependencies actually answer. A configured-but-unreachable database must take
+    # this instance out of rotation, not keep reporting ready from settings shape.
+    # Probe latency is bounded by the configured connect/statement timeouts.
+    readiness = service.runtime_readiness()
+    measured_reason = measured_unavailability_reason(
+        repository_ready=readiness.repository_ready,
+        storage_ready=readiness.storage_ready,
+        access_audit_ready=readiness.access_audit_ready,
+    )
+    if measured_reason is not None:
+        response.status_code = status.HTTP_503_SERVICE_UNAVAILABLE
+        return {"status": "unavailable", "reason": measured_reason}
     return {"status": posture.state, "reason": posture.reason}
 
 

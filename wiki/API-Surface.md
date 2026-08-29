@@ -35,7 +35,7 @@ header the caller sets about itself.
 |---|---|
 | `GET /health` | service health with identity |
 | `GET /health/live` | process liveness only |
-| `GET /health/ready` | drain posture and runtime posture; `503` when draining or unavailable |
+| `GET /health/ready` | drain posture, runtime posture, and measured dependency readiness; `503` when draining, unavailable, or a composed dependency fails its probe |
 | `GET /metadata` | service posture, runtime posture, supportability, build metadata |
 | `GET /metrics` | Prometheus exposition |
 | `GET /version` | source-safe build provenance |
