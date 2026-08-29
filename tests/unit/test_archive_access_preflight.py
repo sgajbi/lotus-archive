@@ -15,6 +15,7 @@ from app.archive.audit import InMemoryAccessAuditRepository
 from app.archive.exceptions import (
     ArchiveDocumentLookupTimeoutError,
     ArchiveDocumentLookupUnavailableError,
+    MetadataValidationError,
 )
 from app.archive.repository import (
     ArchiveDocumentBatchLookup,
@@ -154,9 +155,17 @@ def test_preflight_uses_one_lookup_and_preserves_order_and_scope_redaction(
     assert [item.document_id for item in result.items] == [denied_id, "doc_missing", allowed_id]
     assert [item.state for item in result.items] == [
         ArchiveAccessState.DENIED,
-        ArchiveAccessState.MISSING,
+        ArchiveAccessState.DENIED,
         ArchiveAccessState.ALLOWED,
     ]
+    # The existence-oracle invariant (issue #88): a cross-tenant id and a non-existent id are
+    # byte-identical in the response apart from the id itself.
+    denied_item, missing_item = result.items[0], result.items[1]
+    assert (denied_item.state, denied_item.reason_code) == (
+        missing_item.state,
+        missing_item.reason_code,
+    )
+    assert denied_item.reason_code.value == "not_accessible"
     assert result.result_state is ArchiveAccessResultState.COMPLETE
     assert all("storage" not in item.reason_code.value for item in result.items)
 
@@ -174,7 +183,7 @@ def test_preflight_reports_partial_lookup_without_fanout(tmp_path: Path) -> None
     assert repository.batch_lookups == [("doc_allowed", "doc_unavailable")]
     assert result.result_state is ArchiveAccessResultState.PARTIAL
     assert [item.state for item in result.items] == [
-        ArchiveAccessState.MISSING,
+        ArchiveAccessState.DENIED,
         ArchiveAccessState.UNAVAILABLE,
     ]
 
@@ -244,3 +253,82 @@ def test_single_document_metadata_denies_scope_mismatch_before_publication(
             caller_context=_caller(tenant_id="tenant-other", region="EMEA"),
             trace_id="trace-single-scope",
         )
+
+
+def test_preflight_audit_keeps_granular_reasons_the_response_hides(tmp_path: Path) -> None:
+    """The response collapses to not_accessible; the audit must keep the real reason (issue #88)."""
+    repository = CountingArchiveRepository()
+    audit = InMemoryAccessAuditRepository()
+    storage = FilesystemObjectStorage(tmp_path / "objects")
+    service = ArchiveDocumentService(
+        writer=ArchiveWriter(repository=repository, storage=storage),
+        repository=repository,
+        storage=storage,
+        audit_repository=audit,
+    )
+    cross_tenant_id = _create_document(
+        service, archive_request_id="req-audit-cross", tenant_id="tenant-other"
+    )
+
+    result = service.preflight_document_access(
+        document_ids=(cross_tenant_id, "doc_missing"),
+        caller_context=_caller(),
+        trace_id="trace-preflight-audit",
+    )
+
+    assert [item.reason_code.value for item in result.items] == [
+        "not_accessible",
+        "not_accessible",
+    ]
+
+    def recorded_reason(document_id: str) -> str:
+        events = [
+            event
+            for event in audit.list_by_document_id(document_id)
+            if event.event_type.value == "batch_access_preflight"
+        ]
+        assert events, f"no preflight audit event for {document_id}"
+        return events[-1].authorization_reason_code
+
+    assert recorded_reason(cross_tenant_id) == "caller_scope_mismatch"
+    assert recorded_reason("doc_missing") == "document_not_found"
+
+
+def test_preflight_accepts_exactly_the_documented_maximum(tmp_path: Path) -> None:
+    repository = CountingArchiveRepository()
+    service = _service(tmp_path, repository)
+
+    result = service.preflight_document_access(
+        document_ids=tuple(f"doc_{index}" for index in range(100)),
+        caller_context=_caller(),
+        trace_id="trace-preflight-max",
+    )
+
+    assert len(result.items) == 100
+
+
+def test_preflight_rejects_one_over_the_documented_maximum(tmp_path: Path) -> None:
+    """The bound must hold at the service layer, not only in the HTTP model (issue #88)."""
+    repository = CountingArchiveRepository()
+    service = _service(tmp_path, repository)
+
+    with pytest.raises(MetadataValidationError):
+        service.preflight_document_access(
+            document_ids=tuple(f"doc_{index}" for index in range(101)),
+            caller_context=_caller(),
+            trace_id="trace-preflight-over",
+        )
+    assert repository.batch_lookups == []
+
+
+def test_preflight_rejects_an_empty_id_tuple_at_the_service_layer(tmp_path: Path) -> None:
+    repository = CountingArchiveRepository()
+    service = _service(tmp_path, repository)
+
+    with pytest.raises(MetadataValidationError):
+        service.preflight_document_access(
+            document_ids=(),
+            caller_context=_caller(),
+            trace_id="trace-preflight-empty",
+        )
+    assert repository.batch_lookups == []

@@ -13,6 +13,8 @@ from app.archive.commands import (
     LifecycleTransitionCommand,
 )
 from app.archive.access_preflight import (
+    EXISTENCE_REVEALING_REASON_CODES,
+    MAX_PREFLIGHT_DOCUMENT_IDS,
     ArchiveAccessPreflightItem,
     ArchiveAccessPreflightResult,
     ArchiveAccessReasonCode,
@@ -435,6 +437,13 @@ class ArchiveDocumentService:
         caller_context: CallerContext,
         trace_id: str,
     ) -> ArchiveAccessPreflightResult:
+        if not document_ids:
+            raise MetadataValidationError("access preflight requires at least one document id")
+        if len(document_ids) > MAX_PREFLIGHT_DOCUMENT_IDS:
+            raise MetadataValidationError(
+                "access preflight accepts at most "
+                f"{MAX_PREFLIGHT_DOCUMENT_IDS} document ids per request"
+            )
         self.authorization_policy.authorize(
             permission=ArchivePermission.READ_BATCH_ACCESS_PREFLIGHT,
             caller_context=caller_context,
@@ -460,12 +469,13 @@ class ArchiveDocumentService:
             )
             self._record_preflight_audit(
                 items=items,
+                audit_reasons=tuple(item.reason_code for item in items),
                 caller_context=caller_context,
                 trace_id=trace_id,
             )
             return result
 
-        items = tuple(
+        evaluated = tuple(
             self._preflight_item(
                 document_id=document_id,
                 metadata=lookup.documents.get(document_id),
@@ -474,12 +484,15 @@ class ArchiveDocumentService:
             )
             for document_id in document_ids
         )
+        items = tuple(item for item, _ in evaluated)
+        audit_reasons = tuple(reason for _, reason in evaluated)
         result = ArchiveAccessPreflightResult(
             items=items,
             result_state=result_state_for_items(items),
         )
         self._record_preflight_audit(
             items=items,
+            audit_reasons=audit_reasons,
             caller_context=caller_context,
             trace_id=trace_id,
         )
@@ -609,37 +622,56 @@ class ArchiveDocumentService:
         metadata: ArchiveDocumentMetadata | None,
         unavailable: bool,
         caller_context: CallerContext,
-    ) -> ArchiveAccessPreflightItem:
+    ) -> tuple[ArchiveAccessPreflightItem, ArchiveAccessReasonCode]:
+        """Return the caller-facing item plus the granular reason for the audit record.
+
+        The two deliberately diverge for existence-revealing outcomes: a missing id, a
+        cross-tenant id, and a scope-less record all present as DENIED/not_accessible, so the
+        response cannot be used as an existence oracle. The audit keeps the real reason.
+        """
         if unavailable:
-            return ArchiveAccessPreflightItem(
+            item = ArchiveAccessPreflightItem(
                 document_id=document_id,
                 state=ArchiveAccessState.UNAVAILABLE,
                 reason_code=ArchiveAccessReasonCode.LOOKUP_UNAVAILABLE,
             )
+            return item, ArchiveAccessReasonCode.LOOKUP_UNAVAILABLE
         if metadata is None:
-            return ArchiveAccessPreflightItem(
-                document_id=document_id,
-                state=ArchiveAccessState.MISSING,
-                reason_code=ArchiveAccessReasonCode.DOCUMENT_NOT_FOUND,
+            granular = ArchiveAccessReasonCode.DOCUMENT_NOT_FOUND
+        else:
+            decision = self.authorization_policy.document_scope_decision(
+                metadata=metadata,
+                caller_context=caller_context,
             )
-        decision = self.authorization_policy.document_scope_decision(
-            metadata=metadata,
-            caller_context=caller_context,
-        )
-        return ArchiveAccessPreflightItem(
+            granular = decision.reason_code
+        if granular in EXISTENCE_REVEALING_REASON_CODES:
+            item = ArchiveAccessPreflightItem(
+                document_id=document_id,
+                state=ArchiveAccessState.DENIED,
+                reason_code=ArchiveAccessReasonCode.NOT_ACCESSIBLE,
+            )
+            return item, granular
+        item = ArchiveAccessPreflightItem(
             document_id=document_id,
             state=decision.state,
             reason_code=decision.reason_code,
         )
+        return item, granular
 
     def _record_preflight_audit(
         self,
         *,
         items: tuple[ArchiveAccessPreflightItem, ...],
+        audit_reasons: tuple[ArchiveAccessReasonCode, ...],
         caller_context: CallerContext,
         trace_id: str,
     ) -> None:
-        for item in items:
+        """Record the granular reason per item, not the collapsed response reason.
+
+        The response deliberately hides whether a denied id exists (issue #88); the audit is
+        where an investigator distinguishes document_not_found from caller_scope_mismatch.
+        """
+        for item, audit_reason in zip(items, audit_reasons, strict=True):
             self.audit_repository.record(
                 access_audit_event(
                     event_type=AccessEventType.BATCH_ACCESS_PREFLIGHT,
@@ -650,8 +682,8 @@ class ArchiveDocumentService:
                         if item.state is ArchiveAccessState.ALLOWED
                         else AuthorizationDecision.DENIED
                     ),
-                    authorization_reason_code=item.reason_code.value,
-                    operation_reason_code=item.reason_code.value,
+                    authorization_reason_code=audit_reason.value,
+                    operation_reason_code=audit_reason.value,
                     document_id=item.document_id,
                 )
             )
