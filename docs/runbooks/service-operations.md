@@ -29,7 +29,8 @@ boundary.
 ## Health and Readiness
 
 - Liveness: /health/live
-- Readiness: /health/ready
+- Readiness: /health/ready (measured: probes the composed repository, storage, and access-audit
+  adapters and returns the same bounded unavailability reason as `/metadata` supportability)
 - General health: `/health`
 - Metadata and RFC-0108 archive supportability posture: `/metadata`
 - Runtime build and image provenance metadata: `/version`

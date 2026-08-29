@@ -105,6 +105,26 @@ ArchiveSupportabilityReason = Literal[
 ArchiveSupportabilityFreshness = Literal["current", "unknown"]
 
 
+def measured_unavailability_reason(
+    *,
+    repository_ready: bool,
+    storage_ready: bool,
+    access_audit_ready: bool,
+) -> ArchiveSupportabilityReason | None:
+    """One bounded reason per outage, repository before storage before audit.
+
+    Shared by /health/ready and the /metadata supportability block so the two
+    surfaces report the same reason for the same outage and cannot drift.
+    """
+    if not repository_ready:
+        return "archive_repository_unavailable"
+    if not storage_ready:
+        return "archive_storage_unavailable"
+    if not access_audit_ready:
+        return "archive_access_audit_unavailable"
+    return None
+
+
 def archive_supportability(
     *,
     is_draining: bool,
@@ -116,20 +136,17 @@ def archive_supportability(
     state: ArchiveSupportabilityState = "ready"
     reason: ArchiveSupportabilityReason = "archive_supportability_ready"
     freshness_bucket: ArchiveSupportabilityFreshness = "current"
+    measured_reason = measured_unavailability_reason(
+        repository_ready=repository_ready,
+        storage_ready=storage_ready,
+        access_audit_ready=access_audit_ready,
+    )
     if is_draining:
         state = "degraded"
         reason = "archive_supportability_draining"
-    elif not repository_ready:
+    elif measured_reason is not None:
         state = "unavailable"
-        reason = "archive_repository_unavailable"
-        freshness_bucket = "unknown"
-    elif not storage_ready:
-        state = "unavailable"
-        reason = "archive_storage_unavailable"
-        freshness_bucket = "unknown"
-    elif not access_audit_ready:
-        state = "unavailable"
-        reason = "archive_access_audit_unavailable"
+        reason = measured_reason
         freshness_bucket = "unknown"
 
     retrieval_supported = repository_ready and storage_ready

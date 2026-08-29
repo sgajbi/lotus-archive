@@ -3,6 +3,7 @@ from app.archive.service_profile import (
     SUPPORTED_ARCHIVE_FEATURES,
     UNSUPPORTED_PRODUCT_CAPABILITIES,
     archive_supportability,
+    measured_unavailability_reason,
     service_posture,
 )
 
@@ -130,3 +131,30 @@ def test_archive_supportability_reports_access_audit_unavailable() -> None:
     assert supportability["reason"] == "archive_access_audit_unavailable"
     assert supportability["accessAuditSupported"] is False
     assert supportability["retrievalSupported"] is True
+
+
+def test_measured_unavailability_reason_orders_repository_before_storage_before_audit() -> None:
+    assert (
+        measured_unavailability_reason(
+            repository_ready=False, storage_ready=False, access_audit_ready=False
+        )
+        == "archive_repository_unavailable"
+    )
+    assert (
+        measured_unavailability_reason(
+            repository_ready=True, storage_ready=False, access_audit_ready=False
+        )
+        == "archive_storage_unavailable"
+    )
+    assert (
+        measured_unavailability_reason(
+            repository_ready=True, storage_ready=True, access_audit_ready=False
+        )
+        == "archive_access_audit_unavailable"
+    )
+    assert (
+        measured_unavailability_reason(
+            repository_ready=True, storage_ready=True, access_audit_ready=True
+        )
+        is None
+    )

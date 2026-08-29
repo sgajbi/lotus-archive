@@ -16,8 +16,9 @@ rather than repeated here.
 
 ### Readiness
 
-`/health/ready` returns `503` in two cases: the instance is draining, or `runtime_posture` reports
-`unavailable`. Otherwise it returns the posture state and reason.
+`/health/ready` returns `503` in three cases: the instance is draining, `runtime_posture` reports
+`unavailable`, or a composed dependency fails its live readiness probe. Otherwise it returns the
+posture state and reason.
 
 The posture states are:
 
@@ -27,10 +28,14 @@ The posture states are:
 | `unavailable` | `durable_archive_runtime_missing` | a non-local profile without durable metadata or storage |
 | `ready` | `durable_archive_runtime_configured` | durable metadata **and** durable storage |
 
-`ready` is reachable for the production PostgreSQL + S3 composition. This route records configured
-posture, not a live dependency probe. Use the measured supportability block on `/metadata` alongside
-readiness when investigating a running instance. `degraded` remains expected for local and test
-profiles.
+`ready` is reachable for the production PostgreSQL + S3 composition and is measured, not assumed:
+after the configured posture passes, the route probes the composed repository, object storage, and
+access-audit adapters and returns `503 unavailable` with the same bounded reason the `/metadata`
+supportability block uses (`archive_repository_unavailable`, `archive_storage_unavailable`,
+`archive_access_audit_unavailable`) when one fails. A configured-but-unreachable database therefore
+takes the instance out of rotation instead of reporting `ready` from settings shape. Probe latency
+is bounded by the configured connect and statement timeouts. `degraded` remains expected for local
+and test profiles.
 
 ### Measured supportability
 
@@ -93,7 +98,7 @@ contract in `archive_access_audit`, indexed by document and creation time.
 | every read of one historical document is refused | inspect the access event reason; `document_scope_unavailable` identifies incomplete scope on a historical or migrated record, while new writes require both tenant and region |
 | purge refused | `purge-evaluation` returns the reason: hold active, no retention date, or retention still running |
 | `409 document_checksum_mismatch` | stored bytes no longer match the recorded checksum — treat as an integrity incident, not a retry |
-| readiness `503` | draining, or a non-local profile that cannot compose a durable runtime |
+| readiness `503` | draining, a non-local profile that cannot compose a durable runtime, or a measured dependency outage — the reason names which dependency failed |
 | metadata supportability `unavailable` | use the bounded reason to isolate repository, storage, or access-audit readiness before inspecting support-safe infrastructure diagnostics |
 
 ## Procedures

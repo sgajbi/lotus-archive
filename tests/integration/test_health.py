@@ -7,11 +7,31 @@ from app.archive.api import archive_service
 from app.archive.settings import ArchiveRuntimeSettings
 
 
+def _service_with_readiness(
+    *,
+    repository_ready: bool = True,
+    storage_ready: bool = True,
+    access_audit_ready: bool = True,
+) -> SimpleNamespace:
+    return SimpleNamespace(
+        runtime_readiness=lambda: SimpleNamespace(
+            repository_ready=repository_ready,
+            storage_ready=storage_ready,
+            access_audit_ready=access_audit_ready,
+        )
+    )
+
+
 def test_health_endpoints() -> None:
     client = TestClient(app)
     assert client.get("/health").status_code == 200
     assert client.get("/health/live").status_code == 200
-    assert client.get("/health/ready").status_code == 200
+    ready = client.get("/health/ready")
+    assert ready.status_code == 200
+    assert ready.json() == {
+        "status": "degraded",
+        "reason": "explicit_local_development_runtime",
+    }
 
 
 def test_correlation_and_trace_header_propagation() -> None:
@@ -78,6 +98,7 @@ def test_readiness_reports_draining_state() -> None:
 
 def test_readiness_reports_unavailable_runtime_state() -> None:
     client = TestClient(app)
+    app.dependency_overrides[archive_service] = _service_with_readiness
     original_settings = app.state.archive_runtime_settings
     app.state.archive_runtime_settings = ArchiveRuntimeSettings.model_construct(
         runtime_profile="production",
@@ -96,6 +117,68 @@ def test_readiness_reports_unavailable_runtime_state() -> None:
         }
     finally:
         app.state.archive_runtime_settings = original_settings
+        app.dependency_overrides.clear()
+
+
+def test_readiness_reports_measured_repository_outage() -> None:
+    app.dependency_overrides[archive_service] = lambda: _service_with_readiness(
+        repository_ready=False
+    )
+    try:
+        response = TestClient(app).get("/health/ready")
+    finally:
+        app.dependency_overrides.clear()
+
+    assert response.status_code == 503
+    assert response.json() == {
+        "status": "unavailable",
+        "reason": "archive_repository_unavailable",
+    }
+
+
+def test_readiness_reports_measured_storage_outage() -> None:
+    app.dependency_overrides[archive_service] = lambda: _service_with_readiness(storage_ready=False)
+    try:
+        response = TestClient(app).get("/health/ready")
+    finally:
+        app.dependency_overrides.clear()
+
+    assert response.status_code == 503
+    assert response.json() == {
+        "status": "unavailable",
+        "reason": "archive_storage_unavailable",
+    }
+
+
+def test_readiness_reports_measured_access_audit_outage() -> None:
+    app.dependency_overrides[archive_service] = lambda: _service_with_readiness(
+        access_audit_ready=False
+    )
+    try:
+        response = TestClient(app).get("/health/ready")
+    finally:
+        app.dependency_overrides.clear()
+
+    assert response.status_code == 503
+    assert response.json() == {
+        "status": "unavailable",
+        "reason": "archive_access_audit_unavailable",
+    }
+
+
+def test_readiness_draining_outranks_measured_outage() -> None:
+    app.dependency_overrides[archive_service] = lambda: _service_with_readiness(
+        repository_ready=False
+    )
+    app.state.is_draining = True
+    try:
+        response = TestClient(app).get("/health/ready")
+    finally:
+        app.state.is_draining = False
+        app.dependency_overrides.clear()
+
+    assert response.status_code == 503
+    assert response.json()["status"] == "draining"
 
 
 def test_metadata_reports_archive_supportability() -> None:
