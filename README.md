@@ -90,5 +90,4 @@ Deep reference material that belongs next to the code:
 | gap | tracked |
 |---|---|
 | `/metadata` supportability is declared, not measured | [#91](https://github.com/sgajbi/lotus-archive/issues/91) |
-| `tenant_id` optional on write, required on read | [#93](https://github.com/sgajbi/lotus-archive/issues/93) |
 | Idea lifecycle decisions not certified | [#55](https://github.com/sgajbi/lotus-archive/issues/55) |

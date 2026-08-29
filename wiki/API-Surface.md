@@ -69,11 +69,8 @@ reporting period start must not follow its end, retention start must not follow 
 each optional summary is bound to the report type and template it belongs with. A reviewed advisory
 narrative on anything but a `portfolio_review` using the `portfolio-review` template is rejected, as
 is an Idea evidence pack outside a `proof_pack` on `proof-pack` with
-`dpm_proof_pack_report_input.v1`.
-
-**`tenant_id` is optional here and required to read the document back.** A document archived without
-one is stored and then permanently unreadable — [#93](https://github.com/sgajbi/lotus-archive/issues/93).
-Always send it.
+`dpm_proof_pack_report_input.v1`. `tenant_id` is also required and non-empty because the same tenant
+scope authorizes every later metadata or binary read. A missing tenant is rejected before storage.
 
 The service returns a `document_id`, the storage coordinates it assigned, a SHA-256 `checksum`
 computed and verified at write, and `size_bytes`.

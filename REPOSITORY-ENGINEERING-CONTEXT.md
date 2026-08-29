@@ -204,6 +204,9 @@ dispatch ref is a tag rather than `main`.
 15. Release images build and install only the application wheel plus declared runtime
     dependencies. Build-system and CI-tool pins must remain at vendor-fixed versions, and the
     CRITICAL/HIGH image scan must pass before image signing or provenance attestation.
+16. Generated-document admission requires a non-empty `tenant_id` and `region`. The writer must use
+    that source-backed scope directly in the storage key; do not add unspecified-scope fallbacks
+    that allow a record to be stored but make every authorized read unavailable.
 
 ## Context Maintenance Rule
 

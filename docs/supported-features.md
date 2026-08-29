@@ -71,7 +71,7 @@ Workbench-facing archive retrieval is supported only through the `lotus-workbenc
 
 | Capability | Support state | Backing implementation |
 | --- | --- | --- |
-| Generated-document archival | `ready` | `POST /documents`, `ArchiveWriter`, metadata model, storage adapter, checksum validation, and idempotency tests. |
+| Generated-document archival | `ready` | `POST /documents`, `ArchiveWriter`, metadata model, required tenant scope, storage adapter, checksum validation, and idempotency tests. Requests without a non-empty tenant are rejected before storage. |
 | Controlled document metadata lookup | `ready` | `GET /documents/{document_id}` with caller-context enforcement, authorization, audit, and support-safe response model. |
 | Controlled document binary download | `ready` | `GET /documents/{document_id}/download` with caller-context enforcement, authorization, storage retrieval, checksum verification, and audit. |
 | Batch caller access preflight | `ready` | `POST /documents/access-preflight` evaluates up to 100 ordered document identifiers through one repository batch lookup and returns advisory `allowed`, `denied`, `missing`, or `unavailable` posture with bounded reason codes; it does not mint links or authorize downloads. |

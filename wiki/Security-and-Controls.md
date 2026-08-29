@@ -56,7 +56,8 @@ part of the audit trail, not just an error to the caller.
 ## Tenant and region scope
 
 Beyond the caller allow-list, every scoped document read compares the caller's declared tenant and
-region against the document's:
+region against the document's. `POST /documents` requires a non-empty document tenant, so new
+archive records cannot enter the unreadable missing-tenant state:
 
 | condition | outcome |
 |---|---|
@@ -70,8 +71,8 @@ This is applied on the shared path behind metadata, download and the other scope
 cannot be bypassed by choosing a different endpoint. The batch preflight uses the same decision
 function, which is why its answers agree with the routes that enforce them.
 
-Note the second row: a document stored without a tenant is unreadable by every caller, permanently
-— see [#93](https://github.com/sgajbi/lotus-archive/issues/93).
+The `document_scope_unavailable` branch remains fail-closed for historical or externally migrated
+records whose scope is incomplete.
 
 The response does not distinguish "not permitted" from "wrong tenant", so the error contract cannot
 be used to discover which documents exist in another tenant.

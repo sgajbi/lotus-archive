@@ -62,10 +62,9 @@ running non-durably:
 | `LOTUS_ARCHIVE_STORAGE_ROOT` | `<temp dir>/lotus-archive-objects` | filesystem storage location |
 | `LOTUS_ARCHIVE_STORAGE_NAMESPACE` | `local-development` | prefixes stored objects; minimum length 1 |
 
-Objects are laid out as `region / tenant / report-type / document-id.format`. A document archived
-without a tenant is filed under `tenant-unspecified` — a storage-layout fallback that does **not**
-populate the metadata, which is why such a document is unreadable
-([#93](https://github.com/sgajbi/lotus-archive/issues/93)).
+Objects are laid out as `region / tenant / report-type / document-id.format`. Both region and tenant
+are required by the archive write contract, so every accepted object has an authorization scope in
+its storage key and metadata.
 
 ## Document bounds
 
