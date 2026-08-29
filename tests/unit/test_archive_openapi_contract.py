@@ -41,6 +41,9 @@ def test_archive_document_api_openapi_contract_is_certification_ready() -> None:
     assert "ArchiveDocumentCreateRequest" in str(create_operation["requestBody"])
     assert "201" in create_operation["responses"]
     assert "409" in create_operation["responses"]
+    archive_input_schema = spec["components"]["schemas"]["ArchiveDocumentInput"]
+    assert "tenant_id" in archive_input_schema["required"]
+    assert archive_input_schema["properties"]["tenant_id"]["minLength"] == 1
 
     preflight_operation = spec["paths"]["/documents/access-preflight"]["post"]
     assert "ArchiveDocumentAccessPreflightRequest" in str(preflight_operation["requestBody"])
@@ -61,7 +64,9 @@ def test_archive_document_api_openapi_contract_is_certification_ready() -> None:
     assert "LifecycleTransitionRequest" in str(supersede_operation["requestBody"])
     assert "409" in supersede_operation["responses"]
 
-    metadata_schema = spec["components"]["schemas"]["ArchiveDocumentResponse"]["properties"]
+    metadata_contract = spec["components"]["schemas"]["ArchiveDocumentResponse"]
+    metadata_schema = metadata_contract["properties"]
+    assert "tenant_id" in metadata_contract["required"]
     assert metadata_schema["document_id"]["description"]
     assert metadata_schema["checksum"]["description"]
     assert metadata_schema["reviewed_advisory_narrative"]["description"]

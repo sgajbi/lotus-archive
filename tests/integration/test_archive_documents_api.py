@@ -159,6 +159,24 @@ def _reviewed_narrative_payload() -> dict[str, object]:
     return payload
 
 
+def test_document_create_rejects_missing_tenant_before_storage(tmp_path: Path) -> None:
+    service = _service(tmp_path)
+    app.dependency_overrides[archive_service] = lambda: service
+    client = TestClient(app)
+    payload = _payload()
+    metadata = cast(dict[str, object], payload["metadata"])
+    del metadata["tenant_id"]
+
+    try:
+        response = client.post("/documents", json=payload, headers=_headers())
+
+        assert response.status_code == 422
+        assert response.json()["error"]["code"] == "validation_failed"
+        assert not list((tmp_path / "objects").rglob("*"))
+    finally:
+        app.dependency_overrides.clear()
+
+
 def test_document_create_lookup_download_and_access_events_api(tmp_path: Path) -> None:
     service = _service(tmp_path)
     app.dependency_overrides[archive_service] = lambda: service

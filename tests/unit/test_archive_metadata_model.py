@@ -108,6 +108,12 @@ def test_metadata_input_accepts_source_backed_minimum_contract() -> None:
     assert metadata.classification == DocumentClassification.CONFIDENTIAL
 
 
+@pytest.mark.parametrize("tenant_id", [None, "", "   "])
+def test_metadata_input_rejects_missing_tenant_scope(tenant_id: object) -> None:
+    with pytest.raises(ValidationError):
+        valid_metadata_input(tenant_id=tenant_id)
+
+
 def test_metadata_input_accepts_reviewed_advisory_narrative_archive_summary() -> None:
     metadata = valid_metadata_input(
         reviewed_advisory_narrative=reviewed_advisory_narrative_summary()

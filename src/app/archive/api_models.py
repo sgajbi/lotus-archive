@@ -146,7 +146,7 @@ class ArchiveDocumentResponse(BaseModel):
     output_format: str = Field(description="Archived output format.")
     classification: DocumentClassification = Field(description="Document classification.")
     region: str = Field(description="Region scope for the archive record.")
-    tenant_id: str | None = Field(default=None, description="Tenant scope when available.")
+    tenant_id: str = Field(description="Tenant scope enforced on every document read.")
     retention_policy_id: str | None = Field(
         default=None,
         description="Retention policy assigned to the document.",

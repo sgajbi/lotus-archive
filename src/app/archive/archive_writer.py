@@ -114,7 +114,7 @@ class ArchiveWriter:
         return "/".join(
             [
                 metadata_input.region.lower(),
-                metadata_input.tenant_id or "tenant-unspecified",
+                metadata_input.tenant_id,
                 metadata_input.report_type.lower(),
                 f"{document_id}.{safe_output_format}",
             ]

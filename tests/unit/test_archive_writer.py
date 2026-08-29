@@ -105,15 +105,6 @@ def test_archive_writer_rejects_duplicate_request_with_different_metadata(
         writer.archive_document(metadata_input=changed, content=content)
 
 
-def test_archive_writer_uses_support_safe_unspecified_tenant_segment(tmp_path: Path) -> None:
-    writer = _writer(tmp_path)
-    metadata_input = valid_metadata_input(tenant_id=None)
-
-    metadata = writer.archive_document(metadata_input=metadata_input, content=b"content")
-
-    assert "/tenant-unspecified/" in metadata.storage_key
-
-
 def test_archive_writer_removes_new_object_when_metadata_save_fails(tmp_path: Path) -> None:
     class FailingRepository(InMemoryArchiveDocumentRepository):
         def save(self, metadata: ArchiveDocumentMetadata) -> ArchiveDocumentMetadata:
