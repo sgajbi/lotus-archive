@@ -1252,3 +1252,92 @@ def test_superseding_to_a_second_target_still_conflicts(tmp_path: Path) -> None:
             caller_context=_caller(),
             trace_id="trace-supersede-rival",
         )
+
+
+def test_an_unknown_transition_type_is_rejected_not_echoed(tmp_path: Path) -> None:
+    service = _service(tmp_path)
+    historical = service.create_document(
+        command=_create_request_with_id("archive-request-historical"),
+        caller_context=_caller(),
+        trace_id="trace-create-old",
+    )
+    current = service.create_document(
+        command=_create_request_with_id("archive-request-current"),
+        caller_context=_caller(),
+        trace_id="trace-create-new",
+    )
+
+    with pytest.raises(UnsupportedLifecycleTransitionError):
+        service._apply_lifecycle_transition(
+            source_document_id=historical.document_id,
+            command=LifecycleTransitionCommand(
+                target_document_id=current.document_id,
+                transition_reason="Attempted retraction",
+            ),
+            transition_type=cast(LifecycleTransitionType, "retract"),
+            event_type=AccessEventType.LIFECYCLE_SUPERSEDE,
+            caller_context=_caller(),
+            trace_id="trace-retract",
+        )
+
+
+def test_chain_fields_without_a_relationship_record_conflict_not_echo(tmp_path: Path) -> None:
+    """A half-linked chain is a conflict, never a silent echo.
+
+    The echo requires all three records to agree; if the documents carry the chain
+    fields but the relationship record is missing, the store is corrupted and the
+    retry must surface the conflict instead of inventing a relationship.
+    """
+    service = _service(tmp_path)
+    historical = service.create_document(
+        command=_create_request_with_id("archive-request-historical"),
+        caller_context=_caller(),
+        trace_id="trace-create-old",
+    )
+    current = service.create_document(
+        command=_create_request_with_id("archive-request-current"),
+        caller_context=_caller(),
+        trace_id="trace-create-new",
+    )
+    service.repository.save(
+        historical.model_copy(update={"superseded_by_document_id": current.document_id})
+    )
+    service.repository.save(
+        current.model_copy(update={"supersedes_document_id": historical.document_id})
+    )
+
+    with pytest.raises(SupersessionConflictError):
+        service.supersede_document(
+            document_id=historical.document_id,
+            command=LifecycleTransitionCommand(
+                target_document_id=current.document_id,
+                transition_reason="Quarterly report replaced by approved version",
+            ),
+            caller_context=_caller(),
+            trace_id="trace-supersede-retry",
+        )
+
+
+def test_purge_reevaluation_does_not_rewrite_an_unchanged_status(tmp_path: Path) -> None:
+    service = _service(tmp_path)
+    metadata = service.create_document(
+        command=_create_request(),
+        caller_context=_caller(),
+        trace_id="trace-create",
+    )
+    first, _, _ = service.evaluate_purge(
+        document_id=metadata.document_id,
+        caller_context=_caller(),
+        trace_id="trace-evaluate",
+        evaluation_date=metadata.retain_until_date,
+    )
+
+    second, _, _ = service.evaluate_purge(
+        document_id=metadata.document_id,
+        caller_context=_caller(),
+        trace_id="trace-evaluate-again",
+        evaluation_date=metadata.retain_until_date,
+    )
+
+    assert first.purge_status is second.purge_status
+    assert first.updated_at == second.updated_at
