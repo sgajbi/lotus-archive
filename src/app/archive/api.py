@@ -159,7 +159,8 @@ async def issue_idea_lifecycle_decision(
     summary="Archive a generated document",
     description=(
         "Stores a generated Lotus reporting document with source-backed metadata, checksum "
-        "validation, idempotent archive request handling, and access-audit evidence. Use this "
+        "validation, required tenant scope, idempotent archive request handling, and access-audit "
+        "evidence. Use this "
         "after a render succeeds and the caller has archive authority."
     ),
     responses={

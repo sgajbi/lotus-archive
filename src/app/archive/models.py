@@ -211,7 +211,10 @@ class ArchiveDocumentInput(BaseModel):
     output_format: str = Field(min_length=1)
     classification: DocumentClassification
     region: str = Field(min_length=1)
-    tenant_id: str | None = Field(default=None, min_length=1)
+    tenant_id: str = Field(
+        min_length=1,
+        description="Tenant scope required to authorize every later document read.",
+    )
     retention_policy_id: str | None = Field(default=None, min_length=1)
     retention_start_date: date | None = None
     retain_until_date: date | None = None
