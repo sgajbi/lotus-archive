@@ -33,8 +33,16 @@ def build_archive_service(settings: ArchiveRuntimeSettings) -> ArchiveDocumentSe
     storage: ObjectStorage
     if settings.repository_mode == "postgresql":
         assert settings.database_url is not None
-        repository = PostgresArchiveDocumentRepository(settings.database_url)
-        audit_repository = PostgresAccessAuditRepository(settings.database_url)
+        repository = PostgresArchiveDocumentRepository(
+            settings.database_url,
+            connect_timeout_seconds=settings.database_connect_timeout_seconds,
+            statement_timeout_ms=settings.database_statement_timeout_ms,
+        )
+        audit_repository = PostgresAccessAuditRepository(
+            settings.database_url,
+            connect_timeout_seconds=settings.database_connect_timeout_seconds,
+            statement_timeout_ms=settings.database_statement_timeout_ms,
+        )
     else:
         repository = InMemoryArchiveDocumentRepository()
         audit_repository = InMemoryAccessAuditRepository()
@@ -49,6 +57,9 @@ def build_archive_service(settings: ArchiveRuntimeSettings) -> ArchiveDocumentSe
             endpoint_url=settings.s3_endpoint_url,
             server_side_encryption=settings.s3_server_side_encryption,
             kms_key_id=settings.s3_kms_key_id,
+            connect_timeout_seconds=settings.s3_connect_timeout_seconds,
+            read_timeout_seconds=settings.s3_read_timeout_seconds,
+            max_attempts=settings.s3_max_attempts,
         )
     else:
         storage = FilesystemObjectStorage(

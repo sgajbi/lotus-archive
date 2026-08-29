@@ -28,12 +28,17 @@ class ArchiveRuntimeSettings(BaseSettings):
     )
     storage_namespace: str = Field(default="local-development", min_length=1)
     database_url: str | None = Field(default=None)
+    database_connect_timeout_seconds: int = Field(default=5, ge=1, le=60)
+    database_statement_timeout_ms: int = Field(default=30_000, ge=100, le=600_000)
     s3_bucket: str | None = Field(default=None, min_length=3)
     s3_key_prefix: str = Field(default="archive", min_length=1)
     s3_region: str | None = Field(default=None, min_length=1)
     s3_endpoint_url: str | None = Field(default=None, min_length=1)
     s3_server_side_encryption: S3ServerSideEncryption = Field(default="AES256")
     s3_kms_key_id: str | None = Field(default=None, min_length=1)
+    s3_connect_timeout_seconds: float = Field(default=5.0, gt=0.0, le=60.0)
+    s3_read_timeout_seconds: float = Field(default=30.0, gt=0.0, le=300.0)
+    s3_max_attempts: int = Field(default=3, ge=1, le=10)
     max_decoded_document_bytes: int = Field(default=10 * 1024 * 1024, ge=1)
     idea_lifecycle_decision_ledger_path: Path = Field(
         default_factory=lambda: (

@@ -166,3 +166,18 @@ def test_s3_storage_maps_read_delete_and_malformed_response_failures() -> None:
     client.get_response = {}
     with pytest.raises(StorageReadFailedError, match="could not be read"):
         storage.get(key="document.pdf")
+
+
+def test_client_config_bounds_connect_read_and_retries() -> None:
+    """Failure containment: a hung S3 endpoint must fail the request, never hold it."""
+    from app.archive.s3_storage import client_config
+
+    config = client_config(
+        connect_timeout_seconds=2.5,
+        read_timeout_seconds=11.0,
+        max_attempts=4,
+    )
+
+    assert config.connect_timeout == 2.5
+    assert config.read_timeout == 11.0
+    assert config.retries == {"max_attempts": 4, "mode": "standard"}

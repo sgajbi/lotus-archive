@@ -81,12 +81,27 @@ _RECORD_AUDIT_SQL = (
 )
 
 
-def _connection_factory(dsn: str) -> ConnectionFactory:
+DEFAULT_CONNECT_TIMEOUT_SECONDS = 5
+DEFAULT_STATEMENT_TIMEOUT_MS = 30_000
+
+
+def _connection_factory(
+    dsn: str,
+    *,
+    connect_timeout_seconds: int = DEFAULT_CONNECT_TIMEOUT_SECONDS,
+    statement_timeout_ms: int = DEFAULT_STATEMENT_TIMEOUT_MS,
+) -> ConnectionFactory:
+    """Every connection is bounded: a hung PostgreSQL fails the request, never holds it."""
     if not dsn.strip():
         raise ValueError("PostgreSQL DSN must not be blank")
 
     def connect() -> Any:
-        return psycopg.connect(dsn, row_factory=dict_row)
+        return psycopg.connect(
+            dsn,
+            row_factory=dict_row,
+            connect_timeout=connect_timeout_seconds,
+            options=f"-c statement_timeout={statement_timeout_ms}",
+        )
 
     return connect
 
@@ -112,8 +127,14 @@ class PostgresArchiveDocumentRepository:
         dsn: str,
         *,
         connection_factory: ConnectionFactory | None = None,
+        connect_timeout_seconds: int = DEFAULT_CONNECT_TIMEOUT_SECONDS,
+        statement_timeout_ms: int = DEFAULT_STATEMENT_TIMEOUT_MS,
     ) -> None:
-        self._connect = connection_factory or _connection_factory(dsn)
+        self._connect = connection_factory or _connection_factory(
+            dsn,
+            connect_timeout_seconds=connect_timeout_seconds,
+            statement_timeout_ms=statement_timeout_ms,
+        )
 
     def check_ready(self) -> None:
         with self._connect() as connection, connection.cursor() as cursor:
@@ -238,8 +259,14 @@ class PostgresAccessAuditRepository:
         dsn: str,
         *,
         connection_factory: ConnectionFactory | None = None,
+        connect_timeout_seconds: int = DEFAULT_CONNECT_TIMEOUT_SECONDS,
+        statement_timeout_ms: int = DEFAULT_STATEMENT_TIMEOUT_MS,
     ) -> None:
-        self._connect = connection_factory or _connection_factory(dsn)
+        self._connect = connection_factory or _connection_factory(
+            dsn,
+            connect_timeout_seconds=connect_timeout_seconds,
+            statement_timeout_ms=statement_timeout_ms,
+        )
 
     def check_ready(self) -> None:
         with self._connect() as connection, connection.cursor() as cursor:
