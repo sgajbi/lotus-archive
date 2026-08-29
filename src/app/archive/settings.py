@@ -14,6 +14,7 @@ from app.archive.exceptions import RuntimeConfigurationError
 ArchiveRuntimeProfile = Literal["local-development", "test", "production"]
 ArchiveRepositoryMode = Literal["in-memory", "postgresql"]
 ArchiveStorageMode = Literal["filesystem", "s3"]
+S3ServerSideEncryption = Literal["AES256", "aws:kms"]
 
 
 class ArchiveRuntimeSettings(BaseSettings):
@@ -27,6 +28,12 @@ class ArchiveRuntimeSettings(BaseSettings):
     )
     storage_namespace: str = Field(default="local-development", min_length=1)
     database_url: str | None = Field(default=None)
+    s3_bucket: str | None = Field(default=None, min_length=3)
+    s3_key_prefix: str = Field(default="archive", min_length=1)
+    s3_region: str | None = Field(default=None, min_length=1)
+    s3_endpoint_url: str | None = Field(default=None, min_length=1)
+    s3_server_side_encryption: S3ServerSideEncryption = Field(default="AES256")
+    s3_kms_key_id: str | None = Field(default=None, min_length=1)
     max_decoded_document_bytes: int = Field(default=10 * 1024 * 1024, ge=1)
     idea_lifecycle_decision_ledger_path: Path = Field(
         default_factory=lambda: (
@@ -49,6 +56,10 @@ class ArchiveRuntimeSettings(BaseSettings):
             )
         if self.repository_mode == "postgresql" and not self.database_url:
             raise RuntimeConfigurationError("PostgreSQL archive repository requires database URL")
+        if self.storage_mode == "s3" and not self.s3_bucket:
+            raise RuntimeConfigurationError("S3 archive storage requires bucket")
+        if self.s3_server_side_encryption == "aws:kms" and not self.s3_kms_key_id:
+            raise RuntimeConfigurationError("S3 KMS encryption requires key ID")
         encoded_private_key = self.idea_lifecycle_decision_private_key_base64.get_secret_value()
         if encoded_private_key:
             try:

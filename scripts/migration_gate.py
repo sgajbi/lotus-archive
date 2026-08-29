@@ -46,6 +46,21 @@ REQUIRED_LIFECYCLE_FIELDS = {
     "requested_at",
 }
 
+REQUIRED_ACCESS_AUDIT_FIELDS = {
+    "audit_event_id",
+    "document_id",
+    "event_type",
+    "actor_type",
+    "actor_id",
+    "caller_service",
+    "authorization_decision",
+    "authorization_reason_code",
+    "operation_reason_code",
+    "correlation_id",
+    "trace_id",
+    "created_at",
+}
+
 
 def main() -> None:
     migration = MIGRATIONS_DIR / "001_create_archive_documents.sql"
@@ -107,6 +122,23 @@ def main() -> None:
     if lifecycle_ddl.count("REFERENCES archive_documents(document_id)") < 2:
         raise SystemExit(
             "Migration gate failed: lifecycle relationships must reference source and target documents"
+        )
+
+    access_audit_migration = MIGRATIONS_DIR / "007_create_archive_access_audit.sql"
+    if not access_audit_migration.exists():
+        raise SystemExit("Migration gate failed: archive access-audit migration is missing")
+    access_audit_ddl = access_audit_migration.read_text(encoding="utf-8")
+    missing_access_audit_fields = sorted(
+        field for field in REQUIRED_ACCESS_AUDIT_FIELDS if field not in access_audit_ddl
+    )
+    if missing_access_audit_fields:
+        raise SystemExit(
+            "Migration gate failed: missing archive access-audit fields "
+            + ", ".join(missing_access_audit_fields)
+        )
+    if "idx_archive_access_audit_document_created" not in access_audit_ddl:
+        raise SystemExit(
+            "Migration gate failed: access audit must index document and creation time"
         )
 
     print("Migration gate passed")
