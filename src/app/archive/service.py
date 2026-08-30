@@ -3,7 +3,6 @@ from __future__ import annotations
 from base64 import b64decode
 from binascii import Error as Base64DecodeError
 from collections.abc import Callable
-from dataclasses import dataclass
 from datetime import date, datetime, timezone
 from uuid import uuid4
 
@@ -50,6 +49,8 @@ from app.archive.exceptions import (
 )
 from app.archive.metrics import archive_metric
 from app.archive.models import (
+    LIFECYCLE_TARGET_ORIGIN_FIELD,
+    LIFECYCLE_TRANSITION_REASON_CODES,
     ArchiveDocumentMetadata,
     LegalHoldRecord,
     LegalHoldStatus,
@@ -58,31 +59,13 @@ from app.archive.models import (
     PurgeStatus,
 )
 from app.archive.repository import ArchiveDocumentRepository
+from app.archive.service_readiness import (
+    ArchiveRuntimeReadiness,
+    dependency_is_ready,
+)
 from app.archive.source_events import build_archive_document_source_events
 from app.archive.storage import ObjectStorage
 from app.security.caller_context import CallerContext
-
-
-@dataclass(frozen=True)
-class ArchiveRuntimeReadiness:
-    repository_ready: bool
-    storage_ready: bool
-    access_audit_ready: bool
-
-
-_TARGET_ORIGIN_FIELD: dict[LifecycleTransitionType, str] = {
-    LifecycleTransitionType.SUPERSEDE: "supersedes_document_id",
-    LifecycleTransitionType.CORRECT: "correction_of_document_id",
-    LifecycleTransitionType.REISSUE: "reissue_of_document_id",
-}
-
-
-def _dependency_is_ready(check_ready: Callable[[], None]) -> bool:
-    try:
-        check_ready()
-    except Exception:
-        return False
-    return True
 
 
 class ArchiveDocumentService:
@@ -107,9 +90,9 @@ class ArchiveDocumentService:
 
     def runtime_readiness(self) -> ArchiveRuntimeReadiness:
         return ArchiveRuntimeReadiness(
-            repository_ready=_dependency_is_ready(self.repository.check_ready),
-            storage_ready=_dependency_is_ready(self.storage.check_ready),
-            access_audit_ready=_dependency_is_ready(self.audit_repository.check_ready),
+            repository_ready=dependency_is_ready(self.repository.check_ready),
+            storage_ready=dependency_is_ready(self.storage.check_ready),
+            access_audit_ready=dependency_is_ready(self.audit_repository.check_ready),
         )
 
     def close(self) -> None:
@@ -176,14 +159,10 @@ class ArchiveDocumentService:
         caller_context: CallerContext,
         trace_id: str,
     ) -> ArchiveDocumentMetadata:
-        """Resolve a document by the caller-supplied idempotent archive request
-        id. This is the ambiguity-resolution read for the originating service:
-        after a lost or mangled ingest response, it answers whether the commit
-        happened - so recovery can adopt the existing document instead of
-        minting a new request id that idempotency cannot converge
-        (lotus-report#211 review). Authorization and access audit run through
-        the standard metadata read once the id resolves; an unknown request id
-        answers exactly like an unknown document id.
+        """Ambiguity-resolution read: after a lost ingest response, answers
+        whether the idempotent request committed so recovery can adopt the
+        existing document (lotus-report#211). Authorization and audit run
+        through the standard metadata read; unknown ids answer identically.
         """
 
         record = self.repository.get_by_archive_request_id(archive_request_id)
@@ -795,7 +774,7 @@ class ArchiveDocumentService:
             }
         )
         # _validate_lifecycle_transition already rejected any type outside the mapping.
-        origin_field = _TARGET_ORIGIN_FIELD[transition_type]
+        origin_field = LIFECYCLE_TARGET_ORIGIN_FIELD[transition_type]
         target = target.model_copy(update={"updated_at": now, origin_field: source.document_id})
         relationship = LifecycleRelationshipRecord(
             lifecycle_relationship_id=f"life_{uuid4().hex}",
@@ -803,7 +782,7 @@ class ArchiveDocumentService:
             target_document_id=target.document_id,
             transition_type=transition_type,
             transition_reason=command.transition_reason,
-            transition_reason_code=_transition_reason_code(transition_type),
+            transition_reason_code=LIFECYCLE_TRANSITION_REASON_CODES[transition_type],
             requested_by=caller_context.actor_id,
         )
 
@@ -837,7 +816,7 @@ class ArchiveDocumentService:
         the relationship record exists. Anything less is a genuine conflict and falls
         through to the validation guards.
         """
-        origin_field = _TARGET_ORIGIN_FIELD.get(transition_type)
+        origin_field = LIFECYCLE_TARGET_ORIGIN_FIELD.get(transition_type)
         if origin_field is None:
             return None
         if source.superseded_by_document_id != target.document_id:
@@ -875,7 +854,7 @@ class ArchiveDocumentService:
         )
         if existing_origin is not None:
             raise SupersessionConflictError("target document already has a lifecycle origin")
-        if transition_type not in _TARGET_ORIGIN_FIELD:
+        if transition_type not in LIFECYCLE_TARGET_ORIGIN_FIELD:
             raise UnsupportedLifecycleTransitionError("unsupported lifecycle transition")
 
     def _resolve_current_document(
@@ -992,11 +971,3 @@ class ArchiveDocumentService:
         if len(content) > self.max_decoded_document_bytes:
             raise MetadataValidationError("document content exceeds configured archive size limit")
         return content
-
-
-def _transition_reason_code(transition_type: LifecycleTransitionType) -> str:
-    if transition_type is LifecycleTransitionType.REISSUE:
-        return "client_delivery_reissue_requested"
-    if transition_type is LifecycleTransitionType.CORRECT:
-        return "archive_document_correction_requested"
-    return "archive_document_supersession_requested"

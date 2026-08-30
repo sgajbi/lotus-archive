@@ -26,6 +26,21 @@ class LifecycleTransitionType(StrEnum):
     REISSUE = "reissue"
 
 
+# Transition vocabulary lives beside its enum: which metadata field records
+# the origin document, and the bounded reason code each transition emits.
+LIFECYCLE_TARGET_ORIGIN_FIELD: dict[LifecycleTransitionType, str] = {
+    LifecycleTransitionType.SUPERSEDE: "supersedes_document_id",
+    LifecycleTransitionType.CORRECT: "correction_of_document_id",
+    LifecycleTransitionType.REISSUE: "reissue_of_document_id",
+}
+
+LIFECYCLE_TRANSITION_REASON_CODES: dict[LifecycleTransitionType, str] = {
+    LifecycleTransitionType.SUPERSEDE: "archive_document_supersession_requested",
+    LifecycleTransitionType.CORRECT: "archive_document_correction_requested",
+    LifecycleTransitionType.REISSUE: "client_delivery_reissue_requested",
+}
+
+
 class DocumentClassification(StrEnum):
     INTERNAL = "internal"
     CONFIDENTIAL = "confidential"
