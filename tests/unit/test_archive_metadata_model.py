@@ -167,6 +167,53 @@ def test_metadata_input_rejects_reviewed_narrative_hash_without_sha256_lineage()
         )
 
 
+def advisor_commentary_summary(**overrides: object) -> dict[str, object]:
+    values: dict[str, object] = {
+        "run_id": "run_accept_1",
+        "request_id": "req_77",
+        "reviewed_by": "advisor-lead-7",
+        "reviewed_at": "2026-08-28T10:00:00Z",
+        "content_hash": "0a" * 32,
+        "schema_id": "lotus-ai.workflow_pack_run.accepted_output.advisor_brief.v1",
+        "included_in_render": True,
+    }
+    values.update(overrides)
+    return values
+
+
+def test_metadata_input_accepts_advisor_commentary_archive_summary() -> None:
+    metadata = valid_metadata_input(advisor_commentary=advisor_commentary_summary())
+
+    assert metadata.advisor_commentary is not None
+    assert metadata.advisor_commentary.run_id == "run_accept_1"
+    assert metadata.advisor_commentary.reviewed_by == "advisor-lead-7"
+    assert metadata.advisor_commentary.content_hash == "0a" * 32
+
+
+def test_metadata_input_rejects_advisor_commentary_with_bad_hash_or_schema() -> None:
+    with pytest.raises(ValidationError, match="sha256 hex"):
+        valid_metadata_input(
+            advisor_commentary=advisor_commentary_summary(content_hash="sha256:" + "a" * 64)
+        )
+    with pytest.raises(ValidationError):
+        valid_metadata_input(
+            advisor_commentary=advisor_commentary_summary(schema_id="other.schema.v9")
+        )
+    with pytest.raises(ValidationError, match="must be rendered"):
+        valid_metadata_input(
+            advisor_commentary=advisor_commentary_summary(included_in_render=False)
+        )
+
+
+def test_metadata_input_rejects_advisor_commentary_outside_portfolio_review() -> None:
+    with pytest.raises(ValidationError, match="portfolio_review"):
+        valid_metadata_input(
+            advisor_commentary=advisor_commentary_summary(),
+            report_type="proof_pack",
+            template_id="proof-pack",
+        )
+
+
 def test_metadata_input_accepts_advisor_proposal_memo_archive_summary() -> None:
     metadata = valid_metadata_input(advisor_proposal_memo=advisor_proposal_memo_summary())
 

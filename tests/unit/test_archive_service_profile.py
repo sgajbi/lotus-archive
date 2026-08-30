@@ -85,6 +85,7 @@ def test_archive_supportability_reports_ready_gateway_backed_workbench_posture()
     assert "archive_document_source_events" in supported_archive_features
     assert "reviewed_advisory_narrative_archive_summary" in supported_archive_features
     assert "advisor_proposal_memo_archive_summary" in supported_archive_features
+    assert "advisor_commentary_archive_summary" in supported_archive_features
     assert "idea_evidence_pack_archive_summary" in supported_archive_features
 
 

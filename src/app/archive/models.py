@@ -149,6 +149,44 @@ class AdvisorProposalMemoArchiveSummary(BaseModel):
         return self
 
 
+class AdvisorCommentaryArchiveSummary(BaseModel):
+    """AI audit identity of a rendered ADVISOR_COMMENTARY section (report#166).
+
+    lotus-report composes the section only from a lotus-ai accepted-output
+    projection; the archive keeps the run identity, accepting reviewer, and
+    pinned content hash so the archived client document remains traceable to
+    the exact human-accepted narrative - never the narrative itself.
+    """
+
+    model_config = ConfigDict(str_strip_whitespace=True)
+
+    run_id: str = Field(min_length=1)
+    request_id: str = Field(min_length=1)
+    reviewed_by: str = Field(min_length=1)
+    reviewed_at: str = Field(min_length=1)
+    content_hash: str = Field(min_length=1)
+    schema_id: Literal["lotus-ai.workflow_pack_run.accepted_output.advisor_brief.v1"]
+    included_in_render: bool
+
+    @field_validator("content_hash")
+    @classmethod
+    def _content_hash_must_be_sha256_hex(cls, value: str) -> str:
+        # lotus-ai publishes the canonical hash as bare lowercase sha256 hex
+        # (its content_hash_algorithm field names the algorithm); the archive
+        # preserves that exact representation.
+        if len(value) != 64 or any(ch not in "0123456789abcdef" for ch in value):
+            raise ValueError(
+                "advisor commentary content_hash must be 64 lowercase sha256 hex characters"
+            )
+        return value
+
+    @model_validator(mode="after")
+    def _summary_must_describe_a_rendered_section(self) -> Self:
+        if not self.included_in_render:
+            raise ValueError("advisor commentary archive summary must be rendered")
+        return self
+
+
 class IdeaEvidencePackArchiveSummary(BaseModel):
     model_config = ConfigDict(str_strip_whitespace=True)
 
@@ -220,6 +258,7 @@ class ArchiveDocumentInput(BaseModel):
     retain_until_date: date | None = None
     reviewed_advisory_narrative: ReviewedAdvisoryNarrativeArchiveSummary | None = None
     advisor_proposal_memo: AdvisorProposalMemoArchiveSummary | None = None
+    advisor_commentary: AdvisorCommentaryArchiveSummary | None = None
     idea_evidence_pack: IdeaEvidencePackArchiveSummary | None = None
     created_by_service: str = Field(min_length=1)
     created_by_actor: str = Field(min_length=1)
@@ -257,6 +296,16 @@ class ArchiveDocumentInput(BaseModel):
             if self.template_id != "portfolio-review":
                 raise ValueError(
                     "advisor proposal memo archive summary requires portfolio-review template"
+                )
+        if self.advisor_commentary is not None:
+            if self.report_type is not GeneratedReportType.PORTFOLIO_REVIEW:
+                raise ValueError(
+                    "advisor commentary archive summary is only supported for "
+                    "portfolio_review reports"
+                )
+            if self.template_id != "portfolio-review":
+                raise ValueError(
+                    "advisor commentary archive summary requires portfolio-review template"
                 )
         if self.idea_evidence_pack is not None:
             if self.report_type is not GeneratedReportType.PROOF_PACK:

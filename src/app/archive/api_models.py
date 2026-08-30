@@ -15,6 +15,7 @@ from app.archive.access_preflight import (
 )
 from app.archive.audit import AccessAuditEvent
 from app.archive.models import (
+    AdvisorCommentaryArchiveSummary,
     ArchiveDocumentInput,
     ArchiveDocumentMetadata,
     AdvisorProposalMemoArchiveSummary,
@@ -192,6 +193,15 @@ class ArchiveDocumentResponse(BaseModel):
             "Support-safe advisor proposal memo archive summary when the portfolio-review "
             "document includes an RFC-0024 advisor-use memo package. Client-ready memo document "
             "publication remains blocked."
+        ),
+    )
+    advisor_commentary: AdvisorCommentaryArchiveSummary | None = Field(
+        default=None,
+        description=(
+            "AI audit identity of the rendered ADVISOR_COMMENTARY section when the "
+            "portfolio-review document includes reviewed Advisor Brief commentary "
+            "(lotus-report#166): accepted run id, accepting reviewer and time, and the "
+            "pinned content hash. Never the narrative itself."
         ),
     )
     idea_evidence_pack: IdeaEvidencePackArchiveSummary | None = Field(
