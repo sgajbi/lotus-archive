@@ -168,6 +168,33 @@ class ArchiveDocumentService:
         )
         return metadata
 
+    @archive_metric("metadata_lookup")
+    def get_document_metadata_by_request_id(
+        self,
+        *,
+        archive_request_id: str,
+        caller_context: CallerContext,
+        trace_id: str,
+    ) -> ArchiveDocumentMetadata:
+        """Resolve a document by the caller-supplied idempotent archive request
+        id. This is the ambiguity-resolution read for the originating service:
+        after a lost or mangled ingest response, it answers whether the commit
+        happened - so recovery can adopt the existing document instead of
+        minting a new request id that idempotency cannot converge
+        (lotus-report#211 review). Authorization and access audit run through
+        the standard metadata read once the id resolves; an unknown request id
+        answers exactly like an unknown document id.
+        """
+
+        record = self.repository.get_by_archive_request_id(archive_request_id)
+        if record is None:
+            raise DocumentNotFoundError("document_not_found")
+        return self.get_document_metadata(
+            document_id=record.document_id,
+            caller_context=caller_context,
+            trace_id=trace_id,
+        )
+
     @archive_metric("binary_download")
     def get_document_binary(
         self,

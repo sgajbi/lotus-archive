@@ -715,6 +715,40 @@ def test_document_metadata_lookup_reports_not_found(tmp_path: Path) -> None:
     assert response.json()["error"]["code"] == "document_not_found"
 
 
+def test_document_lookup_by_request_id_resolves_committed_ingest(tmp_path: Path) -> None:
+    """The ambiguity-resolution read: after a lost ingest response, the
+    originating service asks whether its idempotent archive request id
+    committed, and adopts the existing document instead of minting a new
+    request id that idempotency cannot converge."""
+
+    service = _service(tmp_path)
+    app.dependency_overrides[archive_service] = lambda: service
+    client = TestClient(app)
+    try:
+        created = client.post("/documents", json=_payload(), headers=_headers())
+        assert created.status_code == 201
+        document_id = created.json()["document_id"]
+        archive_request_id = created.json()["archive_request_id"]
+
+        resolved = client.get(
+            f"/documents/by-request-id/{archive_request_id}",
+            headers=_headers(caller_service="lotus-report"),
+        )
+        missing = client.get(
+            "/documents/by-request-id/arch_never_committed",
+            headers=_headers(caller_service="lotus-report"),
+        )
+    finally:
+        app.dependency_overrides.clear()
+
+    assert resolved.status_code == 200
+    assert resolved.json()["document_id"] == document_id
+    assert resolved.json()["archive_request_id"] == archive_request_id
+    # An unknown request id answers exactly like an unknown document id.
+    assert missing.status_code == 404
+    assert missing.json()["error"]["code"] == "document_not_found"
+
+
 def test_document_create_reports_metadata_validation_failure(tmp_path: Path) -> None:
     service = _service(tmp_path)
     app.dependency_overrides[archive_service] = lambda: service
