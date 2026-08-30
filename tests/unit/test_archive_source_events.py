@@ -4,6 +4,7 @@ from app.archive.models import ArchiveDocumentMetadata, LifecycleTransitionType
 import app.archive.source_events as source_events
 from app.archive.source_events import build_archive_document_source_events
 from tests.unit.test_archive_metadata_model import (
+    advisor_commentary_summary,
     advisor_proposal_memo_summary,
     idea_evidence_pack_summary,
 )
@@ -39,6 +40,38 @@ def test_source_events_include_advisor_proposal_memo_artifact_ref() -> None:
         "artifact_type": "advisor_proposal_memo_package",
         "artifact_id": "memo-001",
         "content_hash": "sha256:" + "c" * 64,
+    } in artifact_refs
+
+
+def test_source_events_include_advisor_commentary_artifact_ref() -> None:
+    metadata_input = valid_metadata_input(
+        advisor_commentary=advisor_commentary_summary(),
+    )
+    metadata = ArchiveDocumentMetadata(
+        **metadata_input.model_dump(),
+        document_id="doc_commentary",
+        storage_provider="filesystem",
+        storage_namespace="local-development",
+        storage_key="sg/tenant-private-bank/portfolio_review/doc_commentary.pdf",
+        checksum_algorithm="sha256",
+        checksum="a" * 64,
+        size_bytes=100,
+    )
+
+    events = build_archive_document_source_events(
+        metadata=metadata,
+        current_document_id=metadata.document_id,
+        lifecycle_relationships=[],
+    )
+
+    reason_codes = cast(list[str], events[0]["reason_codes"])
+    artifact_refs = cast(list[dict[str, str]], events[0]["artifact_refs"])
+
+    assert "advisor_commentary_archive_summary_preserved" in reason_codes
+    assert {
+        "artifact_type": "advisor_brief_accepted_output",
+        "artifact_id": "run_accept_1",
+        "content_hash": "0a" * 32,
     } in artifact_refs
 
 

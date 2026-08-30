@@ -23,7 +23,12 @@ ConnectionFactory = Callable[[], Any]
 
 _DOCUMENT_COLUMNS = tuple(ArchiveDocumentMetadata.model_fields)
 _DOCUMENT_JSON_COLUMNS = frozenset(
-    {"reviewed_advisory_narrative", "advisor_proposal_memo", "idea_evidence_pack"}
+    {
+        "reviewed_advisory_narrative",
+        "advisor_proposal_memo",
+        "advisor_commentary",
+        "idea_evidence_pack",
+    }
 )
 _LEGAL_HOLD_COLUMNS = tuple(LegalHoldRecord.model_fields)
 _LIFECYCLE_COLUMNS = tuple(LifecycleRelationshipRecord.model_fields)

@@ -74,6 +74,7 @@ SUPPORTED_ARCHIVE_FEATURES = (
     "report_to_archive_handoff",
     "reviewed_advisory_narrative_archive_summary",
     "advisor_proposal_memo_archive_summary",
+    "advisor_commentary_archive_summary",
     "idea_evidence_pack_archive_summary",
     "gateway_backed_document_retrieval",
     "gateway_backed_workbench_document_retrieval",

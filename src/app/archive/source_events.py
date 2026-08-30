@@ -51,6 +51,8 @@ def _archive_created_event(
         reason_codes.append("reviewed_advisory_narrative_archive_summary_preserved")
     if metadata.advisor_proposal_memo is not None:
         reason_codes.append("advisor_proposal_memo_archive_summary_preserved")
+    if metadata.advisor_commentary is not None:
+        reason_codes.append("advisor_commentary_archive_summary_preserved")
     if metadata.idea_evidence_pack is not None:
         reason_codes.append("idea_evidence_pack_archive_summary_preserved")
     return {
@@ -158,6 +160,14 @@ def _artifact_refs(metadata: ArchiveDocumentMetadata) -> list[dict[str, str]]:
                 "artifact_type": "advisor_proposal_memo_package",
                 "artifact_id": metadata.advisor_proposal_memo.memo_id,
                 "content_hash": metadata.advisor_proposal_memo.memo_hash,
+            }
+        )
+    if metadata.advisor_commentary is not None:
+        artifact_refs.append(
+            {
+                "artifact_type": "advisor_brief_accepted_output",
+                "artifact_id": metadata.advisor_commentary.run_id,
+                "content_hash": metadata.advisor_commentary.content_hash,
             }
         )
     if metadata.idea_evidence_pack is not None:

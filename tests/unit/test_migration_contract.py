@@ -61,6 +61,13 @@ def test_reviewed_advisory_narrative_migration_contains_required_field() -> None
     assert "ADD COLUMN IF NOT EXISTS" in migration
 
 
+def test_advisor_commentary_migration_contains_required_field() -> None:
+    migration = (
+        ROOT / "migrations" / "008_add_advisor_commentary_to_archive_documents.sql"
+    ).read_text(encoding="utf-8")
+    assert "advisor_commentary JSONB" in migration
+
+
 def test_advisor_proposal_memo_migration_contains_required_field() -> None:
     migration = (
         ROOT / "migrations" / "005_add_advisor_proposal_memo_to_archive_documents.sql"
