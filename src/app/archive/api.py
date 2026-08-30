@@ -226,6 +226,39 @@ async def preflight_document_access(
 
 
 @router.get(
+    "/by-request-id/{archive_request_id}",
+    response_model=ArchiveDocumentResponse,
+    summary="Get archived document metadata by archive request id",
+    description=(
+        "Resolves a document by the caller-supplied idempotent archive request id, then "
+        "applies the same caller-context validation, authorization, and access-audit "
+        "recording as the document metadata read. Use this to resolve an ambiguous ingest "
+        "outcome (a lost or mangled response after a possible commit) before retrying under "
+        "a new request id; an unknown request id answers 404 exactly like an unknown "
+        "document id, so existence is not leaked."
+    ),
+    responses={
+        200: {"description": "Archived document metadata for the resolved request id."},
+        401: {"description": "Required caller context is missing."},
+        403: {"description": "The caller is not authorized to read document metadata."},
+        404: {"description": "No document was archived under this request id."},
+    },
+)
+async def get_document_by_request_id(
+    archive_request_id: str,
+    service: ArchiveDocumentService = Depends(archive_service),
+    context: CallerContext = Depends(caller_context),
+    request_trace_id: str = Depends(trace_id),
+) -> ArchiveDocumentResponse:
+    metadata = service.get_document_metadata_by_request_id(
+        archive_request_id=archive_request_id,
+        caller_context=context,
+        trace_id=request_trace_id,
+    )
+    return ArchiveDocumentResponse.from_metadata(metadata)
+
+
+@router.get(
     "/{document_id}",
     response_model=ArchiveDocumentResponse,
     summary="Get archived document metadata",
