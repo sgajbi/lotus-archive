@@ -160,7 +160,31 @@ class ArchiveDocumentResponse(BaseModel):
     render_service_version: str = Field(description="Render service version.")
     report_data_contract_version: str = Field(description="Report data contract version.")
     checksum_algorithm: str = Field(description="Checksum algorithm used for integrity checks.")
-    checksum: str = Field(description="Checksum of the archived binary.")
+    checksum: str = Field(description="Checksum Archive computed over the received bytes.")
+    document_reference: str | None = Field(
+        default=None,
+        description=(
+            "Governed document identity minted by lotus-report and printed in the "
+            "artifact footer. Names the financial question the document answers; "
+            "document_id names the stored record - two facts, never collapsed."
+        ),
+    )
+    declared_artifact_sha256: str | None = Field(
+        default=None,
+        description=(
+            "SHA-256 the caller declared for the delivered bytes; custody is "
+            "verified against Archive's independently computed checksum."
+        ),
+    )
+    render_runtime_engine: str | None = Field(
+        default=None, description="Render engine that produced the exact bytes."
+    )
+    render_runtime_engine_version: str | None = Field(
+        default=None, description="Render engine version that produced the exact bytes."
+    )
+    template_digest: str | None = Field(
+        default=None, description="Digest of the template used for rendering."
+    )
     size_bytes: int = Field(description="Archived binary size in bytes.")
     mime_type: str = Field(description="Archived binary media type.")
     output_format: str = Field(description="Archived output format.")

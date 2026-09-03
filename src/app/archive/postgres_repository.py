@@ -209,6 +209,15 @@ class PostgresArchiveDocumentRepository:
     ) -> ArchiveDocumentMetadata | None:
         return self._fetch_document("archive_request_id = %s", (archive_request_id,))
 
+    def get_by_checksum(self, checksum: str) -> list[ArchiveDocumentMetadata]:
+        with self._connect() as connection, connection.cursor() as cursor:
+            cursor.execute(
+                "SELECT * FROM archive_documents WHERE checksum = %s",
+                (checksum,),
+            )
+            rows = cursor.fetchall()
+        return [ArchiveDocumentMetadata.model_validate(row) for row in rows]
+
     def save(self, metadata: ArchiveDocumentMetadata) -> ArchiveDocumentMetadata:
         existing = self.get_by_archive_request_id(metadata.archive_request_id)
         if existing is not None and existing.document_id != metadata.document_id:

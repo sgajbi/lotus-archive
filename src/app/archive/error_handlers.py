@@ -7,6 +7,8 @@ from fastapi.responses import JSONResponse
 
 from app.archive.authorization import AuthorizationFailedError
 from app.archive.exceptions import (
+    ArtifactIdentityCollisionError,
+    DeclaredChecksumMismatchError,
     DocumentChecksumMismatchError,
     HistoricalIntegrityError,
     DocumentNotFoundError,
@@ -141,6 +143,34 @@ def register_archive_exception_handlers(
             http_status=status.HTTP_409_CONFLICT,
             correlation_id=correlation_id(request),
             service=service_name,
+        )
+
+    @app.exception_handler(DeclaredChecksumMismatchError)
+    async def declared_checksum_mismatch_exception_handler(
+        request: Request,
+        exc: DeclaredChecksumMismatchError,
+    ) -> JSONResponse:
+        # The two hashes are named: the operator must see what the caller
+        # claimed and what Archive measured, or the refusal is undebuggable.
+        return error_response(
+            code="declared_checksum_mismatch",
+            http_status=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            correlation_id=correlation_id(request),
+            service=service_name,
+            message=str(exc),
+        )
+
+    @app.exception_handler(ArtifactIdentityCollisionError)
+    async def artifact_identity_collision_exception_handler(
+        request: Request,
+        exc: ArtifactIdentityCollisionError,
+    ) -> JSONResponse:
+        return error_response(
+            code="artifact_identity_collision",
+            http_status=status.HTTP_409_CONFLICT,
+            correlation_id=correlation_id(request),
+            service=service_name,
+            message=str(exc),
         )
 
     @app.exception_handler(DocumentChecksumMismatchError)
