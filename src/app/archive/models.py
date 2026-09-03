@@ -277,6 +277,31 @@ class ArchiveDocumentInput(BaseModel):
     idea_evidence_pack: IdeaEvidencePackArchiveSummary | None = None
     created_by_service: str = Field(min_length=1)
     created_by_actor: str = Field(min_length=1)
+    #: The governed document identity minted by lotus-report pre-render and
+    #: placed in the artifact's footer (render#120 evidence chain). Names the
+    #: financial question the document answers; `document_id` names the stored
+    #: record - two facts, carried side by side, never collapsed. Opaque:
+    #: Archive stores it and never parses it.
+    document_reference: str | None = Field(default=None, min_length=1)
+    #: The SHA-256 the caller DECLARES for the bytes it hands over. Archive
+    #: independently hashes what it received and refuses custody on mismatch -
+    #: a stored artifact whose declared and computed identities disagree would
+    #: be corruption wearing a certificate.
+    declared_artifact_sha256: str | None = Field(default=None)
+    #: Render provenance for custody: which engine produced the exact bytes.
+    render_runtime_engine: str | None = Field(default=None, min_length=1)
+    render_runtime_engine_version: str | None = Field(default=None, min_length=1)
+    template_digest: str | None = Field(default=None, min_length=1)
+
+    @field_validator("declared_artifact_sha256")
+    @classmethod
+    def _declared_sha256_must_be_hex_digest(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        normalized = value.strip().lower().removeprefix("sha256:")
+        if len(normalized) != 64 or any(c not in "0123456789abcdef" for c in normalized):
+            raise ValueError("declared_artifact_sha256 must be a 64-hex SHA-256 digest")
+        return normalized
 
     @field_validator("mime_type")
     @classmethod

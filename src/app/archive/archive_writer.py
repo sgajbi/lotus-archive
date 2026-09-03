@@ -6,7 +6,12 @@ from uuid import uuid4
 from pydantic import ValidationError
 
 from app.archive.checksum import SUPPORTED_CHECKSUM_ALGORITHM, calculate_checksum
-from app.archive.exceptions import DuplicateArchiveRequestConflict, MetadataValidationError
+from app.archive.exceptions import (
+    ArtifactIdentityCollisionError,
+    DeclaredChecksumMismatchError,
+    DuplicateArchiveRequestConflict,
+    MetadataValidationError,
+)
 from app.archive.models import ArchiveDocumentInput, ArchiveDocumentMetadata
 from app.archive.repository import ArchiveDocumentRepository
 from app.archive.storage import ObjectStorage
@@ -29,6 +34,30 @@ class ArchiveWriter:
         content: bytes,
     ) -> ArchiveDocumentMetadata:
         checksum = calculate_checksum(content)
+        # Custody verification comes FIRST - before idempotent replay, before
+        # storage. A declared identity that does not match what arrived is
+        # refused with both hashes named; truncated or zero-length bytes fail
+        # the same comparison, because a wrong artifact is a wrong artifact
+        # regardless of how it got short.
+        declared = metadata_input.declared_artifact_sha256
+        if declared is not None and declared != checksum:
+            raise DeclaredChecksumMismatchError(declared=declared, computed=checksum)
+        # One artifact answers one governed question: the same exact bytes
+        # under a DIFFERENT document reference is an upstream identity fault,
+        # surfaced rather than stored twice. A regenerate is the opposite
+        # case - a different artifact under the SAME reference - and remains
+        # a distinct custody record.
+        if metadata_input.document_reference is not None:
+            for held in self.repository.get_by_checksum(checksum):
+                if (
+                    held.document_reference is not None
+                    and held.document_reference != metadata_input.document_reference
+                ):
+                    raise ArtifactIdentityCollisionError(
+                        checksum=checksum,
+                        existing_reference=held.document_reference,
+                        offered_reference=metadata_input.document_reference,
+                    )
         existing = self.repository.get_by_archive_request_id(metadata_input.archive_request_id)
         if existing is not None:
             self._ensure_duplicate_request_is_idempotent(

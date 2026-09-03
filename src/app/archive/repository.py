@@ -28,6 +28,8 @@ class ArchiveDocumentRepository(Protocol):
         document_ids: tuple[str, ...],
     ) -> ArchiveDocumentBatchLookup: ...
 
+    def get_by_checksum(self, checksum: str) -> list[ArchiveDocumentMetadata]: ...
+
     def get_by_archive_request_id(
         self,
         archive_request_id: str,
@@ -94,6 +96,11 @@ class InMemoryArchiveDocumentRepository:
         if document_id is None:
             return None
         return self._by_document_id[document_id]
+
+    def get_by_checksum(self, checksum: str) -> list[ArchiveDocumentMetadata]:
+        return [
+            metadata for metadata in self._by_document_id.values() if metadata.checksum == checksum
+        ]
 
     def save(self, metadata: ArchiveDocumentMetadata) -> ArchiveDocumentMetadata:
         existing_document_id = self._by_archive_request_id.get(metadata.archive_request_id)

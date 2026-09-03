@@ -27,6 +27,12 @@ SAFE_ERROR_MESSAGES: dict[str, str] = {
     "document_not_found": "The requested archived document was not found.",
     "document_binary_missing": "The archived document binary could not be found.",
     "document_checksum_mismatch": "The archived document failed integrity verification.",
+    "declared_checksum_mismatch": (
+        "The declared artifact checksum does not match the received bytes; custody refused."
+    ),
+    "artifact_identity_collision": (
+        "The exact artifact is already in custody under a different document reference."
+    ),
     "historical_integrity_violation": (
         "The write attempted to change immutable archived-document history."
     ),
