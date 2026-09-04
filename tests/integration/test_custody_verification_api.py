@@ -36,7 +36,9 @@ def test_false_declaration_is_refused_with_both_hashes_named(tmp_path: Path) -> 
     metadata["declared_artifact_sha256"] = "0" * 64
 
     try:
-        response = client.post("/documents", json=payload, headers=_headers())
+        response = client.post(
+            "/documents", json=payload, headers=_headers(caller_service="lotus-render")
+        )
 
         assert response.status_code == 422
         error = response.json()["error"]
@@ -64,12 +66,16 @@ def test_same_bytes_under_a_second_reference_conflict_with_both_named(
     second_metadata["declared_artifact_sha256"] = ARTIFACT_SHA
 
     try:
-        created = client.post("/documents", json=first, headers=_headers())
+        created = client.post(
+            "/documents", json=first, headers=_headers(caller_service="lotus-render")
+        )
         assert created.status_code == 201
         assert created.json()["document_reference"] == ("rdoc_11111111-1111-5111-8111-111111111111")
         assert created.json()["declared_artifact_sha256"] == ARTIFACT_SHA
 
-        collided = client.post("/documents", json=second, headers=_headers())
+        collided = client.post(
+            "/documents", json=second, headers=_headers(caller_service="lotus-render")
+        )
 
         assert collided.status_code == 409
         error = collided.json()["error"]
@@ -89,7 +95,9 @@ def test_declared_digest_must_be_a_sha256_hex_digest(tmp_path: Path) -> None:
     metadata["declared_artifact_sha256"] = "sha256:not-a-digest"
 
     try:
-        response = client.post("/documents", json=payload, headers=_headers())
+        response = client.post(
+            "/documents", json=payload, headers=_headers(caller_service="lotus-render")
+        )
 
         assert response.status_code == 422
         assert response.json()["error"]["code"] == "validation_failed"
@@ -124,29 +132,29 @@ def test_lotus_render_holds_create_authority_for_the_cutover(tmp_path: Path) -> 
         app.dependency_overrides.clear()
 
 
-def test_create_authority_is_the_transition_set_and_nothing_wider(tmp_path: Path) -> None:
-    """Only the cutover pair may deliver; any other service is refused before
-    storage. When Report's relay retires, revoking lotus-report here is the
-    go-live ratchet enforcing the single delivery path."""
+def test_create_authority_is_the_single_delivery_path(tmp_path: Path) -> None:
+    """The render#120 ratchet, enforced: ONLY lotus-render may deliver.
+    lotus-report's retired relay is refused exactly like any other caller -
+    before storage, with nothing orphaned - so a regression that resurrects
+    the relay cannot silently create a second delivery path."""
 
     from app.archive.authorization import ArchiveAuthorizationPolicy
 
-    assert ArchiveAuthorizationPolicy().create_callers == frozenset(
-        {"lotus-report", "lotus-render"}
-    )
+    assert ArchiveAuthorizationPolicy().create_callers == frozenset({"lotus-render"})
 
     service = _service(tmp_path)
     app.dependency_overrides[archive_service] = lambda: service
     client = TestClient(app)
     try:
-        refused = client.post(
-            "/documents",
-            json=_payload(),
-            headers=_headers(caller_service="lotus-manage"),
-        )
+        for retired_or_foreign in ("lotus-report", "lotus-manage"):
+            refused = client.post(
+                "/documents",
+                json=_payload(),
+                headers=_headers(caller_service=retired_or_foreign),
+            )
 
-        assert refused.status_code == 403
-        assert refused.json()["error"]["code"] == "authorization_failed"
+            assert refused.status_code == 403
+            assert refused.json()["error"]["code"] == "authorization_failed"
         assert not list((tmp_path / "objects").rglob("*"))
     finally:
         app.dependency_overrides.clear()

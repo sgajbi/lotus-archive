@@ -168,7 +168,9 @@ def test_document_create_rejects_missing_tenant_before_storage(tmp_path: Path) -
     del metadata["tenant_id"]
 
     try:
-        response = client.post("/documents", json=payload, headers=_headers())
+        response = client.post(
+            "/documents", json=payload, headers=_headers(caller_service="lotus-render")
+        )
 
         assert response.status_code == 422
         assert response.json()["error"]["code"] == "validation_failed"
@@ -182,7 +184,9 @@ def test_document_create_lookup_download_and_access_events_api(tmp_path: Path) -
     app.dependency_overrides[archive_service] = lambda: service
     client = TestClient(app)
     try:
-        create_response = client.post("/documents", json=_payload(), headers=_headers())
+        create_response = client.post(
+            "/documents", json=_payload(), headers=_headers(caller_service="lotus-render")
+        )
         assert create_response.status_code == 201
         body = create_response.json()
         document_id = body["document_id"]
@@ -228,7 +232,11 @@ def test_proof_pack_report_archive_lifecycle_preserves_retention_and_audit(
     app.dependency_overrides[archive_service] = lambda: service
     client = TestClient(app)
     try:
-        create_response = client.post("/documents", json=_proof_pack_payload(), headers=_headers())
+        create_response = client.post(
+            "/documents",
+            json=_proof_pack_payload(),
+            headers=_headers(caller_service="lotus-render"),
+        )
         assert create_response.status_code == 201
         document_id = create_response.json()["document_id"]
         assert create_response.json()["report_type"] == "proof_pack"
@@ -302,7 +310,7 @@ def test_idea_evidence_pack_archive_summary_preserves_lifecycle_and_audit(
         create_response = client.post(
             "/documents",
             json=_idea_evidence_pack_payload(),
-            headers=_headers(),
+            headers=_headers(caller_service="lotus-render"),
         )
         assert create_response.status_code == 201
         document_id = create_response.json()["document_id"]
@@ -370,7 +378,9 @@ def test_rebalance_wave_report_archive_lifecycle_preserves_download_and_audit(
     app.dependency_overrides[archive_service] = lambda: service
     client = TestClient(app)
     try:
-        create_response = client.post("/documents", json=_wave_payload(), headers=_headers())
+        create_response = client.post(
+            "/documents", json=_wave_payload(), headers=_headers(caller_service="lotus-render")
+        )
         assert create_response.status_code == 201
         document_id = create_response.json()["document_id"]
         assert create_response.json()["report_type"] == "rebalance_wave"
@@ -415,8 +425,14 @@ def test_proof_pack_and_wave_source_events_preserve_report_input_provenance(
     app.dependency_overrides[archive_service] = lambda: service
     client = TestClient(app)
     try:
-        proof_response = client.post("/documents", json=_proof_pack_payload(), headers=_headers())
-        wave_response = client.post("/documents", json=_wave_payload(), headers=_headers())
+        proof_response = client.post(
+            "/documents",
+            json=_proof_pack_payload(),
+            headers=_headers(caller_service="lotus-render"),
+        )
+        wave_response = client.post(
+            "/documents", json=_wave_payload(), headers=_headers(caller_service="lotus-render")
+        )
         proof_events = client.get(
             f"/documents/{proof_response.json()['document_id']}/source-events",
             headers=_headers(caller_service="lotus-gateway"),
@@ -450,7 +466,9 @@ def test_archive_metrics_expose_bounded_operation_status_and_size_labels(tmp_pat
     app.dependency_overrides[archive_service] = lambda: service
     client = TestClient(app)
     try:
-        create_response = client.post("/documents", json=_payload(), headers=_headers())
+        create_response = client.post(
+            "/documents", json=_payload(), headers=_headers(caller_service="lotus-render")
+        )
         assert create_response.status_code == 201
         body = create_response.json()
         document_id = body["document_id"]
@@ -521,11 +539,13 @@ def test_batch_access_preflight_is_ordered_bounded_and_advisory(tmp_path: Path) 
     other_metadata["tenant_id"] = "tenant-other"
     other_metadata["region"] = "EMEA"
     try:
-        allowed_response = client.post("/documents", json=_payload(), headers=_headers())
+        allowed_response = client.post(
+            "/documents", json=_payload(), headers=_headers(caller_service="lotus-render")
+        )
         other_response = client.post(
             "/documents",
             json=other_payload,
-            headers=_headers(),
+            headers=_headers(caller_service="lotus-render"),
         )
         response = client.post(
             "/documents/access-preflight",
@@ -607,7 +627,9 @@ def test_document_metadata_route_enforces_tenant_and_region_scope(tmp_path: Path
     app.dependency_overrides[archive_service] = lambda: service
     client = TestClient(app)
     try:
-        create_response = client.post("/documents", json=_payload(), headers=_headers())
+        create_response = client.post(
+            "/documents", json=_payload(), headers=_headers(caller_service="lotus-render")
+        )
         document_id = create_response.json()["document_id"]
         mismatched_headers = _headers(caller_service="lotus-gateway")
         mismatched_headers["X-Tenant-Id"] = "tenant-other"
@@ -643,7 +665,9 @@ def test_document_download_reports_checksum_mismatch(tmp_path: Path) -> None:
     client = TestClient(app)
     try:
         create_response = client.post(
-            "/documents", json=_purge_eligible_payload(), headers=_headers()
+            "/documents",
+            json=_purge_eligible_payload(),
+            headers=_headers(caller_service="lotus-render"),
         )
         document_id = create_response.json()["document_id"]
         metadata = service.repository.get_by_document_id(document_id)
@@ -674,7 +698,9 @@ def test_document_download_reports_missing_binary(tmp_path: Path) -> None:
     client = TestClient(app)
     try:
         create_response = client.post(
-            "/documents", json=_purge_eligible_payload(), headers=_headers()
+            "/documents",
+            json=_purge_eligible_payload(),
+            headers=_headers(caller_service="lotus-render"),
         )
         document_id = create_response.json()["document_id"]
         metadata = service.repository.get_by_document_id(document_id)
@@ -725,7 +751,9 @@ def test_document_lookup_by_request_id_resolves_committed_ingest(tmp_path: Path)
     app.dependency_overrides[archive_service] = lambda: service
     client = TestClient(app)
     try:
-        created = client.post("/documents", json=_payload(), headers=_headers())
+        created = client.post(
+            "/documents", json=_payload(), headers=_headers(caller_service="lotus-render")
+        )
         assert created.status_code == 201
         document_id = created.json()["document_id"]
         archive_request_id = created.json()["archive_request_id"]
@@ -756,7 +784,9 @@ def test_document_create_reports_metadata_validation_failure(tmp_path: Path) -> 
     payload = _payload()
     payload["content_base64"] = "not-valid-base64"
     try:
-        response = client.post("/documents", json=payload, headers=_headers())
+        response = client.post(
+            "/documents", json=payload, headers=_headers(caller_service="lotus-render")
+        )
     finally:
         app.dependency_overrides.clear()
 
@@ -782,7 +812,7 @@ def test_document_create_rejects_oversized_document_without_side_effects(
         response = client.post(
             "/documents",
             json=_payload(content=b"12345"),
-            headers=_headers(),
+            headers=_headers(caller_service="lotus-render"),
         )
     finally:
         app.dependency_overrides.clear()
@@ -798,10 +828,14 @@ def test_document_create_reports_duplicate_request_conflict(tmp_path: Path) -> N
     app.dependency_overrides[archive_service] = lambda: service
     client = TestClient(app)
     try:
-        first = client.post("/documents", json=_payload(), headers=_headers())
+        first = client.post(
+            "/documents", json=_payload(), headers=_headers(caller_service="lotus-render")
+        )
         assert first.status_code == 201
 
-        second = client.post("/documents", json=_payload(b"changed"), headers=_headers())
+        second = client.post(
+            "/documents", json=_payload(b"changed"), headers=_headers(caller_service="lotus-render")
+        )
     finally:
         app.dependency_overrides.clear()
 
@@ -815,7 +849,9 @@ def test_retention_legal_hold_and_purge_api_flow(tmp_path: Path) -> None:
     client = TestClient(app)
     try:
         create_response = client.post(
-            "/documents", json=_purge_eligible_payload(), headers=_headers()
+            "/documents",
+            json=_purge_eligible_payload(),
+            headers=_headers(caller_service="lotus-render"),
         )
         document_id = create_response.json()["document_id"]
 
@@ -879,7 +915,9 @@ def test_purge_evaluation_reports_retention_elapsed_for_eligible_document(tmp_pa
     client = TestClient(app)
     try:
         create_response = client.post(
-            "/documents", json=_purge_eligible_payload(), headers=_headers()
+            "/documents",
+            json=_purge_eligible_payload(),
+            headers=_headers(caller_service="lotus-render"),
         )
         document_id = create_response.json()["document_id"]
 
@@ -900,7 +938,9 @@ def test_legal_hold_release_reports_not_found(tmp_path: Path) -> None:
     app.dependency_overrides[archive_service] = lambda: service
     client = TestClient(app)
     try:
-        create_response = client.post("/documents", json=_payload(), headers=_headers())
+        create_response = client.post(
+            "/documents", json=_payload(), headers=_headers(caller_service="lotus-render")
+        )
         document_id = create_response.json()["document_id"]
         response = client.request(
             "DELETE",
@@ -925,12 +965,12 @@ def test_document_lifecycle_api_preserves_history_and_resolves_current(
         historical_response = client.post(
             "/documents",
             json=_payload_with_id("archive-request-history", b"historical"),
-            headers=_headers(),
+            headers=_headers(caller_service="lotus-render"),
         )
         current_response = client.post(
             "/documents",
             json=_payload_with_id("archive-request-current", b"current"),
-            headers=_headers(),
+            headers=_headers(caller_service="lotus-render"),
         )
         historical_id = historical_response.json()["document_id"]
         current_id = current_response.json()["document_id"]
@@ -980,17 +1020,17 @@ def test_document_lifecycle_api_rejects_conflicting_transition(tmp_path: Path) -
         first = client.post(
             "/documents",
             json=_payload_with_id("archive-request-first", b"first"),
-            headers=_headers(),
+            headers=_headers(caller_service="lotus-render"),
         ).json()["document_id"]
         second = client.post(
             "/documents",
             json=_payload_with_id("archive-request-second", b"second"),
-            headers=_headers(),
+            headers=_headers(caller_service="lotus-render"),
         ).json()["document_id"]
         third = client.post(
             "/documents",
             json=_payload_with_id("archive-request-third", b"third"),
-            headers=_headers(),
+            headers=_headers(caller_service="lotus-render"),
         ).json()["document_id"]
         assert (
             client.post(
@@ -1029,12 +1069,12 @@ def test_document_lifecycle_api_reissue_and_unsupported_transition_errors(
         source = client.post(
             "/documents",
             json=_payload_with_id("archive-request-reissue-api-source", b"source"),
-            headers=_headers(),
+            headers=_headers(caller_service="lotus-render"),
         ).json()["document_id"]
         target = client.post(
             "/documents",
             json=_payload_with_id("archive-request-reissue-api-target", b"target"),
-            headers=_headers(),
+            headers=_headers(caller_service="lotus-render"),
         ).json()["document_id"]
 
         reissue_response = client.post(
@@ -1072,12 +1112,12 @@ def test_document_source_events_are_support_safe_for_portfolio_memory_consumers(
         source = client.post(
             "/documents",
             json=_payload_with_id("archive-request-source-events-source", b"source"),
-            headers=_headers(),
+            headers=_headers(caller_service="lotus-render"),
         ).json()["document_id"]
         target = client.post(
             "/documents",
             json=_payload_with_id("archive-request-source-events-target", b"target"),
-            headers=_headers(),
+            headers=_headers(caller_service="lotus-render"),
         ).json()["document_id"]
         reissue = client.post(
             f"/documents/{source}/reissue",
@@ -1166,7 +1206,9 @@ def test_access_events_api_is_bounded_and_pageable(tmp_path: Path) -> None:
     app.dependency_overrides[archive_service] = lambda: service
     client = TestClient(app)
     try:
-        create_response = client.post("/documents", json=_payload(), headers=_headers())
+        create_response = client.post(
+            "/documents", json=_payload(), headers=_headers(caller_service="lotus-render")
+        )
         document_id = create_response.json()["document_id"]
         assert (
             client.get(
@@ -1207,12 +1249,12 @@ def test_lifecycle_transition_rejects_sensitive_reason_text(tmp_path: Path) -> N
         source = client.post(
             "/documents",
             json=_payload_with_id("archive-request-sensitive-reason-source", b"source"),
-            headers=_headers(),
+            headers=_headers(caller_service="lotus-render"),
         ).json()["document_id"]
         target = client.post(
             "/documents",
             json=_payload_with_id("archive-request-sensitive-reason-target", b"target"),
-            headers=_headers(),
+            headers=_headers(caller_service="lotus-render"),
         ).json()["document_id"]
         response = client.post(
             f"/documents/{source}/reissue",
@@ -1235,7 +1277,9 @@ def test_purge_api_reports_not_eligible_before_retention_elapsed(tmp_path: Path)
     app.dependency_overrides[archive_service] = lambda: service
     client = TestClient(app)
     try:
-        create_response = client.post("/documents", json=_payload(), headers=_headers())
+        create_response = client.post(
+            "/documents", json=_payload(), headers=_headers(caller_service="lotus-render")
+        )
         document_id = create_response.json()["document_id"]
         response = client.post(f"/documents/{document_id}/purge", headers=_headers())
         events_response = client.get(
@@ -1262,7 +1306,7 @@ def test_reviewed_advisory_narrative_archive_summary_is_preserved_and_source_saf
         create_response = client.post(
             "/documents",
             json=_reviewed_narrative_payload(),
-            headers=_headers(),
+            headers=_headers(caller_service="lotus-render"),
         )
         assert create_response.status_code == 201
         document_id = create_response.json()["document_id"]

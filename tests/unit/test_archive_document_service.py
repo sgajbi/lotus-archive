@@ -122,7 +122,7 @@ def test_create_document_records_archive_create_audit_event(tmp_path: Path) -> N
 
     metadata = service.create_document(
         command=_create_request(),
-        caller_context=_caller(),
+        caller_context=_caller("lotus-render"),
         trace_id="trace-create",
     )
 
@@ -140,7 +140,7 @@ def test_create_document_rejects_invalid_base64_content(tmp_path: Path) -> None:
                 metadata=valid_metadata_input(),
                 content_base64="not-valid-base64",
             ),
-            caller_context=_caller(),
+            caller_context=_caller("lotus-render"),
             trace_id="trace-invalid",
         )
 
@@ -159,7 +159,7 @@ def test_create_document_rejects_oversized_decoded_content(tmp_path: Path) -> No
     with pytest.raises(MetadataValidationError):
         service.create_document(
             command=_create_request(content=b"12345"),
-            caller_context=_caller(),
+            caller_context=_caller("lotus-render"),
             trace_id="trace-oversized",
         )
 
@@ -185,7 +185,7 @@ def test_metadata_lookup_records_access_audit_event(tmp_path: Path) -> None:
     service = _service(tmp_path)
     metadata = service.create_document(
         command=_create_request(),
-        caller_context=_caller(),
+        caller_context=_caller("lotus-render"),
         trace_id="trace-create",
     )
 
@@ -207,7 +207,7 @@ def test_download_detects_missing_binary(tmp_path: Path) -> None:
     service = _service(tmp_path)
     metadata = service.create_document(
         command=_create_request(),
-        caller_context=_caller(),
+        caller_context=_caller("lotus-render"),
         trace_id="trace-create",
     )
     (tmp_path / "objects" / metadata.storage_key).unlink()
@@ -230,7 +230,7 @@ def test_download_detects_checksum_mismatch(tmp_path: Path) -> None:
     service = _service(tmp_path)
     metadata = service.create_document(
         command=_create_request(),
-        caller_context=_caller(),
+        caller_context=_caller("lotus-render"),
         trace_id="trace-create",
     )
     (tmp_path / "objects" / metadata.storage_key).write_bytes(b"corrupted")
@@ -325,7 +325,7 @@ def test_purge_evaluation_marks_document_eligible_after_retention_date(tmp_path:
     service = _service(tmp_path)
     metadata = service.create_document(
         command=_create_request(),
-        caller_context=_caller(),
+        caller_context=_caller("lotus-render"),
         trace_id="trace-create",
     )
 
@@ -347,7 +347,7 @@ def test_purge_evaluation_blocks_active_retention_period(tmp_path: Path) -> None
     service = _service(tmp_path)
     metadata = service.create_document(
         command=_create_request(),
-        caller_context=_caller(),
+        caller_context=_caller("lotus-render"),
         trace_id="trace-create",
     )
 
@@ -367,7 +367,7 @@ def test_legal_hold_blocks_purge_until_released(tmp_path: Path) -> None:
     service = _service(tmp_path)
     metadata = service.create_document(
         command=_create_request(),
-        caller_context=_caller(),
+        caller_context=_caller("lotus-render"),
         trace_id="trace-create",
     )
     legal_hold = service.set_legal_hold(
@@ -425,7 +425,7 @@ def test_purge_is_idempotent_after_first_execution(tmp_path: Path) -> None:
     service = _service(tmp_path)
     metadata = service.create_document(
         command=_create_request(),
-        caller_context=_caller(),
+        caller_context=_caller("lotus-render"),
         trace_id="trace-create",
     )
     first, first_reason = service.purge_document(
@@ -451,7 +451,7 @@ def test_purge_rejects_document_still_under_retention(tmp_path: Path) -> None:
     service = _service(tmp_path)
     metadata = service.create_document(
         command=_create_request(),
-        caller_context=_caller(),
+        caller_context=_caller("lotus-render"),
         trace_id="trace-create",
     )
 
@@ -471,7 +471,7 @@ def test_release_unknown_legal_hold_reports_not_found(tmp_path: Path) -> None:
     service = _service(tmp_path)
     metadata = service.create_document(
         command=_create_request(),
-        caller_context=_caller(),
+        caller_context=_caller("lotus-render"),
         trace_id="trace-create",
     )
 
@@ -489,12 +489,12 @@ def test_supersession_preserves_history_and_resolves_current_document(tmp_path: 
     service = _service(tmp_path)
     historical = service.create_document(
         command=_create_request_with_id("archive-request-historical"),
-        caller_context=_caller(),
+        caller_context=_caller("lotus-render"),
         trace_id="trace-create-old",
     )
     current = service.create_document(
         command=_create_request_with_id("archive-request-current"),
-        caller_context=_caller(),
+        caller_context=_caller("lotus-render"),
         trace_id="trace-create-new",
     )
 
@@ -564,12 +564,12 @@ def test_lifecycle_transition_persists_nothing_when_the_atomic_unit_fails(
     )
     historical = service.create_document(
         command=_create_request_with_id("archive-request-atomic-source"),
-        caller_context=_caller(),
+        caller_context=_caller("lotus-render"),
         trace_id="trace-atomic-source",
     )
     current = service.create_document(
         command=_create_request_with_id("archive-request-atomic-current"),
-        caller_context=_caller(),
+        caller_context=_caller("lotus-render"),
         trace_id="trace-atomic-current",
     )
 
@@ -614,12 +614,12 @@ def test_audit_failure_after_a_committed_transition_raises_but_does_not_rewrite_
     )
     historical = service.create_document(
         command=_create_request_with_id("archive-request-audit-source"),
-        caller_context=_caller(),
+        caller_context=_caller("lotus-render"),
         trace_id="trace-audit-source",
     )
     current = service.create_document(
         command=_create_request_with_id("archive-request-audit-current"),
-        caller_context=_caller(),
+        caller_context=_caller("lotus-render"),
         trace_id="trace-audit-current",
     )
 
@@ -647,22 +647,22 @@ def test_correction_and_reissue_set_explicit_lifecycle_semantics(tmp_path: Path)
     service = _service(tmp_path)
     source = service.create_document(
         command=_create_request_with_id("archive-request-source"),
-        caller_context=_caller(),
+        caller_context=_caller("lotus-render"),
         trace_id="trace-source",
     )
     correction = service.create_document(
         command=_create_request_with_id("archive-request-correction"),
-        caller_context=_caller(),
+        caller_context=_caller("lotus-render"),
         trace_id="trace-correction",
     )
     reissue_source = service.create_document(
         command=_create_request_with_id("archive-request-reissue-source"),
-        caller_context=_caller(),
+        caller_context=_caller("lotus-render"),
         trace_id="trace-reissue-source",
     )
     reissue = service.create_document(
         command=_create_request_with_id("archive-request-reissue"),
-        caller_context=_caller(),
+        caller_context=_caller("lotus-render"),
         trace_id="trace-reissue",
     )
 
@@ -706,12 +706,12 @@ def test_document_source_events_project_archive_and_reissue_lineage(tmp_path: Pa
     service = _service(tmp_path)
     source = service.create_document(
         command=_create_request_with_id("archive-request-source-event-source"),
-        caller_context=_caller(),
+        caller_context=_caller("lotus-render"),
         trace_id="trace-source-event-source",
     )
     target = service.create_document(
         command=_create_request_with_id("archive-request-source-event-target"),
-        caller_context=_caller(),
+        caller_context=_caller("lotus-render"),
         trace_id="trace-source-event-target",
     )
 
@@ -762,22 +762,22 @@ def test_document_source_events_project_supersede_and_correction_lineage(
     service = _service(tmp_path)
     supersede_source = service.create_document(
         command=_create_request_with_id("archive-request-source-event-supersede-source"),
-        caller_context=_caller(),
+        caller_context=_caller("lotus-render"),
         trace_id="trace-source-event-supersede-source",
     )
     supersede_target = service.create_document(
         command=_create_request_with_id("archive-request-source-event-supersede-target"),
-        caller_context=_caller(),
+        caller_context=_caller("lotus-render"),
         trace_id="trace-source-event-supersede-target",
     )
     correction_source = service.create_document(
         command=_create_request_with_id("archive-request-source-event-correction-source"),
-        caller_context=_caller(),
+        caller_context=_caller("lotus-render"),
         trace_id="trace-source-event-correction-source",
     )
     correction_target = service.create_document(
         command=_create_request_with_id("archive-request-source-event-correction-target"),
-        caller_context=_caller(),
+        caller_context=_caller("lotus-render"),
         trace_id="trace-source-event-correction-target",
     )
 
@@ -826,17 +826,17 @@ def test_lifecycle_transition_rejects_non_current_source(tmp_path: Path) -> None
     service = _service(tmp_path)
     first = service.create_document(
         command=_create_request_with_id("archive-request-first"),
-        caller_context=_caller(),
+        caller_context=_caller("lotus-render"),
         trace_id="trace-first",
     )
     second = service.create_document(
         command=_create_request_with_id("archive-request-second"),
-        caller_context=_caller(),
+        caller_context=_caller("lotus-render"),
         trace_id="trace-second",
     )
     third = service.create_document(
         command=_create_request_with_id("archive-request-third"),
-        caller_context=_caller(),
+        caller_context=_caller("lotus-render"),
         trace_id="trace-third",
     )
     service.supersede_document(
@@ -865,7 +865,7 @@ def test_lifecycle_transition_rejects_self_reference(tmp_path: Path) -> None:
     service = _service(tmp_path)
     metadata = service.create_document(
         command=_create_request_with_id("archive-request-self"),
-        caller_context=_caller(),
+        caller_context=_caller("lotus-render"),
         trace_id="trace-create",
     )
 
@@ -885,12 +885,12 @@ def test_lifecycle_transition_rejects_purged_documents(tmp_path: Path) -> None:
     service = _service(tmp_path)
     purged = service.create_document(
         command=_create_request_with_id("archive-request-purged"),
-        caller_context=_caller(),
+        caller_context=_caller("lotus-render"),
         trace_id="trace-purged",
     )
     target = service.create_document(
         command=_create_request_with_id("archive-request-target"),
-        caller_context=_caller(),
+        caller_context=_caller("lotus-render"),
         trace_id="trace-target",
     )
     service.purge_document(
@@ -916,17 +916,17 @@ def test_lifecycle_transition_rejects_historical_target(tmp_path: Path) -> None:
     service = _service(tmp_path)
     first = service.create_document(
         command=_create_request_with_id("archive-request-target-first"),
-        caller_context=_caller(),
+        caller_context=_caller("lotus-render"),
         trace_id="trace-first",
     )
     second = service.create_document(
         command=_create_request_with_id("archive-request-target-second"),
-        caller_context=_caller(),
+        caller_context=_caller("lotus-render"),
         trace_id="trace-second",
     )
     third = service.create_document(
         command=_create_request_with_id("archive-request-target-third"),
-        caller_context=_caller(),
+        caller_context=_caller("lotus-render"),
         trace_id="trace-third",
     )
     service.supersede_document(
@@ -955,17 +955,17 @@ def test_lifecycle_transition_rejects_target_with_existing_origin(tmp_path: Path
     service = _service(tmp_path)
     first = service.create_document(
         command=_create_request_with_id("archive-request-origin-first"),
-        caller_context=_caller(),
+        caller_context=_caller("lotus-render"),
         trace_id="trace-first",
     )
     second = service.create_document(
         command=_create_request_with_id("archive-request-origin-second"),
-        caller_context=_caller(),
+        caller_context=_caller("lotus-render"),
         trace_id="trace-second",
     )
     third = service.create_document(
         command=_create_request_with_id("archive-request-origin-third"),
-        caller_context=_caller(),
+        caller_context=_caller("lotus-render"),
         trace_id="trace-third",
     )
     service.reissue_document(
@@ -994,12 +994,12 @@ def test_current_document_resolution_detects_cycle(tmp_path: Path) -> None:
     service = _service(tmp_path)
     first = service.create_document(
         command=_create_request_with_id("archive-request-cycle-first"),
-        caller_context=_caller(),
+        caller_context=_caller("lotus-render"),
         trace_id="trace-first",
     )
     second = service.create_document(
         command=_create_request_with_id("archive-request-cycle-second"),
-        caller_context=_caller(),
+        caller_context=_caller("lotus-render"),
         trace_id="trace-second",
     )
     service.repository.save(
@@ -1027,7 +1027,7 @@ def test_purge_evaluation_reports_missing_retention_date(tmp_path: Path) -> None
             ),
             content_base64=b64encode(b"no retention").decode("ascii"),
         ),
-        caller_context=_caller(),
+        caller_context=_caller("lotus-render"),
         trace_id="trace-create",
     )
 
@@ -1046,7 +1046,7 @@ def test_set_legal_hold_retry_converges_on_the_existing_active_hold(tmp_path: Pa
     service = _service(tmp_path)
     metadata = service.create_document(
         command=_create_request(),
-        caller_context=_caller(),
+        caller_context=_caller("lotus-render"),
         trace_id="trace-create",
     )
     command = LegalHoldCreateCommand(
@@ -1078,7 +1078,7 @@ def test_set_legal_hold_with_a_different_authority_creates_a_second_hold(tmp_pat
     service = _service(tmp_path)
     metadata = service.create_document(
         command=_create_request(),
-        caller_context=_caller(),
+        caller_context=_caller("lotus-render"),
         trace_id="trace-create",
     )
     first = service.set_legal_hold(
@@ -1109,7 +1109,7 @@ def test_set_legal_hold_after_release_creates_a_new_hold(tmp_path: Path) -> None
     service = _service(tmp_path)
     metadata = service.create_document(
         command=_create_request(),
-        caller_context=_caller(),
+        caller_context=_caller("lotus-render"),
         trace_id="trace-create",
     )
     command = LegalHoldCreateCommand(
@@ -1145,12 +1145,12 @@ def test_supersede_retry_echoes_the_recorded_relationship(tmp_path: Path) -> Non
     service = _service(tmp_path)
     historical = service.create_document(
         command=_create_request_with_id("archive-request-historical"),
-        caller_context=_caller(),
+        caller_context=_caller("lotus-render"),
         trace_id="trace-create-old",
     )
     current = service.create_document(
         command=_create_request_with_id("archive-request-current"),
-        caller_context=_caller(),
+        caller_context=_caller("lotus-render"),
         trace_id="trace-create-new",
     )
     command = LifecycleTransitionCommand(
@@ -1187,12 +1187,12 @@ def test_retrying_an_applied_transition_as_a_different_type_still_conflicts(
     service = _service(tmp_path)
     historical = service.create_document(
         command=_create_request_with_id("archive-request-historical"),
-        caller_context=_caller(),
+        caller_context=_caller("lotus-render"),
         trace_id="trace-create-old",
     )
     current = service.create_document(
         command=_create_request_with_id("archive-request-current"),
-        caller_context=_caller(),
+        caller_context=_caller("lotus-render"),
         trace_id="trace-create-new",
     )
     command = LifecycleTransitionCommand(
@@ -1219,17 +1219,17 @@ def test_superseding_to_a_second_target_still_conflicts(tmp_path: Path) -> None:
     service = _service(tmp_path)
     historical = service.create_document(
         command=_create_request_with_id("archive-request-historical"),
-        caller_context=_caller(),
+        caller_context=_caller("lotus-render"),
         trace_id="trace-create-old",
     )
     current = service.create_document(
         command=_create_request_with_id("archive-request-current"),
-        caller_context=_caller(),
+        caller_context=_caller("lotus-render"),
         trace_id="trace-create-new",
     )
     rival = service.create_document(
         command=_create_request_with_id("archive-request-rival"),
-        caller_context=_caller(),
+        caller_context=_caller("lotus-render"),
         trace_id="trace-create-rival",
     )
     service.supersede_document(
@@ -1258,12 +1258,12 @@ def test_an_unknown_transition_type_is_rejected_not_echoed(tmp_path: Path) -> No
     service = _service(tmp_path)
     historical = service.create_document(
         command=_create_request_with_id("archive-request-historical"),
-        caller_context=_caller(),
+        caller_context=_caller("lotus-render"),
         trace_id="trace-create-old",
     )
     current = service.create_document(
         command=_create_request_with_id("archive-request-current"),
-        caller_context=_caller(),
+        caller_context=_caller("lotus-render"),
         trace_id="trace-create-new",
     )
 
@@ -1291,12 +1291,12 @@ def test_chain_fields_without_a_relationship_record_conflict_not_echo(tmp_path: 
     service = _service(tmp_path)
     historical = service.create_document(
         command=_create_request_with_id("archive-request-historical"),
-        caller_context=_caller(),
+        caller_context=_caller("lotus-render"),
         trace_id="trace-create-old",
     )
     current = service.create_document(
         command=_create_request_with_id("archive-request-current"),
-        caller_context=_caller(),
+        caller_context=_caller("lotus-render"),
         trace_id="trace-create-new",
     )
     service.repository.save(
@@ -1322,7 +1322,7 @@ def test_purge_reevaluation_does_not_rewrite_an_unchanged_status(tmp_path: Path)
     service = _service(tmp_path)
     metadata = service.create_document(
         command=_create_request(),
-        caller_context=_caller(),
+        caller_context=_caller("lotus-render"),
         trace_id="trace-create",
     )
     first, _, _ = service.evaluate_purge(

@@ -126,7 +126,7 @@ def _create_document(
             metadata=metadata,
             content_base64=b64encode(b"preflight document").decode("ascii"),
         ),
-        caller_context=_caller(caller_service="lotus-report"),
+        caller_context=_caller(caller_service="lotus-render"),
         trace_id="trace-create",
     )
     return created.document_id
