@@ -184,6 +184,31 @@ def test_legacy_relay_deliveries_without_custody_fields_still_archive(tmp_path: 
     assert metadata.checksum == ARTIFACT_SHA
 
 
+def test_template_publication_posture_rides_custody_verbatim(tmp_path: Path) -> None:
+    """Render's governed template posture at render time is stored and echoed
+    with the custody record (render#120 publication gating): Report's
+    external gate reads archived_verified AND template_publication ==
+    "published" - never digests. Archive stores the posture verbatim,
+    bounded to the owner's vocabulary, and never interprets it."""
+
+    writer, _repository = _writer(tmp_path)
+
+    published = writer.archive_document(
+        metadata_input=_custody_input(template_publication="Published"),
+        content=ARTIFACT,
+    )
+    assert published.template_publication == "published"
+
+    legacy = writer.archive_document(
+        metadata_input=valid_metadata_input(archive_request_id="archive-request-legacy-tp"),
+        content=b"%PDF-1.7 legacy bytes",
+    )
+    assert legacy.template_publication is None
+
+    with pytest.raises(ValidationError):
+        _custody_input(template_publication="beta")
+
+
 def test_declared_digest_refuses_anything_but_a_sha256_hex_digest() -> None:
     """A declaration that is not a 64-hex digest can never match a computed
     SHA-256; refusing it at the model boundary names the fault precisely

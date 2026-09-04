@@ -292,6 +292,22 @@ class ArchiveDocumentInput(BaseModel):
     render_runtime_engine: str | None = Field(default=None, min_length=1)
     render_runtime_engine_version: str | None = Field(default=None, min_length=1)
     template_digest: str | None = Field(default=None, min_length=1)
+    #: Render's governed template posture AT RENDER TIME (render#120
+    #: publication gating): "published" means the artifact came from a
+    #: governance-approved template version; "development" means it did not.
+    #: Report's external-publication gate reads this from custody - Archive
+    #: stores the posture verbatim and never interprets it.
+    template_publication: str | None = Field(default=None)
+
+    @field_validator("template_publication")
+    @classmethod
+    def _template_publication_must_be_bounded(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        normalized = value.strip().lower()
+        if normalized not in {"published", "development"}:
+            raise ValueError("template_publication must be published or development")
+        return normalized
 
     @field_validator("declared_artifact_sha256")
     @classmethod

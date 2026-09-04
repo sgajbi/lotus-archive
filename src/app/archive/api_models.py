@@ -185,6 +185,12 @@ class ArchiveDocumentResponse(BaseModel):
     template_digest: str | None = Field(
         default=None, description="Digest of the template used for rendering."
     )
+    template_publication: str | None = Field(
+        default=None,
+        description=(
+            "Render's governed template posture at render time: published or development."
+        ),
+    )
     size_bytes: int = Field(description="Archived binary size in bytes.")
     mime_type: str = Field(description="Archived binary media type.")
     output_format: str = Field(description="Archived output format.")
