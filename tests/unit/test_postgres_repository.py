@@ -114,6 +114,25 @@ def test_postgres_repository_reads_single_and_batch_documents() -> None:
     assert repository.get_by_document_ids(()).documents == {}
 
 
+def test_postgres_repository_finds_custody_holders_by_checksum() -> None:
+    """The collision check asks "who already holds these exact bytes" - the
+    lookup must go to SQL by checksum and validate what comes back."""
+    metadata = _metadata()
+    by_checksum = FakeCursor(rows=[_row(metadata)])
+    empty = FakeCursor(rows=[])
+    repository = PostgresArchiveDocumentRepository(
+        "postgresql://unused",
+        connection_factory=ConnectionSequence(by_checksum, empty),
+    )
+
+    held = repository.get_by_checksum(metadata.checksum)
+
+    assert held == [metadata]
+    assert "WHERE checksum = %s" in by_checksum.executions[0][0]
+    assert by_checksum.executions[0][1] == (metadata.checksum,)
+    assert repository.get_by_checksum("f" * 64) == []
+
+
 def test_postgres_repositories_measure_required_schema_readiness() -> None:
     document_cursor = FakeCursor()
     audit_cursor = FakeCursor()

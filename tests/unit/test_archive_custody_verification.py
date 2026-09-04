@@ -13,6 +13,7 @@ import hashlib
 from pathlib import Path
 
 import pytest
+from pydantic import ValidationError
 
 from app.archive.archive_writer import ArchiveWriter
 from app.archive.exceptions import (
@@ -181,6 +182,16 @@ def test_legacy_relay_deliveries_without_custody_fields_still_archive(tmp_path: 
     assert metadata.document_reference is None
     assert metadata.declared_artifact_sha256 is None
     assert metadata.checksum == ARTIFACT_SHA
+
+
+def test_declared_digest_refuses_anything_but_a_sha256_hex_digest() -> None:
+    """A declaration that is not a 64-hex digest can never match a computed
+    SHA-256; refusing it at the model boundary names the fault precisely
+    instead of reporting a mismatch against garbage."""
+
+    for invalid in ("sha256:short", "g" * 64, "0" * 63):
+        with pytest.raises(ValidationError):
+            _custody_input(declared_artifact_sha256=invalid)
 
 
 def test_declared_digest_accepts_the_prefixed_form_and_normalizes(tmp_path: Path) -> None:
