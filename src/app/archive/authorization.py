@@ -40,11 +40,11 @@ class AuthorizationFailedError(PermissionError):
 
 @dataclass(frozen=True)
 class ArchiveAuthorizationPolicy:
-    #: The render#120 cutover transition set: lotus-render is the archive
-    #: transmit authority for governed documents; lotus-report keeps create
-    #: authority only until its byte relay retires. Revoking "lotus-report"
-    #: here is the go-live ratchet that enforces the single delivery path.
-    create_callers: frozenset[str] = frozenset({"lotus-report", "lotus-render"})
+    #: The render#120 cutover is complete: lotus-render is the ONE archive
+    #: transmit authority for governed documents. lotus-report's byte relay
+    #: retired (its PR #267); this revocation is the ratchet that makes the
+    #: single delivery path an enforced fact rather than a convention.
+    create_callers: frozenset[str] = frozenset({"lotus-render"})
     read_callers: frozenset[str] = frozenset({"lotus-report", "lotus-gateway"})
     audit_callers: frozenset[str] = frozenset({"lotus-report"})
     retention_callers: frozenset[str] = frozenset({"lotus-report"})
