@@ -96,3 +96,57 @@ def test_declared_digest_must_be_a_sha256_hex_digest(tmp_path: Path) -> None:
         assert not list((tmp_path / "objects").rglob("*"))
     finally:
         app.dependency_overrides.clear()
+
+
+def test_lotus_render_holds_create_authority_for_the_cutover(tmp_path: Path) -> None:
+    """render#120: Render is the archive transmit authority for governed
+    documents. Its deliveries are accepted with full custody semantics -
+    this is the exact call the live round-trip proof makes."""
+
+    service = _service(tmp_path)
+    app.dependency_overrides[archive_service] = lambda: service
+    client = TestClient(app)
+    payload = _payload()
+    metadata = cast(dict[str, object], payload["metadata"])
+    metadata["document_reference"] = "rdoc_33333333-3333-5333-8333-333333333333"
+    metadata["declared_artifact_sha256"] = ARTIFACT_SHA
+
+    try:
+        response = client.post(
+            "/documents",
+            json=payload,
+            headers=_headers(caller_service="lotus-render"),
+        )
+
+        assert response.status_code == 201
+        assert response.json()["declared_artifact_sha256"] == ARTIFACT_SHA
+    finally:
+        app.dependency_overrides.clear()
+
+
+def test_create_authority_is_the_transition_set_and_nothing_wider(tmp_path: Path) -> None:
+    """Only the cutover pair may deliver; any other service is refused before
+    storage. When Report's relay retires, revoking lotus-report here is the
+    go-live ratchet enforcing the single delivery path."""
+
+    from app.archive.authorization import ArchiveAuthorizationPolicy
+
+    assert ArchiveAuthorizationPolicy().create_callers == frozenset(
+        {"lotus-report", "lotus-render"}
+    )
+
+    service = _service(tmp_path)
+    app.dependency_overrides[archive_service] = lambda: service
+    client = TestClient(app)
+    try:
+        refused = client.post(
+            "/documents",
+            json=_payload(),
+            headers=_headers(caller_service="lotus-manage"),
+        )
+
+        assert refused.status_code == 403
+        assert refused.json()["error"]["code"] == "authorization_failed"
+        assert not list((tmp_path / "objects").rglob("*"))
+    finally:
+        app.dependency_overrides.clear()
