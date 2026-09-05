@@ -137,8 +137,10 @@ def test_in_memory_lifecycle_transition_restores_source_when_target_save_fails()
     the relationship is never recorded."""
 
     class _TargetRejectingRepository(InMemoryArchiveDocumentRepository):
+        _fail_on: str | None = None
+
         def save(self, metadata: ArchiveDocumentMetadata) -> ArchiveDocumentMetadata:
-            if getattr(self, "_fail_on", None) == metadata.document_id:
+            if self._fail_on == metadata.document_id:
                 raise RuntimeError("target store unavailable")
             return super().save(metadata)
 
@@ -150,9 +152,7 @@ def test_in_memory_lifecycle_transition_restores_source_when_target_save_fails()
     # The transition writes the source with its supersession pointer set;
     # after the target save fails, the ORIGINAL (pointer-free) source must
     # be back in place.
-    updated_source = source.model_copy(
-        update={"superseded_by_document_id": target.document_id}
-    )
+    updated_source = source.model_copy(update={"superseded_by_document_id": target.document_id})
 
     repository._fail_on = target.document_id
     with pytest.raises(RuntimeError, match="target store unavailable"):
