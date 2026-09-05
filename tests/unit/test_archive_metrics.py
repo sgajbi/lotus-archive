@@ -235,3 +235,33 @@ def test_status_derivation_uses_operation_contracts() -> None:
     assert archive_metrics._status_from_result("archive_create", metadata) == "archived"
     assert archive_metrics._status_from_result("retention_lookup", metadata) == "clear"
     assert archive_metrics._status_from_result("legal_hold_set", hold) == "active"
+
+
+def test_status_projection_covers_every_result_shape() -> None:
+    class _HeldRetention:
+        legal_hold_status = "held"
+
+    class _BareHold:
+        hold_status = "released"
+
+    class _Sized:
+        size_bytes = 512
+
+    assert archive_metrics._status_from_result("retention_lookup", _HeldRetention()) == "held"
+    assert archive_metrics._status_from_result("purge_execute", _BareHold()) == "released"
+    assert archive_metrics._status_from_result("purge_execute", ("doc", "purged")) == "purged"
+    assert (
+        archive_metrics._status_from_result("purge_preflight", ("doc", "retention_elapsed"))
+        == "eligible"
+    )
+    assert (
+        archive_metrics._status_from_result("purge_preflight", ("doc", "legal_hold_active"))
+        == "not_eligible"
+    )
+    assert archive_metrics._status_from_result("purge_preflight", ("doc", "unmapped")) == (
+        "succeeded"
+    )
+    assert archive_metrics._status_from_result("other", object()) == "succeeded"
+    assert archive_metrics._document_size_from_result(("id", b"12345")) == 5
+    assert archive_metrics._document_size_from_result(("id", _Sized())) == 512
+    assert archive_metrics._document_size_from_result(("id", "no-size")) is None

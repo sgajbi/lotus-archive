@@ -10,6 +10,7 @@ from app.archive.models import (
     PurgeStatus,
 )
 from app.archive.repository import InMemoryArchiveDocumentRepository
+from app.archive.models import LifecycleRelationshipRecord, LifecycleTransitionType
 from tests.unit.test_archive_metadata_model import valid_metadata_input
 
 
@@ -102,3 +103,66 @@ def test_mutable_field_registry_matches_what_the_service_actually_mutates() -> N
         "service.py mutates document fields that MUTABLE_DOCUMENT_FIELDS does not register; "
         f"both repositories will refuse those writes at runtime: {unregistered}"
     )
+
+
+def _relationship(relationship_id: str = "lifecycle_1") -> LifecycleRelationshipRecord:
+    return LifecycleRelationshipRecord(
+        lifecycle_relationship_id=relationship_id,
+        source_document_id="doc_1",
+        target_document_id="doc_2",
+        transition_type=LifecycleTransitionType.SUPERSEDE,
+        transition_reason="Quarter-end correction",
+        transition_reason_code="archive_document_supersession_requested",
+        requested_by="operations-user",
+    )
+
+
+def test_in_memory_lifecycle_relationships_roundtrip_and_delete() -> None:
+    repository = InMemoryArchiveDocumentRepository()
+    saved = repository.save_lifecycle_relationship(_relationship())
+
+    assert saved.lifecycle_relationship_id == "lifecycle_1"
+    listed = repository.list_lifecycle_relationships("doc_1")
+    assert [item.lifecycle_relationship_id for item in listed] == ["lifecycle_1"]
+
+    repository.delete_lifecycle_relationship("lifecycle_1")
+    assert repository.list_lifecycle_relationships("doc_1") == []
+    # Deleting an unknown id is a no-op, never an error.
+    repository.delete_lifecycle_relationship("lifecycle_missing")
+
+
+def test_in_memory_lifecycle_transition_restores_source_when_target_save_fails() -> None:
+    """The atomic unit: all three writes or none. When the target save
+    fails, the already-written source is restored from the snapshot and
+    the relationship is never recorded."""
+
+    class _TargetRejectingRepository(InMemoryArchiveDocumentRepository):
+        def save(self, metadata: ArchiveDocumentMetadata) -> ArchiveDocumentMetadata:
+            if getattr(self, "_fail_on", None) == metadata.document_id:
+                raise RuntimeError("target store unavailable")
+            return super().save(metadata)
+
+    repository = _TargetRejectingRepository()
+    source = _metadata("doc_1", "archive-request-1")
+    target = _metadata("doc_2", "archive-request-2")
+    repository.save(source)
+    repository.save(target)
+    # The transition writes the source with its supersession pointer set;
+    # after the target save fails, the ORIGINAL (pointer-free) source must
+    # be back in place.
+    updated_source = source.model_copy(
+        update={"superseded_by_document_id": target.document_id}
+    )
+
+    repository._fail_on = target.document_id
+    with pytest.raises(RuntimeError, match="target store unavailable"):
+        repository.apply_lifecycle_transition(
+            updated_source,
+            target,
+            _relationship("lifecycle_rollback"),
+        )
+
+    restored = repository.get_by_document_id(source.document_id)
+    assert restored is not None
+    assert restored.superseded_by_document_id is None
+    assert repository.list_lifecycle_relationships(source.document_id) == []
