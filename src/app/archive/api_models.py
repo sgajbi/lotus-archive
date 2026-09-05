@@ -191,6 +191,13 @@ class ArchiveDocumentResponse(BaseModel):
             "Render's governed template posture at render time: published or development."
         ),
     )
+    report_revision_id: str | None = Field(
+        default=None,
+        description=(
+            "Report's canonical revision identity for the presented facts; opaque, stored "
+            "verbatim, null for documents delivered before revision identity existed."
+        ),
+    )
     size_bytes: int = Field(description="Archived binary size in bytes.")
     mime_type: str = Field(description="Archived binary media type.")
     output_format: str = Field(description="Archived output format.")

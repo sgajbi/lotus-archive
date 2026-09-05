@@ -298,6 +298,14 @@ class ArchiveDocumentInput(BaseModel):
     #: Report's external-publication gate reads this from custody - Archive
     #: stores the posture verbatim and never interprets it.
     template_publication: str | None = Field(default=None)
+    #: Report's canonical revision identity for the facts this document
+    #: presents (report#283): deterministic over the semantic request, the
+    #: stated source revisions, and the factual snapshot content, so every
+    #: capture of identical facts shares it. Report owns the derivation;
+    #: Archive stores the OPAQUE reference verbatim and never parses or
+    #: interprets it. Nullable: documents delivered before revision identity
+    #: existed archive unchanged - history is never relabelled.
+    report_revision_id: str | None = Field(default=None, min_length=1)
 
     @field_validator("template_publication")
     @classmethod

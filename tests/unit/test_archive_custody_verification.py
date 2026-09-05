@@ -209,6 +209,34 @@ def test_template_publication_posture_rides_custody_verbatim(tmp_path: Path) -> 
         _custody_input(template_publication="beta")
 
 
+def test_report_revision_identity_rides_custody_verbatim(tmp_path: Path) -> None:
+    """Report's canonical revision id for the presented facts (report#283)
+    is stored and echoed with the custody record as an OPAQUE reference:
+    Archive never parses or interprets it, and a document delivered before
+    revision identity existed archives unchanged with no identity invented
+    for it."""
+
+    writer, _repository = _writer(tmp_path)
+
+    bound = writer.archive_document(
+        metadata_input=_custody_input(
+            report_revision_id=(
+                "rrv2_7a5486f4a7ef1962f27fe67c6ef392fd0da0dfc7c98a84e426238637f4a5b7dd"
+            ),
+        ),
+        content=ARTIFACT,
+    )
+    assert bound.report_revision_id == (
+        "rrv2_7a5486f4a7ef1962f27fe67c6ef392fd0da0dfc7c98a84e426238637f4a5b7dd"
+    )
+
+    legacy = writer.archive_document(
+        metadata_input=valid_metadata_input(archive_request_id="archive-request-legacy-rev"),
+        content=b"%PDF-1.7 legacy revision bytes",
+    )
+    assert legacy.report_revision_id is None
+
+
 def test_declared_digest_refuses_anything_but_a_sha256_hex_digest() -> None:
     """A declaration that is not a 64-hex digest can never match a computed
     SHA-256; refusing it at the model boundary names the fault precisely
