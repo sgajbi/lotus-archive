@@ -3,7 +3,10 @@ from pathlib import Path
 
 import pytest
 
+from pydantic import ValidationError
+
 from app.archive.archive_writer import ArchiveWriter
+from app.archive.exceptions import MetadataValidationError
 from app.archive.exceptions import DuplicateArchiveRequestConflict
 from app.archive.models import ArchiveDocumentInput, ArchiveDocumentMetadata, DocumentClassification
 from app.archive.repository import InMemoryArchiveDocumentRepository
@@ -119,6 +122,31 @@ def test_archive_writer_removes_new_object_when_metadata_save_fails(tmp_path: Pa
         writer.archive_document(
             metadata_input=valid_metadata_input(),
             content=b"new unmanaged object",
+        )
+
+    assert not list((tmp_path / "objects").rglob("*.pdf"))
+
+
+def test_archive_writer_removes_new_object_when_metadata_fails_validation(
+    tmp_path: Path,
+) -> None:
+    """The ValidationError branch is its own cleanup path: the stored
+    object is deleted and the failure surfaces as the governed
+    MetadataValidationError, never a raw pydantic error."""
+
+    class ValidationRejectingRepository(InMemoryArchiveDocumentRepository):
+        def save(self, metadata: ArchiveDocumentMetadata) -> ArchiveDocumentMetadata:
+            raise ValidationError.from_exception_data("ArchiveDocumentMetadata", [])
+
+    writer = ArchiveWriter(
+        repository=ValidationRejectingRepository(),
+        storage=FilesystemObjectStorage(tmp_path / "objects"),
+    )
+
+    with pytest.raises(MetadataValidationError, match="could not be validated"):
+        writer.archive_document(
+            metadata_input=valid_metadata_input(),
+            content=b"rejected metadata object",
         )
 
     assert not list((tmp_path / "objects").rglob("*.pdf"))
