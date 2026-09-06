@@ -68,8 +68,11 @@ gate advertised by `make check` or `make ci` from existing only on a developer m
 
 `lotus-archive` accepts only Lotus-generated report documents of four governed types —
 `portfolio_review`, `outcome_review`, `proof_pack` and `rebalance_wave` — submitted by
-`lotus-report` after a successful PDF render. Report-to-archive handoff through `lotus-report` is
-the only write path.
+**`lotus-render`** after it compiles the PDF. Render-to-archive handoff is the only write path:
+`create_callers` admits `lotus-render` alone, so a creation call from any other service, including
+`lotus-report`, is refused. Report composes the document and holds every authority over it
+afterwards — lifecycle transitions, retention, purge, legal hold, access audit and read-back — but
+never sends the bytes.
 
 Product retrieval flows through `lotus-gateway`; Workbench retrieval is supported only through the
 Workbench BFF and the Gateway route, and Workbench must not call `lotus-archive` directly.

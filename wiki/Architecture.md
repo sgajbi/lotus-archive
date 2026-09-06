@@ -91,7 +91,7 @@ that limitation is tracked by #55 and does not change the generated-document cus
 
 The service deliberately does not own:
 
-1. **document content** — assembled by `lotus-report`, compiled by `lotus-render`
+1. **document content** — assembled by `lotus-report`, compiled AND submitted by `lotus-render`, which is the single transmit authority for creation
 2. **retention policy** — supplied on the archive request; enforced here, never computed here
 3. **delivery** — archive records existence, not receipt
 4. **product retrieval** — `lotus-gateway` is the product-facing boundary; Workbench goes through

@@ -136,8 +136,12 @@ transactions, positions, calculations or methodology — which it is not.
 
 ## How each report type arrives
 
-Every document reaches the archive the same way — `lotus-report` submits it after `lotus-render`
-returns a compiled artefact — but the upstream authority differs by type:
+Every document reaches the archive the same way — **`lotus-render` submits it**, as the single
+transmit authority, having compiled the artefact `lotus-report` composed. Report never sends the
+bytes: `create_callers` admits only `lotus-render`, so a creation call from Report is refused.
+Report's authority over the document begins after it exists — lifecycle transitions, retention,
+purge, legal hold and access audit are all Report-called. The upstream authority for the CONTENT
+differs by type:
 
 | report type | upstream authority | notable constraint |
 |---|---|---|

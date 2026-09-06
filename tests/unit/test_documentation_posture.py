@@ -57,7 +57,12 @@ def test_operator_docs_match_report_handoff_and_gateway_retrieval_support() -> N
         ]
     )
 
-    assert "report-to-archive handoff through `lotus-report`" in docs
+    # Pins the transmit authority, which ArchiveAuthorizationPolicy enforces:
+    # create_callers admits lotus-render alone. The previous version of this
+    # assertion required the documents to say lotus-report submits, which the
+    # service refuses - a gate holding a stale claim in place.
+    assert "render-to-archive document handoff through `lotus-render`" in docs
+    assert "`lotus-render`" in docs
     assert "Gateway-backed product retrieval is implemented in `lotus-gateway`" in docs
     assert "lotus-archive.generated_document_client_communication.v1" in docs
     assert "pull-only" in docs

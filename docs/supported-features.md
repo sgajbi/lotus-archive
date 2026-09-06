@@ -29,7 +29,7 @@ archive API surface:
 18. Legal-hold set/release with purge blocking and audit events.
 19. Supersession, correction, and reissue relationships with current-document resolution.
 20. Archive-owned generated-document source events for downstream portfolio-memory consumers.
-21. Report-to-archive handoff after successful PDF render through `lotus-report`.
+21. Render-to-archive document handoff after successful PDF render through `lotus-render`, the single transmit authority; `lotus-report` is refused for creation and holds lifecycle, retention, purge, legal-hold, audit and read authority instead.
 22. Gateway-backed product retrieval through `lotus-gateway` archived document routes.
 23. Gateway-backed Workbench archive retrieval through the `lotus-workbench` BFF and
     `lotus-gateway` archived document routes.
