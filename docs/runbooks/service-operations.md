@@ -8,7 +8,7 @@ metadata model, migration contract, storage adapter, checksum validation, archiv
 service behavior, internal archive create API, controlled metadata lookup, checksum-verified binary
 download, access-audit recording, retention posture lookup, purge eligibility and execution, and
 legal-hold set/release with purge blocking, lifecycle relationship APIs, and current-document
-resolution, report-to-archive handoff through `lotus-report`, and product-facing retrieval through
+resolution, render-to-archive document handoff through `lotus-render`, and product-facing retrieval through
 the `lotus-gateway` document facade and `lotus-workbench` BFF. `/metadata` also publishes RFC-0108
 `archive.observability.archive_supportability` posture and the service emits bounded
 `lotus_archive_supportability_total` metric observations. Unknown supportability label values fall

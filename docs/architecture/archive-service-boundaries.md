@@ -26,7 +26,7 @@ sections, and does not promote client-ready commentary.
 | --- | --- | --- |
 | Report request and job identity | `lotus-report` | Implemented as source-backed archive handoff metadata after successful PDF render |
 | Snapshot and lineage reference | `lotus-report` | Implemented as source-backed archive handoff metadata after successful PDF render |
-| Render attempt and artifact metadata | `lotus-render` through `lotus-report` | Implemented as source-backed archive handoff metadata after successful PDF render |
+| Render attempt and artifact metadata | `lotus-render` directly | Submitted by Render, which is the single archive transmit authority (`create_callers` admits only `lotus-render`). Report composes the document and owns its lifecycle afterwards, but never relays the bytes |
 | Generated report type support | `lotus-archive` | Implemented through explicit metadata validation for `portfolio_review`, `outcome_review`, `proof_pack`, and `rebalance_wave` |
 | Reviewed advisory narrative archive summary | `lotus-report` supplies, `lotus-archive` preserves | Implemented for portfolio-review artifacts as support-safe package, review, policy, source-hash, guardrail, and rendered-page posture without raw narrative sections |
 | Archived document identity | `lotus-archive` | Implemented through metadata model and archive API |

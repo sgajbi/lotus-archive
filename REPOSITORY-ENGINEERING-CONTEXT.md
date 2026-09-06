@@ -22,7 +22,7 @@ blocking, lifecycle relationship APIs, current-document resolution, gateway-back
 resolution, archive-owned generated-document source events for downstream portfolio-memory
 consumers, gateway-backed document retrieval through `lotus-gateway`, Gateway-backed Workbench retrieval through the Workbench BFF,
 bounded caller-scoped batch access preflight for `lotus-gateway`,
-report-to-archive handoff through `lotus-report`, and
+render-to-archive document handoff through `lotus-render`, and
 archive-specific module-family/documentation structure. RFC-0040 proof-pack report artifacts and
 RFC-0041 rebalance-wave report artifacts are now covered by the generated-document lifecycle when
 `lotus-report` supplies governed `report_type=proof_pack` or `report_type=rebalance_wave`
@@ -34,7 +34,7 @@ advisor proposal memo portfolio-review artifacts can now preserve a support-safe
 `advisor_proposal_memo` archive summary when the PDF includes the rendered advisor-use memo page;
 raw memo reconstruction and client-ready memo promotion remain out of scope. RFC-0002 reviewed Idea
 evidence pack artifacts can now preserve a support-safe
-`idea_evidence_pack` archive summary when `lotus-report` archives a rendered `proof-pack` package
+`idea_evidence_pack` archive summary when a rendered `proof-pack` package is archived
 sourced from `lotus-idea`; Archive preserves evidence ids, source-contract lineage, retention
 posture, access-audit events, and source-event artifact refs without raw Idea evidence payloads or
 client-publication authority. RFC-0108 archive supportability now publishes `archive.observability.archive_supportability` through `/metadata` and
