@@ -18,10 +18,24 @@ Debian/Ubuntu that usually means `sudo apt install python3-venv`, and `python` m
 `python3`.
 
 ```shell
+python -V                      # must report 3.12 or newer before make install
 make install
-uvicorn app.main:app --reload --port 8150
+.venv/bin/python -m uvicorn app.main:app --reload --port 8150
 docker compose up --build
 ```
+
+```powershell
+python -V
+make install
+.venv\Scripts\python.exe -m uvicorn app.main:app --reload --port 8150
+docker compose up --build
+```
+
+`make install` runs bare `python -m venv`, so `python` must already be 3.12+; it then installs
+into `.venv`. Starting through `.venv`'s own interpreter is what makes the service run with the
+dependencies that install placed there — `uvicorn` is not put on `PATH`, so a bare `uvicorn` either
+fails or runs a different installation. No activation is needed this way, which also avoids the
+PowerShell execution-policy step.
 
 No external dependency is needed for the default local profile; it uses the in-memory repository and
 filesystem storage. Durable adapter integration tests require PostgreSQL and set
