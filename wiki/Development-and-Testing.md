@@ -5,7 +5,19 @@ where it does not.
 
 ## Local setup
 
-```powershell
+Prerequisites, and nothing else:
+
+- **Python 3.12 or newer** (`pyproject.toml` requires `>=3.12`; CI runs 3.12)
+- **`make`** — preinstalled on macOS and most Linux; on Windows install it or run the
+  `Makefile` targets' commands directly
+- **Docker** only for the container path; the local run does not need it
+
+`make install` creates `.venv` for you, so no manual virtualenv step is needed. It does assume
+`python` resolves to your 3.12+ interpreter and that the venv module is available — on
+Debian/Ubuntu that usually means `sudo apt install python3-venv`, and `python` may need to be
+`python3`.
+
+```shell
 make install
 uvicorn app.main:app --reload --port 8150
 docker compose up --build
