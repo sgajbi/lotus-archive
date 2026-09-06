@@ -51,3 +51,29 @@ class IdeaLifecycleDecision(BaseModel):
     signing_key_id: str
     payload_digest: str
     signature: str
+
+
+class LifecycleVerificationKey(BaseModel):
+    """A key a consumer can use to verify a lifecycle decision Archive issued."""
+
+    key_id: str = Field(description="Matches `signing_key_id` on a decision.")
+    algorithm: str = Field(description="Signature algorithm; `ed25519` today.")
+    public_key_base64: str = Field(description="Raw 32-byte Ed25519 public key, base64url-encoded.")
+    provenance: str = Field(
+        description=(
+            "`managed` for provisioned key material, or `ephemeral_development` for a key "
+            "generated per process in the local profile. A consumer MUST refuse an "
+            "ephemeral key: decisions signed under it cannot be verified after a restart."
+        )
+    )
+
+
+class LifecycleVerificationKeys(BaseModel):
+    """Every key currently acceptable for verification.
+
+    A list rather than one key so a rotation can publish the incoming key
+    alongside the outgoing one during an overlap window, instead of forcing
+    every consumer to cut over at the instant of rotation.
+    """
+
+    keys: list[LifecycleVerificationKey]

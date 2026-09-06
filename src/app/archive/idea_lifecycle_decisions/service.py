@@ -56,6 +56,30 @@ class IdeaLifecycleDecisionService:
         self._audit_repository = audit_repository
         self._decision_ttl = decision_ttl
 
+    def verification_keys(self) -> list[dict[str, str]]:
+        """The keys a consumer needs to verify decisions this service issues.
+
+        Returned as a LIST so a rotation can publish the incoming key alongside
+        the outgoing one during an overlap window; a single-key response would
+        force every consumer to cut over at the same instant as the rotation.
+        Today the service signs with one key and therefore publishes one.
+
+        `provenance` is `managed` or `ephemeral_development`. A consumer must
+        refuse an ephemeral key: it is regenerated per process, so a decision
+        signed under it cannot be verified after a restart, and trusting one in
+        a production store would silently accept unverifiable evidence.
+        """
+        key_id = self._signer.key_id
+        provenance = "ephemeral_development" if key_id.startswith("ephemeral-local") else "managed"
+        return [
+            {
+                "key_id": key_id,
+                "algorithm": "ed25519",
+                "public_key_base64": self._signer.public_key_base64(),
+                "provenance": provenance,
+            }
+        ]
+
     def issue(
         self,
         *,
