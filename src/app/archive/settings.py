@@ -2,7 +2,9 @@ from __future__ import annotations
 
 from base64 import b64decode
 from binascii import Error as Base64DecodeError
+import json
 import tempfile
+from datetime import datetime
 from pathlib import Path
 from typing import Literal
 
@@ -10,6 +12,7 @@ from pydantic import Field, SecretStr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from app.archive.exceptions import RuntimeConfigurationError
+from app.archive.idea_lifecycle_decisions.signing import RetiredVerificationKey
 
 ArchiveRuntimeProfile = Literal["local-development", "test", "production"]
 ArchiveRepositoryMode = Literal["in-memory", "postgresql"]
@@ -49,6 +52,15 @@ class ArchiveRuntimeSettings(BaseSettings):
     )
     idea_lifecycle_decision_private_key_base64: SecretStr = Field(default=SecretStr(""))
     idea_lifecycle_decision_signing_key_id: str = Field(default="ephemeral-local-v1", min_length=3)
+    #: When the active signing key began signing. Required outside the local
+    #: profile: a consumer selects a verification key by the decision's issue
+    #: time, and a defaulted window is the invented one this exists to prevent.
+    idea_lifecycle_decision_signing_key_not_before_utc: datetime | None = Field(default=None)
+    #: Keys that have stopped signing but must stay verifiable, as JSON:
+    #: [{"key_id", "public_key_base64", "not_before_utc", "not_after_utc"}].
+    #: Public keys are not secrets; each entry needs a closed window, since a
+    #: retired key trusted without an end never stops being accepted.
+    idea_lifecycle_decision_retired_verification_keys: str = Field(default="")
 
     @model_validator(mode="after")
     def validate_runtime_posture(self) -> ArchiveRuntimeSettings:
@@ -69,6 +81,17 @@ class ArchiveRuntimeSettings(BaseSettings):
             raise RuntimeConfigurationError("S3 archive storage requires bucket")
         if self.s3_server_side_encryption == "aws:kms" and not self.s3_kms_key_id:
             raise RuntimeConfigurationError("S3 KMS encryption requires key ID")
+        self._validate_lifecycle_decision_keys(local_profile=local_profile)
+        return self
+
+    def _validate_lifecycle_decision_keys(self, *, local_profile: bool) -> None:
+        """Signing and verification key material, checked at startup.
+
+        Separated from the composite runtime validator because these are the
+        rules with real branching, and because a configuration error here is
+        the difference between decisions that stay verifiable and evidence that
+        silently cannot be checked.
+        """
         encoded_private_key = self.idea_lifecycle_decision_private_key_base64.get_secret_value()
         if encoded_private_key:
             try:
@@ -88,7 +111,43 @@ class ArchiveRuntimeSettings(BaseSettings):
             raise RuntimeConfigurationError(
                 "production lifecycle decisions require managed signing key material"
             )
-        return self
+        if not local_profile and self.idea_lifecycle_decision_signing_key_not_before_utc is None:
+            raise RuntimeConfigurationError(
+                "production lifecycle decisions require a provisioned signing key start instant"
+            )
+        for retired in self.retired_verification_keys():
+            if retired.not_after_utc <= retired.not_before_utc:
+                raise RuntimeConfigurationError(
+                    "a retired lifecycle verification key window must end after it begins"
+                )
+
+    def retired_verification_keys(self) -> tuple[RetiredVerificationKey, ...]:
+        """Keys retained so decisions they signed stay verifiable.
+
+        Parsed on demand rather than stored, so a malformed value surfaces as a
+        configuration error at startup validation instead of an attribute that
+        silently reads as empty -- an empty retained set looks exactly like a
+        service that has never rotated.
+        """
+        raw = self.idea_lifecycle_decision_retired_verification_keys.strip()
+        if not raw:
+            return ()
+        try:
+            entries = json.loads(raw)
+        except json.JSONDecodeError as exc:
+            raise RuntimeConfigurationError(
+                "retired lifecycle verification keys must be valid JSON"
+            ) from exc
+        if not isinstance(entries, list):
+            raise RuntimeConfigurationError(
+                "retired lifecycle verification keys must be a JSON list"
+            )
+        try:
+            return tuple(RetiredVerificationKey(**entry) for entry in entries)
+        except (TypeError, ValueError) as exc:
+            raise RuntimeConfigurationError(
+                "a retired lifecycle verification key entry is malformed"
+            ) from exc
 
     @property
     def max_encoded_document_chars(self) -> int:

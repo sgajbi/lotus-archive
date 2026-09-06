@@ -28,7 +28,6 @@ from app.archive.commands import (
     LifecycleTransitionCommand,
 )
 from app.archive.idea_lifecycle_decisions.models import (
-    LifecycleVerificationKey,
     LifecycleVerificationKeys,
     IdeaLifecycleDecision,
     IdeaLifecycleDecisionRequest,
@@ -104,6 +103,8 @@ def idea_lifecycle_decision_service(request: Request) -> IdeaLifecycleDecisionSe
         ),
         authorization_policy=archive.authorization_policy,
         audit_repository=archive.audit_repository,
+        signing_key_not_before_utc=settings.idea_lifecycle_decision_signing_key_not_before_utc,
+        retired_verification_keys=settings.retired_verification_keys(),
     )
     request.app.state.idea_lifecycle_decision_service = service
     return service
@@ -247,9 +248,7 @@ async def preflight_document_access(
 async def get_lifecycle_verification_keys(
     service: IdeaLifecycleDecisionService = Depends(idea_lifecycle_decision_service),
 ) -> LifecycleVerificationKeys:
-    return LifecycleVerificationKeys(
-        keys=[LifecycleVerificationKey(**key) for key in service.verification_keys()]
-    )
+    return LifecycleVerificationKeys(keys=service.verification_keys())
 
 
 @router.get(

@@ -3,7 +3,7 @@ from __future__ import annotations
 import hashlib
 import json
 from datetime import UTC, datetime, timedelta
-from typing import Protocol
+from typing import Protocol, Sequence
 
 from app.archive.audit import (
     AccessAuditRepository,
@@ -13,6 +13,7 @@ from app.archive.audit import (
 )
 from app.archive.authorization import ArchiveAuthorizationPolicy, ArchivePermission
 from app.archive.idea_lifecycle_decisions.models import (
+    LifecycleVerificationKey,
     IdeaLifecycleAction,
     IdeaLifecycleDecision,
     IdeaLifecycleDecisionRequest,
@@ -21,9 +22,18 @@ from app.archive.idea_lifecycle_decisions.repository import (
     IdeaLifecycleDecisionRepository,
     LifecycleDecisionConflictError,
 )
-from app.archive.idea_lifecycle_decisions.signing import LifecycleDecisionSigner
+from app.archive.idea_lifecycle_decisions.signing import (
+    LifecycleDecisionSigner,
+    RetiredVerificationKey,
+)
 from app.archive.models import ArchiveDocumentMetadata, LegalHoldStatus, PurgeStatus
 from app.security.caller_context import CallerContext
+
+
+#: Stand-in start for an ephemeral development key, which has no provisioned
+#: window. Only reachable in the local profile: settings refuse to start
+#: elsewhere without a real one, so this never labels a production key.
+_EPHEMERAL_KEY_START = datetime(1970, 1, 1, tzinfo=UTC)
 
 
 class LifecycleDecisionTenantError(PermissionError):
@@ -48,37 +58,64 @@ class IdeaLifecycleDecisionService:
         authorization_policy: ArchiveAuthorizationPolicy,
         audit_repository: AccessAuditRepository,
         decision_ttl: timedelta = timedelta(minutes=5),
+        signing_key_not_before_utc: datetime | None = None,
+        retired_verification_keys: Sequence[RetiredVerificationKey] = (),
     ) -> None:
         self._posture_reader = posture_reader
         self._repository = repository
         self._signer = signer
+        self._signing_key_not_before_utc = signing_key_not_before_utc
+        self._retired_verification_keys = tuple(retired_verification_keys)
         self._authorization_policy = authorization_policy
         self._audit_repository = audit_repository
         self._decision_ttl = decision_ttl
 
-    def verification_keys(self) -> list[dict[str, str]]:
-        """The keys a consumer needs to verify decisions this service issues.
+    def verification_keys(self) -> list[LifecycleVerificationKey]:
+        """Every key a consumer needs to verify decisions this service issued.
 
-        Returned as a LIST so a rotation can publish the incoming key alongside
-        the outgoing one during an overlap window; a single-key response would
-        force every consumer to cut over at the same instant as the rotation.
-        Today the service signs with one key and therefore publishes one.
+        The active signer plus every retained key. A list alone was not enough:
+        while only the active signer was published, rotating dropped the key
+        that signed every earlier decision, and those decisions stopped
+        verifying for any consumer building trust from this document.
 
-        `provenance` is `managed` or `ephemeral_development`. A consumer must
-        refuse an ephemeral key: it is regenerated per process, so a decision
-        signed under it cannot be verified after a restart, and trusting one in
-        a production store would silently accept unverifiable evidence.
+        Each key carries the window it signed in, because a consumer selects a
+        key by the decision's issue time. The active key's start is provisioned
+        configuration and is never defaulted -- a guessed window either keeps a
+        retired key trusted forever or makes real decisions unverifiable.
+
+        `provenance` is `managed` or `ephemeral_development`, and reports where
+        the key material came from, not that it is well custodied. A consumer
+        must refuse an ephemeral key: it is regenerated per process, so a
+        decision signed under it cannot be verified after a restart.
         """
         key_id = self._signer.key_id
-        provenance = "ephemeral_development" if key_id.startswith("ephemeral-local") else "managed"
-        return [
-            {
-                "key_id": key_id,
-                "algorithm": "ed25519",
-                "public_key_base64": self._signer.public_key_base64(),
-                "provenance": provenance,
-            }
+        active = LifecycleVerificationKey(
+            key_id=key_id,
+            algorithm="ed25519",
+            public_key_base64=self._signer.public_key_base64(),
+            provenance=(
+                "ephemeral_development" if key_id.startswith("ephemeral-local") else "managed"
+            ),
+            status="active",
+            not_before_utc=self._signing_key_not_before_utc or _EPHEMERAL_KEY_START,
+            not_after_utc=None,
+        )
+        retired = [
+            LifecycleVerificationKey(
+                key_id=key.key_id,
+                algorithm="ed25519",
+                public_key_base64=key.public_key_base64,
+                # Retained keys are provisioned, so they are managed by
+                # construction: an ephemeral key cannot outlive the process
+                # that generated it and can never be carried forward.
+                provenance="managed",
+                status="retired",
+                not_before_utc=key.not_before_utc,
+                not_after_utc=key.not_after_utc,
+            )
+            for key in self._retired_verification_keys
         ]
+        return [active, *retired]
 
     def issue(
         self,

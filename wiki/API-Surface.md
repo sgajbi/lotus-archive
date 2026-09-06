@@ -24,6 +24,18 @@ There are **22**: sixteen on documents, six operational. The behaviour behind th
 | `GET /documents/{id}/source-events` | bounded lifecycle projection for portfolio memory | `lotus-report`, `lotus-gateway` |
 | `POST /documents/access-preflight` | batch access posture, advisory | `lotus-gateway` |
 | `POST /documents/{id}/idea-lifecycle-decisions` | signed retention/hold/purge projection | `lotus-idea`, `lotus-report` |
+| `GET /documents/idea-lifecycle-decisions/verification-keys` | keys that verify a signed decision | unauthenticated, any verifier |
+
+The verification-keys route is deliberately unauthenticated: a verification key is not a secret,
+and requiring Archive credentials to *check* a decision Archive already signed would defeat the
+point of signing it. It publishes the active signing key **and every retained key**, each with a
+`status` and the window it signed in (`not_before_utc`, `not_after_utc`), because a consumer selects
+a key by the decision's issue time. Publishing the active key alone would leave every decision
+signed before a rotation unverifiable.
+
+A discovery route does not by itself establish trust in the key it returns — a consumer fetching
+over a channel it cannot authenticate has no basis to trust the response. Trust bootstrap remains
+[#55](https://github.com/sgajbi/lotus-archive/issues/55).
 
 The caller column is the whole authorization model — see
 [Security and Controls](Security-and-Controls#who-may-call-what). It is enforced against a
