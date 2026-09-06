@@ -28,17 +28,29 @@ It is not a general file store, a manual upload service, a delivery channel, or 
 
 ## Quick start
 
-```powershell
+Prerequisites, and nothing else:
+
+- **Python 3.12 or newer** (`pyproject.toml` requires `>=3.12`; CI runs 3.12)
+- **`make`** — preinstalled on macOS and most Linux; on Windows install it or run the
+  `Makefile` targets' commands directly
+- **Docker** only if you want the container path below; the local run does not need it
+
+Run from the repository root:
+
+```shell
 make install
-uvicorn app.main:app --reload --port 8320
+uvicorn app.main:app --reload --port 8150
 ```
+
+`8150` is the service's port everywhere — `Dockerfile`, `docker-compose.yml` and its
+healthcheck — so a local run and a container run answer on the same address.
 
 Nothing external is required. `/health/ready` reports `degraded` with reason
 `explicit_local_development_runtime` — that is the correct local state.
 
 ## Validate a change
 
-```powershell
+```shell
 make check   # lint, typecheck, openapi + migration gates, unit tests
 make ci      # the above plus integration, e2e, coverage and security audit
 ```

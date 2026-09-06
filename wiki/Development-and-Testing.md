@@ -7,7 +7,7 @@ where it does not.
 
 ```powershell
 make install
-uvicorn app.main:app --reload --port 8320
+uvicorn app.main:app --reload --port 8150
 docker compose up --build
 ```
 
