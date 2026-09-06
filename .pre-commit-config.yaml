@@ -11,7 +11,13 @@ repos:
       - id: debug-statements
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.15.1
+    # Must match the ruff pinned in pyproject.toml. pre-commit never reads
+    # requirements -- it resolves each hook from this rev -- so the two drift
+    # independently and the hook can disagree with CI about what formatted
+    # means. Measured here that 0.15.0 and 0.15.1 agree on this tree, so the
+    # divergence was latent rather than active; it is the drift that is the
+    # defect, not today's outcome.
+    rev: v0.15.0
     hooks:
       - id: ruff
       - id: ruff-format
