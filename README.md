@@ -35,17 +35,34 @@ Prerequisites, and nothing else:
   `Makefile` targets' commands directly
 - **Docker** only for the container path; the local run does not need it
 
-`make install` creates `.venv` for you, so no manual virtualenv step is needed. It does assume
-`python` resolves to your 3.12+ interpreter and that the venv module is available — on
-Debian/Ubuntu that usually means `sudo apt install python3-venv`, and `python` may need to be
-`python3`.
+`make install` creates `.venv` for you, so no manual virtualenv step is needed. It runs bare
+`python -m venv`, so **`python` must already report 3.12 or newer** — check before you start:
+
+```shell
+python -V                      # must report 3.12 or newer
+```
+
+If it reports an older version, or `python` is not found at all (common on Debian and Ubuntu,
+where only `python3` exists), point `python` at a 3.12+ interpreter first. Some distributions also
+package the `venv` module separately; install the one matching that interpreter if `-m venv`
+reports it missing.
 
 Run from the repository root:
 
 ```shell
 make install
-uvicorn app.main:app --reload --port 8150
+.venv/bin/python -m uvicorn app.main:app --reload --port 8150
 ```
+
+```powershell
+make install
+.venv\Scripts\python.exe -m uvicorn app.main:app --reload --port 8150
+```
+
+Starting through the virtualenv's own interpreter is deliberate: `make install` installs into
+`.venv`, and `uvicorn` is not placed on `PATH`, so a bare `uvicorn` either fails or runs a
+different installation. This form also needs no activation, which avoids the PowerShell
+execution-policy step entirely.
 
 `8150` is the service's port everywhere — `Dockerfile`, `docker-compose.yml` and its
 healthcheck — so a local run and a container run answer on the same address.
