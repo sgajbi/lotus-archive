@@ -59,6 +59,27 @@ class LifecycleVerificationKey(BaseModel):
     key_id: str = Field(description="Matches `signing_key_id` on a decision.")
     algorithm: str = Field(description="Signature algorithm; `ed25519` today.")
     public_key_base64: str = Field(description="Raw 32-byte Ed25519 public key, base64url-encoded.")
+    status: str = Field(
+        description=(
+            "`active` for the key currently signing, or `retired` for one retained so "
+            "decisions it signed stay verifiable. Both are acceptable for verification; "
+            "only `active` signs."
+        )
+    )
+    not_before_utc: datetime = Field(
+        description=(
+            "Start of the window this key signed in. A consumer selects a key by the "
+            "decision's issue time, so this is required to verify a historical decision "
+            "after a rotation. Provisioned, never defaulted."
+        )
+    )
+    not_after_utc: datetime | None = Field(
+        default=None,
+        description=(
+            "End of the window, or null while the key is still signing. A decision "
+            "issued after this instant was not signed by this key."
+        ),
+    )
     provenance: str = Field(
         description=(
             "`managed` for provisioned key material, or `ephemeral_development` for a key "
@@ -69,11 +90,13 @@ class LifecycleVerificationKey(BaseModel):
 
 
 class LifecycleVerificationKeys(BaseModel):
-    """Every key currently acceptable for verification.
+    """Every key currently acceptable for verification, active and retired.
 
-    A list rather than one key so a rotation can publish the incoming key
-    alongside the outgoing one during an overlap window, instead of forcing
-    every consumer to cut over at the instant of rotation.
+    A list rather than one key so a rotation publishes the incoming key
+    alongside the outgoing one, instead of forcing every consumer to cut over
+    at the instant of rotation. The list shape alone was not enough: until
+    retired keys were retained here, rotation silently dropped the key that
+    signed every earlier decision.
     """
 
     keys: list[LifecycleVerificationKey]

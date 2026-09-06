@@ -17,6 +17,45 @@ from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat
 from app.archive.idea_lifecycle_decisions.models import IdeaLifecycleDecision
 
 
+@dataclass(frozen=True)
+class RetiredVerificationKey:
+    """A key that no longer signs but must stay verifiable.
+
+    Its window is closed by definition: retirement is what makes `not_after_utc`
+    knowable, and a retired key trusted without an end never stops being
+    accepted.
+
+    Held as provisioned metadata rather than derived, because the private key is
+    gone by the time a key is retired -- the public half and the window it
+    signed in are all that remain, and both have to be carried forward
+    deliberately.
+    """
+
+    key_id: str
+    public_key_base64: str
+    not_before_utc: datetime
+    not_after_utc: datetime
+
+    def __post_init__(self) -> None:
+        if not self.key_id or not self.public_key_base64:
+            raise ValueError("a retired verification key needs an id and a public key")
+        # Built with **entry from parsed JSON, so these arrive as strings and
+        # the annotations above would otherwise be a claim nothing enforces.
+        # Comparing them as strings gives right answers for well-formed UTC
+        # values and wrong ones across offsets, which is the worst combination:
+        # it passes the tests written to check it.
+        object.__setattr__(self, "not_before_utc", _as_datetime(self.not_before_utc))
+        object.__setattr__(self, "not_after_utc", _as_datetime(self.not_after_utc))
+
+
+def _as_datetime(value: datetime | str) -> datetime:
+    """An aware UTC datetime, from configuration that may carry either form."""
+    parsed = value if isinstance(value, datetime) else datetime.fromisoformat(str(value))
+    if parsed.tzinfo is None:
+        raise ValueError("a verification key window instant must carry a timezone")
+    return parsed.astimezone(UTC)
+
+
 class LifecycleDecisionSigner(Protocol):
     @property
     def key_id(self) -> str: ...

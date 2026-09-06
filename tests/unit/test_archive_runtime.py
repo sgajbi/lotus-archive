@@ -3,6 +3,9 @@ from pathlib import Path
 from types import SimpleNamespace
 from typing import cast
 
+import json
+from datetime import UTC, datetime
+
 import pytest
 from pydantic import SecretStr
 from starlette.requests import Request
@@ -57,6 +60,9 @@ def test_runtime_builds_complete_production_service(monkeypatch: pytest.MonkeyPa
         s3_bucket="lotus-archive-production",
         idea_lifecycle_decision_private_key_base64=SecretStr(b64encode(b"x" * 32).decode("ascii")),
         idea_lifecycle_decision_signing_key_id="managed-archive-v1",
+        # Provisioned, not defaulted: a consumer selects a verification key by the
+        # decision issue time, so production refuses to start without this window.
+        idea_lifecycle_decision_signing_key_not_before_utc=datetime(2026, 1, 1, tzinfo=UTC),
     )
 
     service = build_archive_service(settings)
@@ -210,6 +216,9 @@ def test_runtime_threads_operational_bounds_into_both_adapters(
         s3_max_attempts=5,
         idea_lifecycle_decision_private_key_base64=SecretStr(b64encode(b"0" * 32).decode()),
         idea_lifecycle_decision_signing_key_id="managed-v1",
+        # Provisioned, not defaulted: a consumer selects a verification key by the
+        # decision issue time, so production refuses to start without this window.
+        idea_lifecycle_decision_signing_key_not_before_utc=datetime(2026, 1, 1, tzinfo=UTC),
     )
     runtime_module.build_archive_service(settings)
 
@@ -266,6 +275,9 @@ def test_postgres_composition_shares_one_pool_and_wires_shutdown(
         s3_bucket="lotus-archive",
         idea_lifecycle_decision_private_key_base64=SecretStr(b64encode(b"0" * 32).decode()),
         idea_lifecycle_decision_signing_key_id="managed-v1",
+        # Provisioned, not defaulted: a consumer selects a verification key by the
+        # decision issue time, so production refuses to start without this window.
+        idea_lifecycle_decision_signing_key_not_before_utc=datetime(2026, 1, 1, tzinfo=UTC),
     )
     service = runtime_module.build_archive_service(settings)
 
@@ -276,3 +288,135 @@ def test_postgres_composition_shares_one_pool_and_wires_shutdown(
     ), "both repositories must share the single pool"
     service.close()
     assert closed == ["pool"]
+
+
+def _production_settings(**overrides: object) -> ArchiveRuntimeSettings:
+    """Minimum viable production configuration, before the override under test."""
+    base: dict[str, object] = {
+        "runtime_profile": "production",
+        "repository_mode": "postgresql",
+        "database_url": "postgresql://archive/prod",
+        "storage_mode": "s3",
+        "s3_bucket": "lotus-archive-production",
+        "idea_lifecycle_decision_private_key_base64": SecretStr(
+            b64encode(b"x" * 32).decode("ascii")
+        ),
+        "idea_lifecycle_decision_signing_key_id": "managed-v1",
+        "idea_lifecycle_decision_signing_key_not_before_utc": datetime(2026, 1, 1, tzinfo=UTC),
+    }
+    base.update(overrides)
+    return ArchiveRuntimeSettings(**base)  # type: ignore[arg-type]
+
+
+def test_production_requires_a_provisioned_signing_key_window() -> None:
+    """A consumer selects a verification key by the decision's issue time.
+
+    Without a start instant the window would have to be guessed, and a guessed
+    window either keeps a retired key trusted forever or makes real decisions
+    unverifiable. Refusing at startup is the only place that failure is cheap.
+    """
+    with pytest.raises(RuntimeConfigurationError, match="signing key start instant"):
+        _production_settings(idea_lifecycle_decision_signing_key_not_before_utc=None)
+
+
+def test_production_starts_with_a_provisioned_signing_key_window() -> None:
+    """The control: the rule above must not reject a valid configuration."""
+    settings = _production_settings()
+
+    assert settings.idea_lifecycle_decision_signing_key_not_before_utc == datetime(
+        2026, 1, 1, tzinfo=UTC
+    )
+    assert settings.retired_verification_keys() == ()
+
+
+def test_a_retired_key_window_must_end_after_it_begins() -> None:
+    """An inverted window can never select the key it describes."""
+    with pytest.raises(RuntimeConfigurationError, match="must end after it begins"):
+        _production_settings(
+            idea_lifecycle_decision_retired_verification_keys=json.dumps(
+                [
+                    {
+                        "key_id": "managed-v0",
+                        "public_key_base64": "3q2-7w==",
+                        "not_before_utc": "2026-01-01T00:00:00Z",
+                        "not_after_utc": "2025-01-01T00:00:00Z",
+                    }
+                ]
+            )
+        )
+
+
+def test_a_retired_key_without_an_end_is_refused() -> None:
+    """Retirement is what makes the end knowable.
+
+    A retired key trusted without an end never stops being accepted, which
+    defeats rotation entirely.
+    """
+    with pytest.raises(RuntimeConfigurationError, match="malformed"):
+        _production_settings(
+            idea_lifecycle_decision_retired_verification_keys=json.dumps(
+                [
+                    {
+                        "key_id": "managed-v0",
+                        "public_key_base64": "3q2-7w==",
+                        "not_before_utc": "2025-01-01T00:00:00Z",
+                    }
+                ]
+            )
+        )
+
+
+def test_malformed_retired_key_configuration_is_refused_not_ignored() -> None:
+    """An unparseable value must not read as "no retired keys".
+
+    Those two states look identical from the published document, and one of
+    them silently drops every key a rotation was supposed to retain.
+    """
+    with pytest.raises(RuntimeConfigurationError, match="valid JSON"):
+        _production_settings(idea_lifecycle_decision_retired_verification_keys="{not json")
+
+    with pytest.raises(RuntimeConfigurationError, match="JSON list"):
+        _production_settings(idea_lifecycle_decision_retired_verification_keys='{"key_id": "v0"}')
+
+
+def test_retired_keys_are_parsed_into_windows() -> None:
+    """The control for the three refusals above."""
+    settings = _production_settings(
+        idea_lifecycle_decision_retired_verification_keys=json.dumps(
+            [
+                {
+                    "key_id": "managed-v0",
+                    "public_key_base64": "3q2-7w==",
+                    "not_before_utc": "2025-01-01T00:00:00Z",
+                    "not_after_utc": "2026-01-01T00:00:00Z",
+                }
+            ]
+        )
+    )
+
+    (retired,) = settings.retired_verification_keys()
+    assert retired.key_id == "managed-v0"
+    assert retired.not_after_utc == datetime(2026, 1, 1, tzinfo=UTC)
+
+
+def test_a_retired_key_window_is_ordered_by_instant_not_by_string() -> None:
+    """The case that comparing ISO strings gets wrong.
+
+    not_after_utc here is 2026-01-01T01:00:00+02:00, which is 2025-12-31T23:00Z
+    -- BEFORE the 23:30Z start, so the window is inverted and must be refused.
+    As strings the +02:00 value sorts after the Z value and the check passes,
+    which is why the window instants are parsed rather than trusted as written.
+    """
+    with pytest.raises(RuntimeConfigurationError, match="must end after it begins"):
+        _production_settings(
+            idea_lifecycle_decision_retired_verification_keys=json.dumps(
+                [
+                    {
+                        "key_id": "managed-v0",
+                        "public_key_base64": "3q2-7w==",
+                        "not_before_utc": "2025-12-31T23:30:00Z",
+                        "not_after_utc": "2026-01-01T01:00:00+02:00",
+                    }
+                ]
+            )
+        )

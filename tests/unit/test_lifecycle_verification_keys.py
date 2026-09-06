@@ -20,9 +20,13 @@ from cryptography.hazmat.primitives.asymmetric.ed25519 import (
     Ed25519PublicKey,
 )
 
-from app.archive.idea_lifecycle_decisions.models import IdeaLifecycleDecision
+from app.archive.idea_lifecycle_decisions.models import (
+    IdeaLifecycleDecision,
+    LifecycleVerificationKey,
+)
 from app.archive.idea_lifecycle_decisions.signing import (
     Ed25519LifecycleDecisionSigner,
+    RetiredVerificationKey,
     verify_lifecycle_decision,
 )
 
@@ -132,6 +136,46 @@ def test_published_key_matches_the_signing_key() -> None:
     assert published.public_bytes_raw() == signer.private_key.public_key().public_bytes_raw()
 
 
+def _published_keys(
+    signer: Ed25519LifecycleDecisionSigner,
+    *,
+    not_before_utc: datetime | None = None,
+    retired: tuple[RetiredVerificationKey, ...] = (),
+) -> list[LifecycleVerificationKey]:
+    """Call the real published surface with only what it reads.
+
+    Naming the three attributes in one place rather than inline: the previous
+    stand-in duck-typed `_signer` alone and broke as soon as the method read
+    another field, which tells you nothing about the behaviour under test.
+    """
+    from app.archive.idea_lifecycle_decisions.service import IdeaLifecycleDecisionService
+
+    stand_in = type(
+        "ServiceStandIn",
+        (),
+        {
+            "_signer": signer,
+            "_signing_key_not_before_utc": not_before_utc,
+            "_retired_verification_keys": retired,
+        },
+    )()
+    return IdeaLifecycleDecisionService.verification_keys(stand_in)
+
+
+def _trust_store_from(
+    published: list[LifecycleVerificationKey],
+) -> dict[str, Ed25519PublicKey]:
+    """Build the consumer's trusted-key mapping the way a consumer would.
+
+    From the published document only -- no access to any signer -- because that
+    is the whole claim the distribution route makes.
+    """
+    return {
+        key.key_id: Ed25519PublicKey.from_public_bytes(urlsafe_b64decode(key.public_key_base64))
+        for key in published
+    }
+
+
 def test_ephemeral_provenance_is_distinguishable() -> None:
     """A consumer must be able to refuse a development key.
 
@@ -140,14 +184,86 @@ def test_ephemeral_provenance_is_distinguishable() -> None:
     silently accepts unverifiable evidence, which is why provenance is a field
     rather than something inferred from the key_id by each consumer.
     """
-    from app.archive.idea_lifecycle_decisions.service import IdeaLifecycleDecisionService
+    ephemeral = _published_keys(_signer("ephemeral-local-v1"))
+    managed = _published_keys(_signer("managed-v1"))
 
-    ephemeral = IdeaLifecycleDecisionService.verification_keys(
-        type("S", (), {"_signer": _signer("ephemeral-local-v1")})()
-    )
-    managed = IdeaLifecycleDecisionService.verification_keys(
-        type("S", (), {"_signer": _signer("managed-v1")})()
+    assert ephemeral[0].provenance == "ephemeral_development"
+    assert managed[0].provenance == "managed"
+
+
+def test_a_decision_still_verifies_after_the_signer_rotates() -> None:
+    """The point of retention, and what a list alone did not deliver.
+
+    A decision signed under key n, verified from the document published after
+    the service has rotated to n+1. Before retention this failed: the published
+    document carried the active signer only, so key n vanished and every
+    decision it signed became unverifiable to anyone building trust from it.
+    """
+    outgoing = _signer("managed-v1")
+    decision = _decision(outgoing)
+
+    rotated_at = datetime.now(UTC)
+    incoming = _signer("managed-v2")
+    published = _published_keys(
+        incoming,
+        not_before_utc=rotated_at,
+        retired=(
+            RetiredVerificationKey(
+                key_id=outgoing.key_id,
+                public_key_base64=outgoing.public_key_base64(),
+                not_before_utc=rotated_at - timedelta(days=90),
+                not_after_utc=rotated_at,
+            ),
+        ),
     )
 
-    assert ephemeral[0]["provenance"] == "ephemeral_development"
-    assert managed[0]["provenance"] == "managed"
+    assert [key.key_id for key in published] == ["managed-v2", "managed-v1"]
+    assert verify_lifecycle_decision(decision, trusted_keys=_trust_store_from(published))
+
+
+def test_rotation_without_retention_loses_the_old_decision() -> None:
+    """The negative control that makes the test above mean something.
+
+    Publishing only the new signer -- exactly what this service did before --
+    leaves the old decision unverifiable. Without this, the test above would
+    pass for any trust store that happened to contain the right key.
+    """
+    outgoing = _signer("managed-v1")
+    decision = _decision(outgoing)
+
+    published = _published_keys(_signer("managed-v2"), not_before_utc=datetime.now(UTC))
+
+    assert [key.key_id for key in published] == ["managed-v2"]
+    assert not verify_lifecycle_decision(decision, trusted_keys=_trust_store_from(published))
+
+
+def test_every_published_key_carries_the_window_a_consumer_selects_by() -> None:
+    """A consumer picks a key by the decision's issue time.
+
+    A key published without a window cannot be selected correctly for a
+    historical decision, so the window is part of the contract rather than
+    documentation. The active key's end is open; a retired key's is closed,
+    because a retired key trusted without an end never stops being accepted.
+    """
+    rotated_at = datetime.now(UTC)
+    published = _published_keys(
+        _signer("managed-v2"),
+        not_before_utc=rotated_at,
+        retired=(
+            RetiredVerificationKey(
+                key_id="managed-v1",
+                public_key_base64=_signer("managed-v1").public_key_base64(),
+                not_before_utc=rotated_at - timedelta(days=90),
+                not_after_utc=rotated_at,
+            ),
+        ),
+    )
+
+    active, retired = published
+    assert active.status == "active"
+    assert active.not_before_utc == rotated_at
+    assert active.not_after_utc is None
+
+    assert retired.status == "retired"
+    assert retired.not_after_utc == rotated_at
+    assert retired.not_before_utc < retired.not_after_utc

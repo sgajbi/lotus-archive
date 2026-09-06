@@ -104,11 +104,44 @@ before it is decoded rather than after.
 | `LOTUS_ARCHIVE_IDEA_LIFECYCLE_DECISION_LEDGER_PATH` | `<temp dir>/lotus-archive-idea-lifecycle-decisions.sqlite3` | local SQLite replay ledger |
 | `LOTUS_ARCHIVE_IDEA_LIFECYCLE_DECISION_PRIVATE_KEY_BASE64` | *(empty)* | Ed25519 private key, exactly 32 bytes, base64 |
 | `LOTUS_ARCHIVE_IDEA_LIFECYCLE_DECISION_SIGNING_KEY_ID` | `ephemeral-local-v1` | minimum length 3 |
+| `LOTUS_ARCHIVE_IDEA_LIFECYCLE_DECISION_SIGNING_KEY_NOT_BEFORE_UTC` | *(unset)* | when the active key began signing; **required outside local profiles** |
+| `LOTUS_ARCHIVE_IDEA_LIFECYCLE_DECISION_RETIRED_VERIFICATION_KEYS` | *(empty)* | JSON list of keys retained so their decisions stay verifiable |
 
 Validation is layered. A supplied key must decode as base64 and be exactly 32 bytes, in every
 profile. A non-local profile additionally requires that a key is present *and* that the signing key
 id does not begin with `ephemeral-local` — so a production deployment cannot run on the development
 key or an unnamed one.
+
+A non-local profile also requires `..._SIGNING_KEY_NOT_BEFORE_UTC`. A consumer selects a
+verification key by the decision's issue time, so a key published without a window cannot be chosen
+correctly for a historical decision. The instant is provisioned rather than defaulted on purpose: a
+guessed window either keeps a retired key trusted indefinitely or makes genuine decisions
+unverifiable.
+
+`..._RETIRED_VERIFICATION_KEYS` carries keys that have stopped signing but whose decisions must
+still verify, as JSON:
+
+```json
+[
+  {
+    "key_id": "managed-v1",
+    "public_key_base64": "<base64url public key>",
+    "not_before_utc": "2025-10-01T00:00:00Z",
+    "not_after_utc": "2026-01-01T00:00:00Z"
+  }
+]
+```
+
+Public keys are not secrets, so this is ordinary configuration. Each entry needs a **closed** window
+— a retired key trusted without an end never stops being accepted — and the service refuses to start
+on an inverted window, a missing `not_after_utc`, or unparseable JSON. It refuses rather than
+treating a malformed value as "no retired keys", because those two states look identical in the
+published document and one of them silently drops every key a rotation was meant to retain.
+
+**Rotation procedure.** Move the outgoing key into `..._RETIRED_VERIFICATION_KEYS` with
+`not_after_utc` set to the changeover instant, set the new key and id, and set
+`..._SIGNING_KEY_NOT_BEFORE_UTC` to that same instant. Both keys are then published and decisions on
+either side of the changeover verify.
 
 The ledger defaults to the temp directory, so replay protection is not durable in the runnable
 configuration either. The capability is not certified — see
