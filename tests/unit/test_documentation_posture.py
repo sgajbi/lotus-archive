@@ -84,3 +84,34 @@ def test_local_enterprise_refactor_playbook_is_only_canonical_pointer() -> None:
     assert "stale local copy" in " ".join(local_playbook.split())
     assert "# 6. Layer Responsibilities" not in local_playbook
     assert "runtime composition settings" in repo_docs
+
+
+def test_branch_protection_policy_table_describes_this_repository() -> None:
+    """The lifted checker is byte-identical everywhere; the policy table is not.
+
+    Two of the three adopters shipped a stated limitation describing a
+    ``Risk-only`` fork, copied from the first adoption. A limitation that names
+    the wrong repository is evidence the text was never read in the context it
+    governs, which is the exact failure the table exists to prevent.
+    """
+    policy = _read("quality/branch_protection_policy.v1.json")
+    foreign = [
+        name
+        for name in (
+            "Risk",
+            "Report",
+            "Gateway",
+            "Core",
+            "Advise",
+            "Manage",
+            "Render",
+            "Idea",
+            "Performance",
+            "Platform",
+            "Workbench",
+        )
+        if f"{name}-only" in policy
+    ]
+
+    assert not foreign, f"policy table describes another repository: {foreign}"
+    assert "Archive-only" in policy
