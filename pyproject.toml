@@ -25,6 +25,9 @@ dependencies = [
   "psycopg_pool==3.3.1",
 ]
 
+[project.urls]
+Repository = "https://github.com/sgajbi/lotus-archive"
+
 [project.optional-dependencies]
 dev = [
   "ruff==0.15.0",
