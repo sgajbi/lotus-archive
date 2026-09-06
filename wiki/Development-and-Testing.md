@@ -31,6 +31,8 @@ is the correct local state, not a fault.
 | `make source-size-gate` | no module past the banked 914 lines |
 | `make dead-code-gate` | no vulture finding at 80% confidence |
 | `make dependency-hygiene-gate` | no deptry finding; direct imports must be declared dependencies |
+| `python scripts/check_branch_protection_policy.py --offline` | the branch-protection policy table is complete and self-consistent (also run by the unit gate) |
+| `python scripts/check_branch_protection_policy.py` | live branch protection matches `quality/branch_protection_policy.v1.json` field by field; needs a token carrying `administration: read` and fails closed without one |
 | `make security-audit` | dependency vulnerability audit |
 | `make check` | lint, typecheck, both gates, **unit tests only** |
 | `make ci` | the above plus integration, e2e, coverage and security audit |
