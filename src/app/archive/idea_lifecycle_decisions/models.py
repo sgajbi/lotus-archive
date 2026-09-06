@@ -34,7 +34,13 @@ class IdeaLifecycleDecision(BaseModel):
     idea_candidate_id: str
     source_correlation_ref: str
     tenant_id: str
-    residency_region: str
+    #: Uppercase region code, matching what `lotus-idea` accepts. Its
+    #: `archive_posture.py` refuses anything else at contract mapping, before
+    #: verification, so an unconstrained value here becomes a decision the
+    #: consumer cannot read -- failing at their end with nothing naming this
+    #: service. Real documents carry values like `SG`, so this enforces current
+    #: behaviour rather than changing it.
+    residency_region: str = Field(pattern=r"^[A-Z]{2,16}$")
     retention_policy_id: str
     legal_hold_status: LegalHoldStatus
     legal_hold_count: int

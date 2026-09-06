@@ -59,7 +59,7 @@ def _decision(signer: Ed25519LifecycleDecisionSigner) -> IdeaLifecycleDecision:
         "idea_candidate_id": "cand-1",
         "source_correlation_ref": "src-1",
         "tenant_id": "tenant-1",
-        "residency_region": "eu-west-1",
+        "residency_region": "SG",
         "retention_policy_id": "policy-1",
         "legal_hold_status": "clear",
         "legal_hold_count": 0,
