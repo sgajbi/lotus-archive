@@ -129,9 +129,11 @@ Branch protection is asserted, not assumed. `quality/branch_protection_policy.v1
 every protection field this repository claims - required contexts, posture flags, bypass
 allowances, CODEOWNERS posture, the review authority, and `documented_exceptions` each carrying the
 condition that retires it - and `scripts/check_branch_protection_policy.py` compares live
-protection against it field by field, failing in BOTH drift directions (protection weakening, and
-an exception's text being removed without the configuration strengthening), with absent settings
-compared as ABSENT rather than coerced to false. The checker and its tests are the canonical
+protection against it field by field, comparing for EQUALITY rather than as a floor, so protection
+that weakens OR strengthens away from the table fails and must be re-declared, with absent settings
+compared as ABSENT rather than coerced to false. Only the zero-approval exception is bound to the
+weakness it documents (lotus-gateway#743), so an exception the offline validation does not name can
+be deleted while the weakness it excused persists. The checker and its tests are the canonical
 objects from merged `lotus-gateway#741`, verified by BLOB identity (`git rev-parse <ref>:<path>`
 against gateway's `origin/main` on the committed ref, because a blob SHA hashes what git actually
 stored) and must stay byte-identical: that identity is how a canonical fix reaches every adopter
