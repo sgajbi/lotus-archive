@@ -28,6 +28,8 @@ from app.archive.commands import (
     LifecycleTransitionCommand,
 )
 from app.archive.idea_lifecycle_decisions.models import (
+    LifecycleVerificationKey,
+    LifecycleVerificationKeys,
     IdeaLifecycleDecision,
     IdeaLifecycleDecisionRequest,
 )
@@ -223,6 +225,31 @@ async def preflight_document_access(
         trace_id=request_trace_id,
     )
     return ArchiveDocumentAccessPreflightResponse.from_result(result)
+
+
+@router.get(
+    "/idea-lifecycle-decisions/verification-keys",
+    response_model=LifecycleVerificationKeys,
+    summary="Publish the keys that verify Idea lifecycle decisions",
+    description=(
+        "Returns the Ed25519 public keys a consumer needs to verify an Idea lifecycle "
+        "decision Archive issued, keyed by the `signing_key_id` each decision carries. "
+        "Deliberately unauthenticated: a verification key is not a secret, and requiring "
+        "Archive credentials to CHECK a decision Archive already signed would defeat the "
+        "point of signing it. Keys are derived from the active signer, so a published key "
+        "cannot disagree with the key that signed. `provenance` distinguishes provisioned "
+        "key material from an ephemeral development key, which a consumer must refuse."
+    ),
+    responses={
+        200: {"description": "Currently acceptable verification keys."},
+    },
+)
+async def get_lifecycle_verification_keys(
+    service: IdeaLifecycleDecisionService = Depends(idea_lifecycle_decision_service),
+) -> LifecycleVerificationKeys:
+    return LifecycleVerificationKeys(
+        keys=[LifecycleVerificationKey(**key) for key in service.verification_keys()]
+    )
 
 
 @router.get(

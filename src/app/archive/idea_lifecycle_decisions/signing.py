@@ -12,6 +12,7 @@ from cryptography.hazmat.primitives.asymmetric.ed25519 import (
     Ed25519PrivateKey,
     Ed25519PublicKey,
 )
+from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat
 
 from app.archive.idea_lifecycle_decisions.models import IdeaLifecycleDecision
 
@@ -21,6 +22,15 @@ class LifecycleDecisionSigner(Protocol):
     def key_id(self) -> str: ...
 
     def sign(self, payload: Mapping[str, object]) -> tuple[str, str]: ...
+
+    def public_key_base64(self) -> str:
+        """The verification key for `key_id`, base64url, no padding stripped.
+
+        Published so a consumer can populate `verify_lifecycle_decision`'s
+        `trusted_keys`. Derived from the signing key itself rather than from
+        configuration, so a published key cannot disagree with the key that
+        signed.
+        """
 
 
 @dataclass(frozen=True)
@@ -33,6 +43,13 @@ class Ed25519LifecycleDecisionSigner:
         digest = "sha256:" + hashlib.sha256(canonical).hexdigest()
         signature = "ed25519:" + urlsafe_b64encode(self.private_key.sign(canonical)).decode("ascii")
         return digest, signature
+
+    def public_key_base64(self) -> str:
+        raw = self.private_key.public_key().public_bytes(
+            encoding=Encoding.Raw,
+            format=PublicFormat.Raw,
+        )
+        return urlsafe_b64encode(raw).decode("ascii")
 
 
 def verify_lifecycle_decision(
