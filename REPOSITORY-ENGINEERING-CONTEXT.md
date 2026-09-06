@@ -125,6 +125,35 @@ build validation. Feature, pull-request, and main releasability workflows execut
 contract gate explicitly. `tests/unit/test_ci_gate_liveness.py` derives blocking `*-gate` targets
 from `make check` and `make ci` and fails if any validating workflow omits one.
 
+Branch protection is asserted, not assumed. `quality/branch_protection_policy.v1.json` records
+every protection field this repository claims - required contexts, posture flags, bypass
+allowances, CODEOWNERS posture, the review authority, and `documented_exceptions` each carrying the
+condition that retires it - and `scripts/check_branch_protection_policy.py` compares live
+protection against it field by field, failing in BOTH drift directions (protection weakening, and
+an exception's text being removed without the configuration strengthening), with absent settings
+compared as ABSENT rather than coerced to false. The checker and its tests are the canonical
+objects from merged `lotus-gateway#741`, verified by BLOB identity (`git rev-parse <ref>:<path>`
+against gateway's `origin/main` on the committed ref, because a blob SHA hashes what git actually
+stored) and must stay byte-identical: that identity is how a canonical fix reaches every adopter
+instead of forking an estate-wide control, so repository-specific needs belong in the policy table,
+never in the lifted files. Offline document-shape checks run blocking in the unit gate so the table
+cannot rot; the live comparison runs daily in its own job in `Main Gate Coverage Audit` - a
+separate job, because sharing the coverage audit's job would let that job's timeout cancel the
+protection evidence exactly when it is most useful. OPERATOR REQUIREMENT: the live comparison needs
+a repository Actions secret (`LOTUS_AUTOMERGE_TOKEN`) carrying `administration: read`, which
+`github.token` cannot carry; no Lotus repository held one when this landed, so the step FAILS
+CLOSED on the missing token rather than passing silently, and the gate's own context is
+deliberately not yet self-anchored in the required list. Three canonical comparison gaps are stated
+in the table rather than implied: source `app_id` bindings (lotus-gateway#740), four protection
+controls the API returns but the checker's hard-coded allowlist ignores (lotus-gateway#742), and
+only the zero-approval exception being bound to the weakness it documents (lotus-gateway#743).
+
+One operational caveat for any workflow-touching change here: a dispatcher tag write is refused
+when the tagged commit's workflow tree differs from the default branch tip's, so a multi-commit PR
+that edits `.github/workflows` anywhere but its first commit - and never again after - loses
+per-commit gating on its ancestors and needs a manual pinned backfill. Single-commit workflow PRs
+are always safe.
+
 The pull-request Docker job also scans the image it builds for `CRITICAL,HIGH` vulnerabilities with
 `ignore-unfixed: true`, and fails on a finding. It is held to the *same* posture as the release scan
 in `Main Releasability` - `tests/unit/test_pr_image_vulnerability_gate.py` compares the two lanes

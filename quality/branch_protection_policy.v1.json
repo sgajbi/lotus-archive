@@ -1,0 +1,80 @@
+{
+  "contract_id": "lotus-branch-protection-policy",
+  "contract_version": "1.0.0",
+  "repository": "sgajbi/lotus-archive",
+  "protected_branch": "main",
+  "review_authority": {
+    "review_lead": "the lotus-archive review-lead session, working with the chatgpt-codex-connector inline review bot",
+    "mergeable_meaning": "an exact-head VERDICT of mergeable means every required context is green on the current head and every review thread on that head is resolved",
+    "escalation": "unresolved disagreements escalate to the repository owner (sgajbi), who is the sole accepted collaborator"
+  },
+  "expected": {
+    "enforce_admins": true,
+    "required_linear_history": true,
+    "allow_force_pushes": false,
+    "allow_deletions": false,
+    "required_conversation_resolution": true,
+    "required_status_checks": {
+      "strict": true,
+      "contexts": [
+        "PR Merge Gate / Workflow Lint",
+        "PR Merge Gate / Lint Typecheck Security",
+        "PR Merge Gate / Tests (unit)",
+        "PR Merge Gate / Tests (integration)",
+        "PR Merge Gate / Tests (e2e)",
+        "PR Merge Gate / Coverage Gate (Combined)",
+        "PR Merge Gate / Validate Docker Build"
+      ]
+    },
+    "required_pull_request_reviews": {
+      "present": true,
+      "required_approving_review_count": 0,
+      "dismiss_stale_reviews": true,
+      "require_code_owner_reviews": false,
+      "require_last_push_approval": false,
+      "bypass_pull_request_allowances": {
+        "users": [],
+        "teams": [],
+        "apps": []
+      }
+    },
+    "restrictions_present": false,
+    "codeowners_present": false
+  },
+  "documented_exceptions": [
+    {
+      "field": "required_pull_request_reviews.required_approving_review_count",
+      "value": 0,
+      "reason": "the repository has a single accepted collaborator; requiring a non-author approval would hard-lock main rather than strengthen it, and naming that collaborator in CODEOWNERS would record an independent-review control that does not exist",
+      "compensating_controls": "seven required green contexts, enforce_admins, strict up-to-date branches, required conversation resolution, and linear history apply to every merge including the administrator's; every change is additionally reviewed on its exact head by the inline review bot before merge",
+      "retires_when": "a second accepted reviewer identity exists; then raise required_approving_review_count to 1, add CODEOWNERS, and update this policy in the same change"
+    },
+    {
+      "field": "required_status_checks.contexts",
+      "value": "the branch-protection policy gate is not yet self-anchored in this list",
+      "reason": "the live comparison cannot authenticate anywhere in the estate: no Lotus repository holds an Actions secret carrying administration:read (measured 2026-09-06), so requiring this gate's context would block every merge on an operator action rather than assert a control. The offline document-shape check runs blocking in the repo-native unit gate today; the live comparison runs fail-closed on a schedule",
+      "compensating_controls": "the offline shape check is blocking, so the table itself cannot rot; the scheduled live comparison fails closed on the absent token, so its silence is never mistaken for a pass",
+      "retires_when": "an operator provisions a repository PAT with administration:read; then move the live comparison into the blocking pre-merge lane, add its context to this list and to live protection in the ordered rollout the pattern specifies, and delete this exception"
+    }
+  ],
+  "stated_limitations": [
+    {
+      "limitation": "the comparison asserts required-check NAMES, not their source app bindings",
+      "detail": "branch protection also carries required_status_checks.checks[].app_id, which names the app permitted to satisfy each context. A context whose binding is removed or replaced keeps its name in contexts, so this comparison reports a match while a different app or a legacy commit status could satisfy protection.",
+      "why_not_fixed_here": "the checker is lifted byte-identically from the canonical implementation so that a fix propagates to every adopter; changing it in one adopter would fork an estate-wide control and silently diverge this repository from the canonical parity check. The gap is the canonical checker's, and is reported there.",
+      "tracked_as": "lotus-gateway#740, against the canonical implementation; this table adopts the binding declaration once the canonical checker compares it"
+    },
+    {
+      "limitation": "four protection controls the API returns are not compared at all",
+      "detail": "lock_branch, required_signatures, block_creations and allow_fork_syncing are absent from the checker's hard-coded scalar allowlist. All four read {\"enabled\": false} on this branch today; enabling lock_branch or required_signatures would change whether merges are possible while the comparison still reported a clean match.",
+      "why_not_fixed_here": "the allowlist is hard-coded in the canonical checker, so declaring these fields in this table would not cause them to be compared - an unknown expected key is never read. Editing the lifted checker would fork an estate-wide control.",
+      "tracked_as": "lotus-gateway#742, against the canonical implementation, companion to #740"
+    },
+    {
+      "limitation": "only the zero-approval exception is bound to the weakness it documents",
+      "detail": "validate_policy_document requires the zero-approval exception while required_approving_review_count is 0, but no invariant binds the omitted-gate-context exception to the omission. Deleting that exception while the context stays absent passes both offline validation and a matching live comparison, so the reason, compensating controls and retirement condition can be lost silently.",
+      "why_not_fixed_here": "the invariant lives in the canonical checker's offline validation; adding a Risk-only rule would fork an estate-wide control and diverge this repository from the canonical parity check.",
+      "tracked_as": "lotus-gateway#743, against the canonical implementation, alongside #740 and #742"
+    }
+  ]
+}
