@@ -92,6 +92,26 @@ jobs:
     name: Main Releasability / Tests (${{ matrix.suite }})
     needs: [lint-typecheck-security]
     runs-on: ubuntu-latest
+    services:
+      # The PostgreSQL adapter tests are skipped without this, and they were
+      # skipping in every run: `test_postgres_durable_adapters.py` has a
+      # `skipif` on LOTUS_ARCHIVE_TEST_DATABASE_URL and nothing ever set it, so
+      # the durable adapter has been shipping unverified by this pipeline while
+      # the suite reported green. A skipped proof and a passing proof look
+      # identical in a summary line.
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: archive
+          POSTGRES_PASSWORD: archive
+          POSTGRES_DB: archive_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U archive -d archive_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
     strategy:
       fail-fast: false
       matrix:
@@ -113,6 +133,7 @@ jobs:
       - name: Run tests with coverage data
         env:
           COVERAGE_FILE: .coverage.${{ matrix.suite }}
+          LOTUS_ARCHIVE_TEST_DATABASE_URL: postgresql://archive:archive@localhost:5432/archive_test
         run: ./.venv/bin/python -m pytest ${{ matrix.path }} --cov=src --cov-report=
       - name: Upload coverage data
         uses: actions/upload-artifact@v7.0.1
