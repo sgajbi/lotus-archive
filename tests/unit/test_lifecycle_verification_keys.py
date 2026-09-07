@@ -21,12 +21,16 @@ from cryptography.hazmat.primitives.asymmetric.ed25519 import (
 )
 
 from app.archive.idea_lifecycle_decisions.models import (
+    IdeaLifecycleAction,
     IdeaLifecycleDecision,
     LifecycleVerificationKey,
+    LifecycleVerificationKeys,
 )
 from app.archive.idea_lifecycle_decisions.signing import (
     Ed25519LifecycleDecisionSigner,
+    LifecycleDecisionVerificationRefusal,
     RetiredVerificationKey,
+    refuse_lifecycle_decision_against_bundle,
     verify_lifecycle_decision,
 )
 
@@ -42,7 +46,12 @@ def _published_public_key(signer: Ed25519LifecycleDecisionSigner) -> Ed25519Publ
     return Ed25519PublicKey.from_public_bytes(urlsafe_b64decode(signer.public_key_base64()))
 
 
-def _decision(signer: Ed25519LifecycleDecisionSigner) -> IdeaLifecycleDecision:
+def _decision(
+    signer: Ed25519LifecycleDecisionSigner,
+    *,
+    issued_at: datetime | None = None,
+    decision_id: str = "dec-1",
+) -> IdeaLifecycleDecision:
     """A decision built from the REAL model and signed the way the service signs.
 
     Every field comes from `IdeaLifecycleDecision` rather than a convenient
@@ -50,10 +59,10 @@ def _decision(signer: Ed25519LifecycleDecisionSigner) -> IdeaLifecycleDecision:
     verifier look correct, which is the failure this whole test file is
     guarding against.
     """
-    issued = datetime.now(UTC)
+    issued = issued_at or datetime.now(UTC)
     payload = {
         "contract_version": "lotus-archive:IdeaEvidenceLifecycleDecision:v1",
-        "decision_id": "dec-1",
+        "decision_id": decision_id,
         "document_id": "doc-1",
         "idea_evidence_pack_id": "pack-1",
         "idea_candidate_id": "cand-1",
@@ -267,3 +276,252 @@ def test_every_published_key_carries_the_window_a_consumer_selects_by() -> None:
     assert retired.status == "retired"
     assert retired.not_after_utc == rotated_at
     assert retired.not_before_utc < retired.not_after_utc
+
+
+# --------------------------------------------------------------------------
+# Enforcement: the tests above prove the windows are PUBLISHED. These prove
+# they are USED.
+#
+# Archive shipped `not_before_utc` and `not_after_utc` on every published key
+# and no code that read one. `verify_lifecycle_decision` takes a plain
+# `key_id -> public key` mapping -- `_trust_store_from` above builds exactly
+# that, which is what a consumer does with this document -- and there is no
+# parameter through which a window could reach it. So the windows were a
+# contract nothing enforced, on the one route that exists to be consumed by
+# somebody else.
+# --------------------------------------------------------------------------
+
+
+def _rotated_bundle(
+    outgoing: Ed25519LifecycleDecisionSigner,
+    incoming: Ed25519LifecycleDecisionSigner,
+    rotated_at: datetime,
+) -> LifecycleVerificationKeys:
+    """The document published immediately after a rotation, from the real surface."""
+    return LifecycleVerificationKeys(
+        keys=_published_keys(
+            incoming,
+            not_before_utc=rotated_at,
+            retired=(
+                RetiredVerificationKey(
+                    key_id=outgoing.key_id,
+                    public_key_base64=outgoing.public_key_base64(),
+                    not_before_utc=rotated_at - timedelta(days=90),
+                    not_after_utc=rotated_at,
+                ),
+            ),
+        )
+    )
+
+
+def test_a_decision_from_either_side_of_the_rotation_verifies() -> None:
+    """The handoff is an overlap, not a cutover.
+
+    One document, one moment, both decisions accepted -- without the consumer
+    being told which side of the rotation it is on.
+    """
+    rotated_at = datetime.now(UTC)
+    outgoing, incoming = _signer("managed-v1"), _signer("managed-v2")
+    bundle = _rotated_bundle(outgoing, incoming, rotated_at)
+
+    before = _decision(outgoing, issued_at=rotated_at - timedelta(minutes=1), decision_id="dec-old")
+    after = _decision(incoming, issued_at=rotated_at + timedelta(minutes=1), decision_id="dec-new")
+
+    assert refuse_lifecycle_decision_against_bundle(before, bundle=bundle) is None
+    assert refuse_lifecycle_decision_against_bundle(after, bundle=bundle) is None
+
+
+def test_a_decision_dated_after_its_key_retired_is_refused() -> None:
+    """Retention is what makes this forgeable, and the window is what bounds it.
+
+    The outgoing key stays published so decisions it really signed keep
+    verifying. That same key must not vouch for a decision claiming to have
+    been issued after it stopped signing.
+    """
+    rotated_at = datetime.now(UTC)
+    outgoing, incoming = _signer("managed-v1"), _signer("managed-v2")
+    bundle = _rotated_bundle(outgoing, incoming, rotated_at)
+
+    after_retirement = _decision(outgoing, issued_at=rotated_at + timedelta(minutes=1))
+
+    assert (
+        refuse_lifecycle_decision_against_bundle(after_retirement, bundle=bundle)
+        is LifecycleDecisionVerificationRefusal.KEY_ALREADY_RETIRED
+    )
+
+
+def test_the_plain_trusted_keys_helper_cannot_enforce_the_window() -> None:
+    """The finding itself, kept as a test so it cannot quietly return.
+
+    `_trust_store_from` is the obvious way to consume this document, and it is
+    the shape every test above uses. Fed the same decision the test above
+    refuses, it accepts -- because the helper it feeds has nowhere to put a
+    window.
+
+    Not a defect in `verify_lifecycle_decision`: it does exactly what its
+    signature promises. The defect was publishing a window that no shipped code
+    read, leaving the only obvious consumer unable to honour it.
+    """
+    rotated_at = datetime.now(UTC)
+    outgoing, incoming = _signer("managed-v1"), _signer("managed-v2")
+    bundle = _rotated_bundle(outgoing, incoming, rotated_at)
+
+    after_retirement = _decision(outgoing, issued_at=rotated_at + timedelta(minutes=1))
+
+    assert verify_lifecycle_decision(
+        after_retirement, trusted_keys=_trust_store_from(bundle.keys)
+    ), "if this ever fails, the windows reached the plain helper and this test is obsolete"
+
+
+def test_a_decision_back_dated_before_its_key_existed_is_refused() -> None:
+    rotated_at = datetime.now(UTC)
+    outgoing, incoming = _signer("managed-v1"), _signer("managed-v2")
+    bundle = _rotated_bundle(outgoing, incoming, rotated_at)
+
+    too_early = _decision(outgoing, issued_at=rotated_at - timedelta(days=91))
+
+    assert (
+        refuse_lifecycle_decision_against_bundle(too_early, bundle=bundle)
+        is LifecycleDecisionVerificationRefusal.KEY_NOT_YET_VALID
+    )
+
+
+def test_the_rotation_instant_belongs_to_the_incoming_key() -> None:
+    """Half-open, so exactly one key answers at the boundary.
+
+    A rotation sets the outgoing key's `not_after_utc` to the incoming key's
+    `not_before_utc`. A closed upper bound would leave both keys valid at that
+    instant with neither answer wrong -- ambiguity that surfaces once, in
+    production, at the one instant nobody tested.
+    """
+    rotated_at = datetime.now(UTC)
+    outgoing, incoming = _signer("managed-v1"), _signer("managed-v2")
+    bundle = _rotated_bundle(outgoing, incoming, rotated_at)
+
+    assert (
+        refuse_lifecycle_decision_against_bundle(
+            _decision(incoming, issued_at=rotated_at), bundle=bundle
+        )
+        is None
+    )
+    assert (
+        refuse_lifecycle_decision_against_bundle(
+            _decision(outgoing, issued_at=rotated_at), bundle=bundle
+        )
+        is LifecycleDecisionVerificationRefusal.KEY_ALREADY_RETIRED
+    )
+
+
+def test_a_key_that_was_never_published_is_refused() -> None:
+    rotated_at = datetime.now(UTC)
+    bundle = _rotated_bundle(_signer("managed-v1"), _signer("managed-v2"), rotated_at)
+
+    stranger = _signer("managed-somebody-elses")
+
+    assert (
+        refuse_lifecycle_decision_against_bundle(_decision(stranger), bundle=bundle)
+        is LifecycleDecisionVerificationRefusal.KEY_NOT_PUBLISHED
+    )
+
+
+def test_withdrawing_a_key_differs_from_retiring_it() -> None:
+    """Retirement and compromise are not the same operation.
+
+    A retired key keeps verifying decisions inside its window -- that is why it
+    is retained. A compromised key must stop verifying everything it ever
+    signed, including decisions that verified yesterday, because its signature
+    no longer evidences Archive's authority. The mechanism is removal from the
+    published document, and the operator needs to know that merely retiring a
+    compromised key leaves it trusted for its whole historical window.
+    """
+    rotated_at = datetime.now(UTC)
+    outgoing, incoming = _signer("managed-v1"), _signer("managed-v2")
+    bundle = _rotated_bundle(outgoing, incoming, rotated_at)
+    decision = _decision(outgoing, issued_at=rotated_at - timedelta(minutes=1))
+
+    assert refuse_lifecycle_decision_against_bundle(decision, bundle=bundle) is None
+
+    withdrawn = LifecycleVerificationKeys(keys=_published_keys(incoming, not_before_utc=rotated_at))
+
+    assert (
+        refuse_lifecycle_decision_against_bundle(decision, bundle=withdrawn)
+        is LifecycleDecisionVerificationRefusal.KEY_NOT_PUBLISHED
+    )
+
+
+def test_an_ephemeral_key_is_refused_however_valid_its_window() -> None:
+    """Provenance is enforced, not merely distinguishable.
+
+    The earlier test proves a consumer *can* tell an ephemeral key apart. This
+    proves the reference consumer *does* refuse one, inside a valid window and
+    with a genuine signature.
+    """
+    signer = _signer("ephemeral-local-v1")
+    bundle = LifecycleVerificationKeys(
+        keys=_published_keys(signer, not_before_utc=datetime.now(UTC) - timedelta(minutes=1))
+    )
+
+    assert (
+        refuse_lifecycle_decision_against_bundle(_decision(signer), bundle=bundle)
+        is LifecycleDecisionVerificationRefusal.KEY_IS_EPHEMERAL
+    )
+
+
+def test_a_decision_survives_a_restart_only_under_provisioned_key_material() -> None:
+    """What `provenance` is actually claiming, proven as a restart.
+
+    A managed signer is rebuilt from provisioned material, so the document
+    published after a restart carries the same public key and the earlier
+    decision still verifies. An ephemeral signer generates fresh material, so
+    the restarted process publishes a key that verifies nothing it signed
+    before -- and the refusal names provenance rather than leaving a consumer
+    to diagnose an invalid signature.
+    """
+    private_key = Ed25519PrivateKey.generate()
+    before_restart = Ed25519LifecycleDecisionSigner(private_key=private_key, key_id="managed-v1")
+    decision = _decision(before_restart)
+    started_at = datetime.now(UTC) - timedelta(minutes=1)
+
+    # Same provisioned material, new process.
+    after_restart = Ed25519LifecycleDecisionSigner(private_key=private_key, key_id="managed-v1")
+    managed = LifecycleVerificationKeys(
+        keys=_published_keys(after_restart, not_before_utc=started_at)
+    )
+
+    assert refuse_lifecycle_decision_against_bundle(decision, bundle=managed) is None
+
+    # A process that generates its own key cannot do this, which is the whole
+    # reason the ephemeral refusal exists.
+    regenerated = _signer("ephemeral-local-v1")
+    ephemeral_decision = _decision(regenerated)
+    restarted_ephemeral = LifecycleVerificationKeys(
+        keys=_published_keys(_signer("ephemeral-local-v1"), not_before_utc=started_at)
+    )
+
+    assert (
+        refuse_lifecycle_decision_against_bundle(ephemeral_decision, bundle=restarted_ephemeral)
+        is LifecycleDecisionVerificationRefusal.KEY_IS_EPHEMERAL
+    )
+
+
+def test_a_tampered_decision_is_refused_inside_a_valid_window() -> None:
+    """Window and provenance are preconditions, not substitutes for the signature.
+
+    The tamper flips a retain into an executed disposal, which is the change
+    that would matter: it authorises destroying evidence.
+    """
+    rotated_at = datetime.now(UTC)
+    outgoing, incoming = _signer("managed-v1"), _signer("managed-v2")
+    bundle = _rotated_bundle(outgoing, incoming, rotated_at)
+
+    tampered = _decision(outgoing, issued_at=rotated_at - timedelta(minutes=1)).model_copy(
+        update={
+            "lifecycle_action": IdeaLifecycleAction.DISPOSAL_EXECUTED,
+            "disposal_authorized": True,
+        }
+    )
+
+    assert (
+        refuse_lifecycle_decision_against_bundle(tampered, bundle=bundle)
+        is LifecycleDecisionVerificationRefusal.SIGNATURE_INVALID
+    )

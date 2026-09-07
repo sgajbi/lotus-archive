@@ -33,6 +33,21 @@ point of signing it. It publishes the active signing key **and every retained ke
 a key by the decision's issue time. Publishing the active key alone would leave every decision
 signed before a rotation unverifiable.
 
+Those windows are a requirement on the consumer, not decoration. Archive retains a key so the
+decisions it signed keep verifying; that same retention is what lets a retired key be offered as
+cover for a decision claiming to have been issued after it stopped signing. A consumer that
+collects the published keys into a `key_id -> public key` mapping and checks only the signature
+accepts exactly that. Archive therefore ships the reference consumer alongside the route:
+`refuse_lifecycle_decision_against_bundle` in `app.archive.idea_lifecycle_decisions.signing` takes
+the published document whole, selects by the decision's `issued_at_utc`, and returns a named reason
+rather than a bare boolean. The older `verify_lifecycle_decision` remains correct for what it
+promises — it resolves a key and checks a signature — but has no parameter a window could reach,
+so it cannot enforce one.
+
+Selection is by the decision's issue time and never by wall clock. Selecting by "now" would make
+every historical decision unverifiable the instant its key retired, which is the failure retention
+was added to remove.
+
 A discovery route does not by itself establish trust in the key it returns — a consumer fetching
 over a channel it cannot authenticate has no basis to trust the response. Trust bootstrap remains
 [#55](https://github.com/sgajbi/lotus-archive/issues/55).
