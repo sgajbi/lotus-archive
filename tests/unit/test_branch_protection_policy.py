@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import Any
 
 from scripts.check_branch_protection_policy import (
+    _MERGEABILITY_EXPECTED_KEYS,
     compare_live_to_policy,
     load_policy,
     resolve_effective_codeowners,
@@ -21,6 +22,11 @@ from scripts.check_branch_protection_policy import (
 def _live_matching_policy(policy: dict[str, Any]) -> dict[str, Any]:
     expected = policy["expected"]
     return {
+        # Derived from the checker's own list rather than restated here. These
+        # four all carry the plain `{"enabled": bool}` shape, and writing them
+        # out again would make this fake drift the next time a control is added
+        # -- which is exactly how the four arrived undeclared in the first place.
+        **{key: {"enabled": expected[key]} for key in _MERGEABILITY_EXPECTED_KEYS},
         "enforce_admins": {"enabled": expected["enforce_admins"]},
         "required_linear_history": {"enabled": expected["required_linear_history"]},
         "allow_force_pushes": {"enabled": expected["allow_force_pushes"]},
