@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+from collections.abc import Collection
 from datetime import UTC, datetime, timedelta
 from typing import Protocol, Sequence
 
@@ -13,6 +14,7 @@ from app.archive.audit import (
 )
 from app.archive.authorization import ArchiveAuthorizationPolicy, ArchivePermission
 from app.archive.idea_lifecycle_decisions.models import (
+    LifecycleKeyStatus,
     LifecycleVerificationKey,
     IdeaLifecycleAction,
     IdeaLifecycleDecision,
@@ -24,7 +26,7 @@ from app.archive.idea_lifecycle_decisions.repository import (
 )
 from app.archive.idea_lifecycle_decisions.signing import (
     LifecycleDecisionSigner,
-    RetiredVerificationKey,
+    RetainedVerificationKey,
 )
 from app.archive.models import ArchiveDocumentMetadata, LegalHoldStatus, PurgeStatus
 from app.security.caller_context import CallerContext
@@ -38,6 +40,16 @@ _EPHEMERAL_KEY_START = datetime(1970, 1, 1, tzinfo=UTC)
 
 class LifecycleDecisionTenantError(PermissionError):
     pass
+
+
+class LifecycleDecisionSigningKeyRevokedError(RuntimeError):
+    """The configured signing key has been revoked, so nothing may be signed.
+
+    A separate failure from a missing or malformed key: the material is present
+    and would sign perfectly well. Refusing is the point. Publishing a key as
+    revoked while continuing to sign with it would tell consumers to reject
+    exactly the decisions this service is still minting.
+    """
 
 
 class LifecycleDecisionDocumentError(ValueError):
@@ -59,13 +71,15 @@ class IdeaLifecycleDecisionService:
         audit_repository: AccessAuditRepository,
         decision_ttl: timedelta = timedelta(minutes=5),
         signing_key_not_before_utc: datetime | None = None,
-        retired_verification_keys: Sequence[RetiredVerificationKey] = (),
+        retained_verification_keys: Sequence[RetainedVerificationKey] = (),
+        revoked_key_ids: Collection[str] = (),
     ) -> None:
         self._posture_reader = posture_reader
         self._repository = repository
         self._signer = signer
         self._signing_key_not_before_utc = signing_key_not_before_utc
-        self._retired_verification_keys = tuple(retired_verification_keys)
+        self._retained_verification_keys = tuple(retained_verification_keys)
+        self._revoked_key_ids = frozenset(revoked_key_ids)
         self._authorization_policy = authorization_policy
         self._audit_repository = audit_repository
         self._decision_ttl = decision_ttl
@@ -73,7 +87,11 @@ class IdeaLifecycleDecisionService:
     def verification_keys(self) -> list[LifecycleVerificationKey]:
         """Every key a consumer needs to verify decisions this service issued.
 
-        The active signer plus every retained key. A list alone was not enough:
+        The signing key plus every retained key, whatever their status --
+        including revoked ones, which a consumer needs in order to *refuse*
+        decisions rather than to accept them.
+
+        A list alone was not enough:
         while only the active signer was published, rotating dropped the key
         that signed every earlier decision, and those decisions stopped
         verifying for any consumer building trust from this document.
@@ -81,7 +99,7 @@ class IdeaLifecycleDecisionService:
         Each key carries the window it signed in, because a consumer selects a
         key by the decision's issue time. The active key's start is provisioned
         configuration and is never defaulted -- a guessed window either keeps a
-        retired key trusted forever or makes real decisions unverifiable.
+        rotated key trusted forever or makes real decisions unverifiable.
 
         `provenance` is `managed` or `ephemeral_development`, and reports where
         the key material came from, not that it is well custodied. A consumer
@@ -89,18 +107,21 @@ class IdeaLifecycleDecisionService:
         decision signed under it cannot be verified after a restart.
         """
         key_id = self._signer.key_id
-        active = LifecycleVerificationKey(
+        signing = LifecycleVerificationKey(
             key_id=key_id,
             algorithm="ed25519",
             public_key_base64=self._signer.public_key_base64(),
             provenance=(
                 "ephemeral_development" if key_id.startswith("ephemeral-local") else "managed"
             ),
-            status="active",
+            # A revoked signer is still published, and published as revoked.
+            # It has to be: withdrawing a key means consumers must reject what
+            # it signed, and this document is the only place they learn that.
+            status=self._status_for(key_id, unrevoked=LifecycleKeyStatus.ACTIVE),
             not_before_utc=self._signing_key_not_before_utc or _EPHEMERAL_KEY_START,
             not_after_utc=None,
         )
-        retired = [
+        retained = [
             LifecycleVerificationKey(
                 key_id=key.key_id,
                 algorithm="ed25519",
@@ -109,13 +130,23 @@ class IdeaLifecycleDecisionService:
                 # construction: an ephemeral key cannot outlive the process
                 # that generated it and can never be carried forward.
                 provenance="managed",
-                status="retired",
+                status=self._status_for(key.key_id, unrevoked=LifecycleKeyStatus.ROTATED),
                 not_before_utc=key.not_before_utc,
                 not_after_utc=key.not_after_utc,
             )
-            for key in self._retired_verification_keys
+            for key in self._retained_verification_keys
         ]
-        return [active, *retired]
+        return [signing, *retained]
+
+    def _status_for(self, key_id: str, *, unrevoked: LifecycleKeyStatus) -> LifecycleKeyStatus:
+        """Revocation overrides whatever the key would otherwise be published as.
+
+        One place, so the signing key and the retained keys cannot come to
+        disagree about what revocation means for them.
+        """
+        if key_id in self._revoked_key_ids:
+            return LifecycleKeyStatus.REVOKED
+        return unrevoked
 
     def issue(
         self,
@@ -127,6 +158,14 @@ class IdeaLifecycleDecisionService:
         trace_id: str,
         issued_at_utc: datetime | None = None,
     ) -> IdeaLifecycleDecision:
+        if self._signer.key_id in self._revoked_key_ids:
+            # Before authorization, and before the idempotent replay lookup.
+            # A revoked signer must not mint a decision for anyone, and a
+            # replay served from the ledger would hand back one signed by
+            # exactly the key whose signatures have been withdrawn.
+            raise LifecycleDecisionSigningKeyRevokedError(
+                "the configured lifecycle signing key is revoked and cannot sign"
+            )
         self._authorization_policy.authorize(
             permission=ArchivePermission.READ_IDEA_LIFECYCLE_DECISION,
             caller_context=caller_context,

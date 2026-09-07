@@ -1,0 +1,10 @@
+{
+  "_comment": "Vendored copy of the governed lifecycle key-status vocabulary, so archive CI can check its enum against a declared authority without a lotus-platform checkout. Provenance is recorded by blob SHA rather than by path alone: a path says where it came from, a blob SHA says exactly what was copied, and only the second can be re-verified. See lotus-archive#147.",
+  "source_repository": "lotus-platform",
+  "source_path": "platform-contracts/lifecycle-authority/lifecycle-authority-key-discovery.schema.json",
+  "source_blob_sha": "adcf8599cbc861afbc7631ae1c30cb652452d4cd",
+  "source_commit": "503873c5689a2906322d794a478e109135f9b63d",
+  "verify": "git -C <lotus-platform> rev-parse <source_commit>:<source_path>",
+  "_scope": "Only the status vocabulary is shared. The surrounding document is NOT archive's bundle: it describes a bank-controlled lifecycle authority (issuer const 'bank-lifecycle-governance'), forbids additional properties, and so forbids the 'provenance' field archive publishes and lotus-idea requires. Archive's bundle cannot and should not validate against it.",
+  "status": ["active", "rotated", "revoked"]
+}

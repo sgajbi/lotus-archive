@@ -290,6 +290,96 @@ def test_postgres_composition_shares_one_pool_and_wires_shutdown(
     assert closed == ["pool"]
 
 
+def test_no_revoked_key_ids_parses_as_an_empty_set() -> None:
+    """The healthy state, and the one a parse failure would be mistaken for."""
+    assert _production_settings().revoked_key_ids() == frozenset()
+
+
+def test_revoked_key_ids_are_parsed_and_stripped() -> None:
+    """Whitespace around an id must not produce an id that matches nothing.
+
+    The ids are compared against published key ids, so ` managed-v1 ` failing to
+    match `managed-v1` would leave the key trusted while the configuration
+    plainly says it is revoked.
+    """
+    settings = _production_settings(
+        idea_lifecycle_decision_revoked_key_ids=json.dumps(["  managed-v1  "]),
+    )
+
+    assert settings.revoked_key_ids() == frozenset({"managed-v1"})
+
+
+def test_malformed_revoked_key_configuration_is_refused_not_ignored() -> None:
+    """An unparseable value must not read as "nothing is revoked".
+
+    Same reasoning as the retained keys, and sharper: those two states are
+    indistinguishable in the published document, and one of them silently keeps
+    a compromised key trusted.
+    """
+    with pytest.raises(RuntimeConfigurationError, match="valid JSON"):
+        _production_settings(idea_lifecycle_decision_revoked_key_ids="{not json")
+
+
+@pytest.mark.parametrize(
+    "value",
+    ['{"key_id": "managed-v1"}', "[123]", '["managed-v1", ""]', '["   "]'],
+    ids=["object-not-list", "non-string-entry", "empty-entry", "blank-entry"],
+)
+def test_a_revoked_key_id_list_must_hold_non_empty_strings(value: str) -> None:
+    """An empty or blank entry is the shape a half-filled template produces.
+
+    It would parse, match no key, and -- without the check below -- silently
+    revoke nothing.
+    """
+    with pytest.raises(RuntimeConfigurationError, match="non-empty strings"):
+        _production_settings(idea_lifecycle_decision_revoked_key_ids=value)
+
+
+def test_a_revoked_key_id_matching_no_published_key_refuses_to_start() -> None:
+    """A typo in the one control that withdraws trust must not read as applied.
+
+    An id naming nothing is inert: it withholds no signature and marks nothing
+    in the published document. The operator sees a successful start, a correct
+    looking configuration, and a compromised key still trusted.
+    """
+    with pytest.raises(RuntimeConfigurationError, match="match no published key"):
+        _production_settings(
+            idea_lifecycle_decision_revoked_key_ids=json.dumps(["managed-typo"]),
+        )
+
+
+def test_the_active_signing_key_may_be_revoked() -> None:
+    """The case a status field on the retained entries could not express.
+
+    A compromised key that is still signing has no closed window, so it cannot
+    be listed as retained. Revocation is keyed by id precisely so this works.
+    """
+    settings = _production_settings(
+        idea_lifecycle_decision_revoked_key_ids=json.dumps(["managed-v1"]),
+    )
+
+    assert settings.revoked_key_ids() == frozenset({"managed-v1"})
+
+
+def test_a_retained_key_may_be_revoked() -> None:
+    """The ordinary case: a key rotated out, later found to be compromised."""
+    settings = _production_settings(
+        idea_lifecycle_decision_retained_verification_keys=json.dumps(
+            [
+                {
+                    "key_id": "managed-v0",
+                    "public_key_base64": "x" * 43,
+                    "not_before_utc": "2025-10-01T00:00:00+00:00",
+                    "not_after_utc": "2026-01-01T00:00:00+00:00",
+                }
+            ]
+        ),
+        idea_lifecycle_decision_revoked_key_ids=json.dumps(["managed-v0"]),
+    )
+
+    assert settings.revoked_key_ids() == frozenset({"managed-v0"})
+
+
 def _production_settings(**overrides: object) -> ArchiveRuntimeSettings:
     """Minimum viable production configuration, before the override under test."""
     base: dict[str, object] = {
@@ -312,7 +402,7 @@ def test_production_requires_a_provisioned_signing_key_window() -> None:
     """A consumer selects a verification key by the decision's issue time.
 
     Without a start instant the window would have to be guessed, and a guessed
-    window either keeps a retired key trusted forever or makes real decisions
+    window either keeps a rotated key trusted forever or makes real decisions
     unverifiable. Refusing at startup is the only place that failure is cheap.
     """
     with pytest.raises(RuntimeConfigurationError, match="signing key start instant"):
@@ -326,14 +416,14 @@ def test_production_starts_with_a_provisioned_signing_key_window() -> None:
     assert settings.idea_lifecycle_decision_signing_key_not_before_utc == datetime(
         2026, 1, 1, tzinfo=UTC
     )
-    assert settings.retired_verification_keys() == ()
+    assert settings.retained_verification_keys() == ()
 
 
-def test_a_retired_key_window_must_end_after_it_begins() -> None:
+def test_a_retained_key_window_must_end_after_it_begins() -> None:
     """An inverted window can never select the key it describes."""
     with pytest.raises(RuntimeConfigurationError, match="must end after it begins"):
         _production_settings(
-            idea_lifecycle_decision_retired_verification_keys=json.dumps(
+            idea_lifecycle_decision_retained_verification_keys=json.dumps(
                 [
                     {
                         "key_id": "managed-v0",
@@ -346,15 +436,15 @@ def test_a_retired_key_window_must_end_after_it_begins() -> None:
         )
 
 
-def test_a_retired_key_without_an_end_is_refused() -> None:
+def test_a_retained_key_without_an_end_is_refused() -> None:
     """Retirement is what makes the end knowable.
 
-    A retired key trusted without an end never stops being accepted, which
+    A rotated key trusted without an end never stops being accepted, which
     defeats rotation entirely.
     """
     with pytest.raises(RuntimeConfigurationError, match="malformed"):
         _production_settings(
-            idea_lifecycle_decision_retired_verification_keys=json.dumps(
+            idea_lifecycle_decision_retained_verification_keys=json.dumps(
                 [
                     {
                         "key_id": "managed-v0",
@@ -366,23 +456,23 @@ def test_a_retired_key_without_an_end_is_refused() -> None:
         )
 
 
-def test_malformed_retired_key_configuration_is_refused_not_ignored() -> None:
-    """An unparseable value must not read as "no retired keys".
+def test_malformed_retained_key_configuration_is_refused_not_ignored() -> None:
+    """An unparseable value must not read as "no retained keys".
 
     Those two states look identical from the published document, and one of
     them silently drops every key a rotation was supposed to retain.
     """
     with pytest.raises(RuntimeConfigurationError, match="valid JSON"):
-        _production_settings(idea_lifecycle_decision_retired_verification_keys="{not json")
+        _production_settings(idea_lifecycle_decision_retained_verification_keys="{not json")
 
     with pytest.raises(RuntimeConfigurationError, match="JSON list"):
-        _production_settings(idea_lifecycle_decision_retired_verification_keys='{"key_id": "v0"}')
+        _production_settings(idea_lifecycle_decision_retained_verification_keys='{"key_id": "v0"}')
 
 
-def test_retired_keys_are_parsed_into_windows() -> None:
+def test_retained_keys_are_parsed_into_windows() -> None:
     """The control for the three refusals above."""
     settings = _production_settings(
-        idea_lifecycle_decision_retired_verification_keys=json.dumps(
+        idea_lifecycle_decision_retained_verification_keys=json.dumps(
             [
                 {
                     "key_id": "managed-v0",
@@ -394,12 +484,12 @@ def test_retired_keys_are_parsed_into_windows() -> None:
         )
     )
 
-    (retired,) = settings.retired_verification_keys()
-    assert retired.key_id == "managed-v0"
-    assert retired.not_after_utc == datetime(2026, 1, 1, tzinfo=UTC)
+    (retained,) = settings.retained_verification_keys()
+    assert retained.key_id == "managed-v0"
+    assert retained.not_after_utc == datetime(2026, 1, 1, tzinfo=UTC)
 
 
-def test_a_retired_key_window_is_ordered_by_instant_not_by_string() -> None:
+def test_a_retained_key_window_is_ordered_by_instant_not_by_string() -> None:
     """The case that comparing ISO strings gets wrong.
 
     not_after_utc here is 2026-01-01T01:00:00+02:00, which is 2025-12-31T23:00Z
@@ -409,7 +499,7 @@ def test_a_retired_key_window_is_ordered_by_instant_not_by_string() -> None:
     """
     with pytest.raises(RuntimeConfigurationError, match="must end after it begins"):
         _production_settings(
-            idea_lifecycle_decision_retired_verification_keys=json.dumps(
+            idea_lifecycle_decision_retained_verification_keys=json.dumps(
                 [
                     {
                         "key_id": "managed-v0",
