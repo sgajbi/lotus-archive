@@ -143,6 +143,14 @@ published document and one of them silently drops every key a rotation was meant
 `..._SIGNING_KEY_NOT_BEFORE_UTC` to that same instant. Both keys are then published and decisions on
 either side of the changeover verify.
 
+Both keys carry that one instant, so the changeover itself belongs to the incoming key: a
+consumer treats a retired key's window as closed at `not_after_utc`, not through it, or both
+keys would be valid at the changeover and neither answer would be wrong.
+
+This procedure is for ordinary retirement. A **compromised** key must be withdrawn from the
+published document rather than retired into it — see
+[Security and Controls](Security-and-Controls#retiring-a-key-is-not-withdrawing-it).
+
 The ledger defaults to the temp directory, so replay protection is not durable in the runnable
 configuration either. The capability is not certified — see
 [#55](https://github.com/sgajbi/lotus-archive/issues/55) and

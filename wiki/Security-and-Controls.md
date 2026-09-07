@@ -136,6 +136,27 @@ required to be exactly 32 bytes.
 A non-local profile additionally refuses to start unless a real key is present **and** the signing
 key id is not an `ephemeral-local` one — so a production profile cannot run on the development key.
 
+### Retiring a key is not withdrawing it
+
+Two operations look similar and are not interchangeable.
+
+**Retirement** is the ordinary end of a key's service. The key moves to
+`LOTUS_ARCHIVE_IDEA_LIFECYCLE_DECISION_RETIRED_VERIFICATION_KEYS` with a closed window, stays in the
+published document, and keeps verifying the decisions it signed inside that window. This is what a
+rotation does, and it is why a rotation does not invalidate history.
+
+**Withdrawal** is the response to compromise. The key is removed from the published document
+entirely, and every decision it ever signed stops verifying — including decisions that verified
+yesterday. That is the intended outcome: once the private half may be held by someone else, the
+signature no longer evidences Archive's authority over anything, and a decision that still verifies
+is worse than one that does not.
+
+Retiring a compromised key instead of withdrawing it leaves it trusted for its whole historical
+window, which is the failure mode to watch for: the operation succeeds, the service starts, the
+published document looks correct, and nothing reports that a compromised key is still accepted.
+Decisions signed under a withdrawn key must be re-issued under the current key if they are still
+needed.
+
 Managed key custody, rotation and consumer trust distribution remain open
 ([#55](https://github.com/sgajbi/lotus-archive/issues/55)). Treat the signing capability as
 uncertified.

@@ -5,6 +5,7 @@ import json
 from base64 import urlsafe_b64decode, urlsafe_b64encode
 from dataclasses import dataclass
 from datetime import UTC, datetime
+from enum import Enum
 from typing import Mapping, Protocol
 
 from cryptography.exceptions import InvalidSignature
@@ -14,7 +15,10 @@ from cryptography.hazmat.primitives.asymmetric.ed25519 import (
 )
 from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat
 
-from app.archive.idea_lifecycle_decisions.models import IdeaLifecycleDecision
+from app.archive.idea_lifecycle_decisions.models import (
+    IdeaLifecycleDecision,
+    LifecycleVerificationKeys,
+)
 
 
 @dataclass(frozen=True)
@@ -122,3 +126,77 @@ def verify_lifecycle_decision(
 
 def _canonical_payload(payload: Mapping[str, object]) -> bytes:
     return json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
+
+
+class LifecycleDecisionVerificationRefusal(str, Enum):
+    """Why a decision was not accepted, so a consumer can act on the reason.
+
+    A bare `False` cannot distinguish "this key was never ours" from "this key
+    was ours and had been retired before this decision claims to have been
+    issued" -- the second is evidence of a forged or back-dated decision, the
+    first is an ordinary trust-distribution miss.
+    """
+
+    KEY_NOT_PUBLISHED = "key_not_published"
+    KEY_NOT_YET_VALID = "key_not_yet_valid"
+    KEY_ALREADY_RETIRED = "key_already_retired"
+    KEY_IS_EPHEMERAL = "key_is_ephemeral"
+    SIGNATURE_INVALID = "signature_invalid"
+
+
+def refuse_lifecycle_decision_against_bundle(
+    decision: IdeaLifecycleDecision,
+    *,
+    bundle: LifecycleVerificationKeys,
+    at_utc: datetime | None = None,
+) -> LifecycleDecisionVerificationRefusal | None:
+    """`None` when the decision verifies against the published bundle.
+
+    The reference implementation of what a consumer must do with
+    `GET /documents/idea-lifecycle-decisions/verification-keys`, which Archive
+    publishes and, until now, did not itself consume.
+
+    `verify_lifecycle_decision` takes a plain `key_id -> public key` mapping.
+    That resolves the key and checks the signature, and it structurally cannot
+    enforce the validity windows this service publishes beside each key --
+    Archive declared a window and shipped no code that reads one. A consumer
+    building `trusted_keys` from the bundle and dropping the windows would
+    accept a decision claiming to be issued years after the key that signed it
+    was retired, which is precisely what retention makes possible and what the
+    window exists to bound.
+
+    Selection is by the decision's `issued_at_utc`, not by wall clock: the
+    question is whether this key was the signing key when the decision says it
+    was issued. Using "now" would make every historical decision unverifiable
+    the moment its key retired, which is the failure retention removed.
+    """
+
+    published = {key.key_id: key for key in bundle.keys}
+    key = published.get(decision.signing_key_id)
+    if key is None:
+        return LifecycleDecisionVerificationRefusal.KEY_NOT_PUBLISHED
+
+    if key.provenance != "managed":
+        # Regenerated per process, so a decision signed under it cannot be
+        # verified after a restart. Accepting one would make a local
+        # development key indistinguishable from provisioned custody.
+        return LifecycleDecisionVerificationRefusal.KEY_IS_EPHEMERAL
+
+    issued_at = decision.issued_at_utc
+    if issued_at < key.not_before_utc:
+        return LifecycleDecisionVerificationRefusal.KEY_NOT_YET_VALID
+    if key.not_after_utc is not None and issued_at >= key.not_after_utc:
+        # Half-open on purpose: a rotation sets the outgoing key's
+        # `not_after_utc` to the incoming key's `not_before_utc`, so a closed
+        # upper bound would make both keys valid at that instant and neither
+        # answer wrong.
+        return LifecycleDecisionVerificationRefusal.KEY_ALREADY_RETIRED
+
+    public_key = Ed25519PublicKey.from_public_bytes(
+        urlsafe_b64decode(key.public_key_base64.encode("ascii"))
+    )
+    if not verify_lifecycle_decision(
+        decision, trusted_keys={key.key_id: public_key}, at_utc=at_utc
+    ):
+        return LifecycleDecisionVerificationRefusal.SIGNATURE_INVALID
+    return None
