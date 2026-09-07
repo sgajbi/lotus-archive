@@ -59,17 +59,40 @@ class IdeaLifecycleDecision(BaseModel):
     signature: str
 
 
+class LifecycleKeyStatus(StrEnum):
+    """The governed lifecycle key-status vocabulary.
+
+    Constrained rather than a free `str` because the previous field accepted
+    anything: a typo, an empty string and `definitely-not-valid` were all
+    publishable and all verified identically, since nothing read the value.
+
+    `rotated` and `revoked` are not two names for the same thing, and the
+    difference is what a consumer acts on. A **rotated** key stopped signing and
+    keeps verifying inside its closed window -- that is what retention exists
+    for. A **revoked** key verifies nothing at any instant, including inside the
+    window it really did sign in, because the claim being withdrawn is that its
+    signatures ever meant anything. Both stay published; removing a revoked key
+    instead would answer "this key was never ours" for a key that was, which is
+    the one distinction this bundle exists to preserve.
+    """
+
+    ACTIVE = "active"
+    ROTATED = "rotated"
+    REVOKED = "revoked"
+
+
 class LifecycleVerificationKey(BaseModel):
     """A key a consumer can use to verify a lifecycle decision Archive issued."""
 
     key_id: str = Field(description="Matches `signing_key_id` on a decision.")
     algorithm: str = Field(description="Signature algorithm; `ed25519` today.")
     public_key_base64: str = Field(description="Raw 32-byte Ed25519 public key, base64url-encoded.")
-    status: str = Field(
+    status: LifecycleKeyStatus = Field(
         description=(
-            "`active` for the key currently signing, or `retired` for one retained so "
-            "decisions it signed stay verifiable. Both are acceptable for verification; "
-            "only `active` signs."
+            "`active` for the key currently signing, `rotated` for one retained so "
+            "decisions it signed stay verifiable, or `revoked` for one whose "
+            "signatures are withdrawn. `active` and `rotated` verify inside their "
+            "windows; `revoked` verifies at no instant. Only `active` signs."
         )
     )
     not_before_utc: datetime = Field(
@@ -96,12 +119,16 @@ class LifecycleVerificationKey(BaseModel):
 
 
 class LifecycleVerificationKeys(BaseModel):
-    """Every key currently acceptable for verification, active and retired.
+    """Every key a consumer needs to reach a verdict, including revoked ones.
+
+    Not "every acceptable key": a revoked entry is published precisely so a
+    consumer can refuse decisions it signed, and dropping it would make a
+    withdrawn key indistinguishable from one that was never Archive's.
 
     A list rather than one key so a rotation publishes the incoming key
     alongside the outgoing one, instead of forcing every consumer to cut over
     at the instant of rotation. The list shape alone was not enough: until
-    retired keys were retained here, rotation silently dropped the key that
+    rotated keys were retained here, rotation silently dropped the key that
     signed every earlier decision.
     """
 

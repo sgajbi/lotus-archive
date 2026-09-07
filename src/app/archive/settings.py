@@ -12,7 +12,7 @@ from pydantic import Field, SecretStr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from app.archive.exceptions import RuntimeConfigurationError
-from app.archive.idea_lifecycle_decisions.signing import RetiredVerificationKey
+from app.archive.idea_lifecycle_decisions.signing import RetainedVerificationKey
 
 ArchiveRuntimeProfile = Literal["local-development", "test", "production"]
 ArchiveRepositoryMode = Literal["in-memory", "postgresql"]
@@ -56,11 +56,21 @@ class ArchiveRuntimeSettings(BaseSettings):
     #: profile: a consumer selects a verification key by the decision's issue
     #: time, and a defaulted window is the invented one this exists to prevent.
     idea_lifecycle_decision_signing_key_not_before_utc: datetime | None = Field(default=None)
-    #: Keys that have stopped signing but must stay verifiable, as JSON:
+    #: Keys that have stopped signing but must stay published, as JSON:
     #: [{"key_id", "public_key_base64", "not_before_utc", "not_after_utc"}].
     #: Public keys are not secrets; each entry needs a closed window, since a
-    #: retired key trusted without an end never stops being accepted.
-    idea_lifecycle_decision_retired_verification_keys: str = Field(default="")
+    #: rotated key trusted without an end never stops being accepted.
+    idea_lifecycle_decision_retained_verification_keys: str = Field(default="")
+    #: Key IDs whose signatures are withdrawn, as a JSON list of strings.
+    #:
+    #: Separate from the retained list, and keyed by ID rather than carrying a
+    #: status on each entry, because revocation is not a property of retirement.
+    #: The key that is *still signing* can be compromised, and it has no closed
+    #: window to be listed under -- so a status field on the retained entries
+    #: could not express the case that matters most. Listing the active signer
+    #: here stops it signing and publishes it as revoked, which is the pair of
+    #: effects revocation means.
+    idea_lifecycle_decision_revoked_key_ids: str = Field(default="")
 
     @model_validator(mode="after")
     def validate_runtime_posture(self) -> ArchiveRuntimeSettings:
@@ -115,13 +125,52 @@ class ArchiveRuntimeSettings(BaseSettings):
             raise RuntimeConfigurationError(
                 "production lifecycle decisions require a provisioned signing key start instant"
             )
-        for retired in self.retired_verification_keys():
-            if retired.not_after_utc <= retired.not_before_utc:
+        for retained in self.retained_verification_keys():
+            if retained.not_after_utc <= retained.not_before_utc:
                 raise RuntimeConfigurationError(
-                    "a retired lifecycle verification key window must end after it begins"
+                    "a retained lifecycle verification key window must end after it begins"
                 )
+        revoked = self.revoked_key_ids()
+        published = {key.key_id for key in self.retained_verification_keys()} | {
+            self.idea_lifecycle_decision_signing_key_id
+        }
+        unknown = sorted(revoked - published)
+        if unknown:
+            # A revoked ID matching no published key is silently inert: it
+            # neither withholds a signature nor marks anything in the bundle,
+            # so a typo in the one control that withdraws trust would read as
+            # applied. Refusing to start is the only way that surfaces.
+            raise RuntimeConfigurationError(
+                f"revoked lifecycle key IDs match no published key: {', '.join(unknown)}"
+            )
 
-    def retired_verification_keys(self) -> tuple[RetiredVerificationKey, ...]:
+    def revoked_key_ids(self) -> frozenset[str]:
+        """Key IDs whose signatures are withdrawn.
+
+        Parsed on demand for the same reason as the retained list: a malformed
+        value must fail startup validation rather than read as an empty set,
+        and an empty revocation set is exactly what a healthy service looks
+        like -- so the failure would be invisible in the one direction that
+        matters.
+        """
+        raw = self.idea_lifecycle_decision_revoked_key_ids.strip()
+        if not raw:
+            return frozenset()
+        try:
+            entries = json.loads(raw)
+        except json.JSONDecodeError as exc:
+            raise RuntimeConfigurationError(
+                "revoked lifecycle verification key IDs must be valid JSON"
+            ) from exc
+        if not isinstance(entries, list) or not all(
+            isinstance(entry, str) and entry.strip() for entry in entries
+        ):
+            raise RuntimeConfigurationError(
+                "revoked lifecycle verification key IDs must be a JSON list of non-empty strings"
+            )
+        return frozenset(entry.strip() for entry in entries)
+
+    def retained_verification_keys(self) -> tuple[RetainedVerificationKey, ...]:
         """Keys retained so decisions they signed stay verifiable.
 
         Parsed on demand rather than stored, so a malformed value surfaces as a
@@ -129,24 +178,24 @@ class ArchiveRuntimeSettings(BaseSettings):
         silently reads as empty -- an empty retained set looks exactly like a
         service that has never rotated.
         """
-        raw = self.idea_lifecycle_decision_retired_verification_keys.strip()
+        raw = self.idea_lifecycle_decision_retained_verification_keys.strip()
         if not raw:
             return ()
         try:
             entries = json.loads(raw)
         except json.JSONDecodeError as exc:
             raise RuntimeConfigurationError(
-                "retired lifecycle verification keys must be valid JSON"
+                "retained lifecycle verification keys must be valid JSON"
             ) from exc
         if not isinstance(entries, list):
             raise RuntimeConfigurationError(
-                "retired lifecycle verification keys must be a JSON list"
+                "retained lifecycle verification keys must be a JSON list"
             )
         try:
-            return tuple(RetiredVerificationKey(**entry) for entry in entries)
+            return tuple(RetainedVerificationKey(**entry) for entry in entries)
         except (TypeError, ValueError) as exc:
             raise RuntimeConfigurationError(
-                "a retired lifecycle verification key entry is malformed"
+                "a retained lifecycle verification key entry is malformed"
             ) from exc
 
     @property

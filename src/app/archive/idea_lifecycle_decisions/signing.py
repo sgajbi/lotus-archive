@@ -17,22 +17,27 @@ from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat
 
 from app.archive.idea_lifecycle_decisions.models import (
     IdeaLifecycleDecision,
+    LifecycleKeyStatus,
     LifecycleVerificationKeys,
 )
 
 
 @dataclass(frozen=True)
-class RetiredVerificationKey:
-    """A key that no longer signs but must stay verifiable.
+class RetainedVerificationKey:
+    """A key that no longer signs but must stay published.
 
-    Its window is closed by definition: retirement is what makes `not_after_utc`
-    knowable, and a retired key trusted without an end never stops being
+    Its window is closed by definition: rotation is what makes `not_after_utc`
+    knowable, and a rotated key trusted without an end never stops being
     accepted.
 
     Held as provisioned metadata rather than derived, because the private key is
-    gone by the time a key is retired -- the public half and the window it
+    gone by the time a key rotates out -- the public half and the window it
     signed in are all that remain, and both have to be carried forward
     deliberately.
+
+    Named for retention rather than for a status, because a retained key may be
+    published as `rotated` or as `revoked`. Revocation is expressed separately,
+    by key id, since it also applies to the key that is still signing.
     """
 
     key_id: str
@@ -42,7 +47,7 @@ class RetiredVerificationKey:
 
     def __post_init__(self) -> None:
         if not self.key_id or not self.public_key_base64:
-            raise ValueError("a retired verification key needs an id and a public key")
+            raise ValueError("a retained verification key needs an id and a public key")
         # Built with **entry from parsed JSON, so these arrive as strings and
         # the annotations above would otherwise be a claim nothing enforces.
         # Comparing them as strings gives right answers for well-formed UTC
@@ -132,14 +137,23 @@ class LifecycleDecisionVerificationRefusal(str, Enum):
     """Why a decision was not accepted, so a consumer can act on the reason.
 
     A bare `False` cannot distinguish "this key was never ours" from "this key
-    was ours and had been retired before this decision claims to have been
+    was ours and had rotated out before this decision claims to have been
     issued" -- the second is evidence of a forged or back-dated decision, the
     first is an ordinary trust-distribution miss.
+
+    `KEY_REVOKED` is a third answer again, and the reason it cannot collapse
+    into either: the key was ours, the decision falls inside the window it
+    genuinely signed in, and it is still refused. Reporting that as
+    `KEY_NOT_PUBLISHED` would describe a withdrawn key as one Archive never
+    held; reporting it as `KEY_ALREADY_ROTATED` would say the signature was
+    fine but late. Both would be untrue, and an operator acting on either would
+    look in the wrong place.
     """
 
     KEY_NOT_PUBLISHED = "key_not_published"
+    KEY_REVOKED = "key_revoked"
     KEY_NOT_YET_VALID = "key_not_yet_valid"
-    KEY_ALREADY_RETIRED = "key_already_retired"
+    KEY_ALREADY_ROTATED = "key_already_rotated"
     KEY_IS_EPHEMERAL = "key_is_ephemeral"
     SIGNATURE_INVALID = "signature_invalid"
 
@@ -162,19 +176,27 @@ def refuse_lifecycle_decision_against_bundle(
     Archive declared a window and shipped no code that reads one. A consumer
     building `trusted_keys` from the bundle and dropping the windows would
     accept a decision claiming to be issued years after the key that signed it
-    was retired, which is precisely what retention makes possible and what the
+    rotated out, which is precisely what retention makes possible and what the
     window exists to bound.
 
     Selection is by the decision's `issued_at_utc`, not by wall clock: the
     question is whether this key was the signing key when the decision says it
     was issued. Using "now" would make every historical decision unverifiable
-    the moment its key retired, which is the failure retention removed.
+    the moment its key rotated out, which is the failure retention removed.
     """
 
     published = {key.key_id: key for key in bundle.keys}
     key = published.get(decision.signing_key_id)
     if key is None:
         return LifecycleDecisionVerificationRefusal.KEY_NOT_PUBLISHED
+
+    if key.status is LifecycleKeyStatus.REVOKED:
+        # Deliberately ahead of both window checks. Revocation withdraws the
+        # signatures the key already made, so it has to refuse *inside* the
+        # window the key genuinely signed in -- a check placed after the window
+        # comparisons would only ever fire where the existing ones already did,
+        # and would pass its test while changing nothing.
+        return LifecycleDecisionVerificationRefusal.KEY_REVOKED
 
     if key.provenance != "managed":
         # Regenerated per process, so a decision signed under it cannot be
@@ -190,7 +212,7 @@ def refuse_lifecycle_decision_against_bundle(
         # `not_after_utc` to the incoming key's `not_before_utc`, so a closed
         # upper bound would make both keys valid at that instant and neither
         # answer wrong.
-        return LifecycleDecisionVerificationRefusal.KEY_ALREADY_RETIRED
+        return LifecycleDecisionVerificationRefusal.KEY_ALREADY_ROTATED
 
     public_key = Ed25519PublicKey.from_public_bytes(
         urlsafe_b64decode(key.public_key_base64.encode("ascii"))

@@ -104,7 +104,8 @@ def idea_lifecycle_decision_service(request: Request) -> IdeaLifecycleDecisionSe
         authorization_policy=archive.authorization_policy,
         audit_repository=archive.audit_repository,
         signing_key_not_before_utc=settings.idea_lifecycle_decision_signing_key_not_before_utc,
-        retired_verification_keys=settings.retired_verification_keys(),
+        retained_verification_keys=settings.retained_verification_keys(),
+        revoked_key_ids=settings.revoked_key_ids(),
     )
     request.app.state.idea_lifecycle_decision_service = service
     return service

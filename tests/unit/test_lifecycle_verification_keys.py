@@ -29,7 +29,7 @@ from app.archive.idea_lifecycle_decisions.models import (
 from app.archive.idea_lifecycle_decisions.signing import (
     Ed25519LifecycleDecisionSigner,
     LifecycleDecisionVerificationRefusal,
-    RetiredVerificationKey,
+    RetainedVerificationKey,
     refuse_lifecycle_decision_against_bundle,
     verify_lifecycle_decision,
 )
@@ -149,26 +149,29 @@ def _published_keys(
     signer: Ed25519LifecycleDecisionSigner,
     *,
     not_before_utc: datetime | None = None,
-    retired: tuple[RetiredVerificationKey, ...] = (),
+    retained: tuple[RetainedVerificationKey, ...] = (),
+    revoked: frozenset[str] = frozenset(),
 ) -> list[LifecycleVerificationKey]:
-    """Call the real published surface with only what it reads.
+    """Call the real published surface with only the state it reads.
 
-    Naming the three attributes in one place rather than inline: the previous
-    stand-in duck-typed `_signer` alone and broke as soon as the method read
-    another field, which tells you nothing about the behaviour under test.
+    A real instance built without `__init__`, rather than a duck-typed
+    look-alike. The look-alike carried the attributes but not the class, so it
+    resolved fields and nothing else: the moment `verification_keys` called a
+    method on `self`, fourteen tests failed with `AttributeError` on a stand-in
+    that had been faithful right up until it wasn't.
+
+    `object.__new__` keeps the real behaviour and skips the collaborators this
+    method never touches -- and still fails loudly, on the specific name, if it
+    starts reading state that is not set here.
     """
     from app.archive.idea_lifecycle_decisions.service import IdeaLifecycleDecisionService
 
-    stand_in = type(
-        "ServiceStandIn",
-        (),
-        {
-            "_signer": signer,
-            "_signing_key_not_before_utc": not_before_utc,
-            "_retired_verification_keys": retired,
-        },
-    )()
-    return IdeaLifecycleDecisionService.verification_keys(stand_in)
+    service = object.__new__(IdeaLifecycleDecisionService)
+    service._signer = signer
+    service._signing_key_not_before_utc = not_before_utc
+    service._retained_verification_keys = retained
+    service._revoked_key_ids = revoked
+    return service.verification_keys()
 
 
 def _trust_store_from(
@@ -216,8 +219,8 @@ def test_a_decision_still_verifies_after_the_signer_rotates() -> None:
     published = _published_keys(
         incoming,
         not_before_utc=rotated_at,
-        retired=(
-            RetiredVerificationKey(
+        retained=(
+            RetainedVerificationKey(
                 key_id=outgoing.key_id,
                 public_key_base64=outgoing.public_key_base64(),
                 not_before_utc=rotated_at - timedelta(days=90),
@@ -251,15 +254,15 @@ def test_every_published_key_carries_the_window_a_consumer_selects_by() -> None:
 
     A key published without a window cannot be selected correctly for a
     historical decision, so the window is part of the contract rather than
-    documentation. The active key's end is open; a retired key's is closed,
-    because a retired key trusted without an end never stops being accepted.
+    documentation. The active key's end is open; a rotated key's is closed,
+    because a rotated key trusted without an end never stops being accepted.
     """
     rotated_at = datetime.now(UTC)
     published = _published_keys(
         _signer("managed-v2"),
         not_before_utc=rotated_at,
-        retired=(
-            RetiredVerificationKey(
+        retained=(
+            RetainedVerificationKey(
                 key_id="managed-v1",
                 public_key_base64=_signer("managed-v1").public_key_base64(),
                 not_before_utc=rotated_at - timedelta(days=90),
@@ -273,7 +276,7 @@ def test_every_published_key_carries_the_window_a_consumer_selects_by() -> None:
     assert active.not_before_utc == rotated_at
     assert active.not_after_utc is None
 
-    assert retired.status == "retired"
+    assert retired.status == "rotated"
     assert retired.not_after_utc == rotated_at
     assert retired.not_before_utc < retired.not_after_utc
 
@@ -302,8 +305,8 @@ def _rotated_bundle(
         keys=_published_keys(
             incoming,
             not_before_utc=rotated_at,
-            retired=(
-                RetiredVerificationKey(
+            retained=(
+                RetainedVerificationKey(
                     key_id=outgoing.key_id,
                     public_key_base64=outgoing.public_key_base64(),
                     not_before_utc=rotated_at - timedelta(days=90),
@@ -346,7 +349,7 @@ def test_a_decision_dated_after_its_key_retired_is_refused() -> None:
 
     assert (
         refuse_lifecycle_decision_against_bundle(after_retirement, bundle=bundle)
-        is LifecycleDecisionVerificationRefusal.KEY_ALREADY_RETIRED
+        is LifecycleDecisionVerificationRefusal.KEY_ALREADY_ROTATED
     )
 
 
@@ -408,7 +411,7 @@ def test_the_rotation_instant_belongs_to_the_incoming_key() -> None:
         refuse_lifecycle_decision_against_bundle(
             _decision(outgoing, issued_at=rotated_at), bundle=bundle
         )
-        is LifecycleDecisionVerificationRefusal.KEY_ALREADY_RETIRED
+        is LifecycleDecisionVerificationRefusal.KEY_ALREADY_ROTATED
     )
 
 
@@ -424,15 +427,22 @@ def test_a_key_that_was_never_published_is_refused() -> None:
     )
 
 
-def test_withdrawing_a_key_differs_from_retiring_it() -> None:
-    """Retirement and compromise are not the same operation.
+def test_withdrawing_a_key_by_deleting_it_loses_the_compromise_signal() -> None:
+    """Rotation and compromise are not the same operation.
 
-    A retired key keeps verifying decisions inside its window -- that is why it
+    A rotated key keeps verifying decisions inside its window -- that is why it
     is retained. A compromised key must stop verifying everything it ever
     signed, including decisions that verified yesterday, because its signature
-    no longer evidences Archive's authority. The mechanism is removal from the
-    published document, and the operator needs to know that merely retiring a
-    compromised key leaves it trusted for its whole historical window.
+    no longer evidences Archive's authority.
+
+    What this test used to claim about the *mechanism* was wrong, and #147
+    corrected it: "the mechanism is removal from the published document" was
+    guidance this repository gave its own operators, and it destroyed the
+    distinction the refusal vocabulary exists to preserve. Removal does make the
+    decisions unverifiable -- that much was true and is still asserted here --
+    but it reports them as signed by a key Archive never held. The correct
+    mechanism, and the difference in what an operator is told, is proved in
+    `test_revocation_is_reported_differently_from_deletion`.
     """
     rotated_at = datetime.now(UTC)
     outgoing, incoming = _signer("managed-v1"), _signer("managed-v2")
