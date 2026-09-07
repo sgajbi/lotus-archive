@@ -45,6 +45,7 @@ openapi-gate:
 
 migration-gate:
 	$(VENV_PYTHON) scripts/migration_gate.py
+	$(VENV_PYTHON) scripts/migration_schema_coverage.py
 
 test:
 	$(MAKE) test-unit

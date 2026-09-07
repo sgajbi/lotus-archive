@@ -1,65 +1,23 @@
+"""Structural facts about the migrations that no model declares (archive#146).
+
+Field *coverage* moved to `migration_schema_coverage.py`, which derives the
+requirement from the persisted models instead of restating fifteen of their
+fifty-eight names here. What is left is the set of facts a model genuinely
+cannot express: which columns are unique, which are stored as JSONB, which
+tables reference which, that later migrations are additive, and that the
+expected indexes exist.
+
+Keeping those here is not a leftover. They are real assertions about the schema,
+and unlike the field lists they are not a second copy of something the code
+already declares.
+"""
+
 from __future__ import annotations
 
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 MIGRATIONS_DIR = ROOT / "migrations"
-
-REQUIRED_FIELDS = {
-    "document_id",
-    "archive_request_id",
-    "report_job_id",
-    "report_request_id",
-    "snapshot_id",
-    "render_job_id",
-    "render_attempt_id",
-    "storage_key",
-    "checksum_algorithm",
-    "checksum",
-    "size_bytes",
-    "retention_policy_id",
-    "purge_status",
-    "legal_hold_status",
-    "legal_hold_count",
-}
-
-REQUIRED_LEGAL_HOLD_FIELDS = {
-    "legal_hold_id",
-    "document_id",
-    "hold_status",
-    "hold_reason",
-    "authority_reference",
-    "requested_by",
-    "requested_at",
-    "released_by",
-    "released_at",
-    "release_reason",
-}
-
-REQUIRED_LIFECYCLE_FIELDS = {
-    "lifecycle_relationship_id",
-    "source_document_id",
-    "target_document_id",
-    "transition_type",
-    "transition_reason",
-    "requested_by",
-    "requested_at",
-}
-
-REQUIRED_ACCESS_AUDIT_FIELDS = {
-    "audit_event_id",
-    "document_id",
-    "event_type",
-    "actor_type",
-    "actor_id",
-    "caller_service",
-    "authorization_decision",
-    "authorization_reason_code",
-    "operation_reason_code",
-    "correlation_id",
-    "trace_id",
-    "created_at",
-}
 
 
 def main() -> None:
@@ -68,11 +26,6 @@ def main() -> None:
         raise SystemExit("Migration gate failed: initial archive document migration is missing")
 
     ddl = migration.read_text(encoding="utf-8")
-    missing_fields = sorted(field for field in REQUIRED_FIELDS if field not in ddl)
-    if missing_fields:
-        raise SystemExit(
-            "Migration gate failed: missing archive document fields " + ", ".join(missing_fields)
-        )
     if "archive_request_id TEXT NOT NULL UNIQUE" not in ddl:
         raise SystemExit("Migration gate failed: archive_request_id must be unique")
     if "storage_key TEXT NOT NULL UNIQUE" not in ddl:
@@ -96,14 +49,6 @@ def main() -> None:
     if not legal_hold_migration.exists():
         raise SystemExit("Migration gate failed: archive legal-hold migration is missing")
     legal_hold_ddl = legal_hold_migration.read_text(encoding="utf-8")
-    missing_legal_hold_fields = sorted(
-        field for field in REQUIRED_LEGAL_HOLD_FIELDS if field not in legal_hold_ddl
-    )
-    if missing_legal_hold_fields:
-        raise SystemExit(
-            "Migration gate failed: missing archive legal-hold fields "
-            + ", ".join(missing_legal_hold_fields)
-        )
     if "REFERENCES archive_documents(document_id)" not in legal_hold_ddl:
         raise SystemExit("Migration gate failed: legal holds must reference archive documents")
 
@@ -111,14 +56,6 @@ def main() -> None:
     if not lifecycle_migration.exists():
         raise SystemExit("Migration gate failed: archive lifecycle migration is missing")
     lifecycle_ddl = lifecycle_migration.read_text(encoding="utf-8")
-    missing_lifecycle_fields = sorted(
-        field for field in REQUIRED_LIFECYCLE_FIELDS if field not in lifecycle_ddl
-    )
-    if missing_lifecycle_fields:
-        raise SystemExit(
-            "Migration gate failed: missing archive lifecycle fields "
-            + ", ".join(missing_lifecycle_fields)
-        )
     if lifecycle_ddl.count("REFERENCES archive_documents(document_id)") < 2:
         raise SystemExit(
             "Migration gate failed: lifecycle relationships must reference source and target documents"
@@ -128,14 +65,6 @@ def main() -> None:
     if not access_audit_migration.exists():
         raise SystemExit("Migration gate failed: archive access-audit migration is missing")
     access_audit_ddl = access_audit_migration.read_text(encoding="utf-8")
-    missing_access_audit_fields = sorted(
-        field for field in REQUIRED_ACCESS_AUDIT_FIELDS if field not in access_audit_ddl
-    )
-    if missing_access_audit_fields:
-        raise SystemExit(
-            "Migration gate failed: missing archive access-audit fields "
-            + ", ".join(missing_access_audit_fields)
-        )
     if "idx_archive_access_audit_document_created" not in access_audit_ddl:
         raise SystemExit(
             "Migration gate failed: access audit must index document and creation time"
