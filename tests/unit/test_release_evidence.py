@@ -10,6 +10,8 @@ from scripts.generate_release_evidence import (
     main,
 )
 
+pytestmark = pytest.mark.governance
+
 
 def _evidence(**overrides: object) -> dict[str, Any]:
     values: dict[str, Any] = {

@@ -20,6 +20,8 @@ import pytest
 
 from scripts import audit_main_gate_coverage as audit
 
+pytestmark = pytest.mark.governance
+
 ROOT = Path(__file__).resolve().parents[2]
 WORKFLOW_ROOT = ROOT / ".github" / "workflows"
 

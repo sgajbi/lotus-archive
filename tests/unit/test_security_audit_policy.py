@@ -5,6 +5,11 @@ from typing import Any
 
 from scripts.security_audit import ignore_args, load_policy, validate_policy
 
+import pytest
+
+
+pytestmark = pytest.mark.governance
+
 ROOT = Path(__file__).resolve().parents[2]
 
 
