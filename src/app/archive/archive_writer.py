@@ -106,28 +106,14 @@ class ArchiveWriter:
             raise DuplicateArchiveRequestConflict(
                 "archive_request_id was reused with different document content"
             )
-        comparable_existing = existing.model_dump(
-            exclude={
-                "document_id",
-                "storage_provider",
-                "storage_namespace",
-                "storage_key",
-                "checksum_algorithm",
-                "checksum",
-                "size_bytes",
-                "purge_eligible_at",
-                "purged_at",
-                "purge_status",
-                "legal_hold_status",
-                "legal_hold_count",
-                "supersedes_document_id",
-                "superseded_by_document_id",
-                "correction_of_document_id",
-                "reissue_of_document_id",
-                "created_at",
-                "updated_at",
-            }
-        )
+        # Compare exactly the fields the caller supplied, derived from the input
+        # contract rather than listed again here. The previous hand-maintained
+        # exclusion set was a second copy of "what is not caller input", and it
+        # drifted the moment a lifecycle field was added to the metadata model:
+        # the new field appeared in `comparable_existing`, matched nothing in the
+        # input, and turned every idempotent redelivery into a false
+        # `archive_request_id was reused with different metadata` conflict.
+        comparable_existing = existing.model_dump(include=set(ArchiveDocumentInput.model_fields))
         if comparable_existing != metadata_input.model_dump():
             raise DuplicateArchiveRequestConflict(
                 "archive_request_id was reused with different metadata"

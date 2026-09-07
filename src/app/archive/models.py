@@ -394,6 +394,7 @@ MUTABLE_DOCUMENT_FIELDS = frozenset(
     {
         "purge_status",
         "purged_at",
+        "purge_started_at",
         "purge_eligible_at",
         "legal_hold_status",
         "legal_hold_count",
@@ -415,6 +416,12 @@ class ArchiveDocumentMetadata(ArchiveDocumentInput):
     checksum: str = Field(min_length=64, max_length=64)
     size_bytes: int = Field(ge=0)
     purge_eligible_at: datetime | None = None
+    #: Set immediately BEFORE the stored object is deleted, and never cleared.
+    #: Destruction is irreversible, so the intent has to be durable before the
+    #: act: without it, a failure between deleting the object and recording the
+    #: outcome leaves a document whose metadata says it is retained and whose
+    #: bytes are gone, and nothing can tell that from a genuinely retained one.
+    purge_started_at: datetime | None = None
     purged_at: datetime | None = None
     purge_status: PurgeStatus = PurgeStatus.NOT_ELIGIBLE
     legal_hold_status: LegalHoldStatus = LegalHoldStatus.CLEAR

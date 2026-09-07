@@ -12,13 +12,13 @@ from app.archive.commands import (
     LifecycleTransitionCommand,
 )
 from app.archive.access_preflight import (
-    EXISTENCE_REVEALING_REASON_CODES,
     MAX_PREFLIGHT_DOCUMENT_IDS,
     ArchiveAccessPreflightItem,
     ArchiveAccessPreflightResult,
     ArchiveAccessReasonCode,
     ArchiveAccessResultState,
     ArchiveAccessState,
+    preflight_item,
     result_state_for_items,
 )
 from app.archive.archive_writer import ArchiveWriter
@@ -42,6 +42,7 @@ from app.archive.exceptions import (
     LegalHoldActiveError,
     LegalHoldNotFoundError,
     MetadataValidationError,
+    PurgeAlreadyStartedError,
     PurgeNotEligibleError,
     StorageReadFailedError,
     SupersessionConflictError,
@@ -334,6 +335,15 @@ class ArchiveDocumentService:
                 raise LegalHoldActiveError("legal hold blocks purge")
             raise PurgeNotEligibleError("document is not purge eligible")
 
+        # The intent is recorded before the object is deleted, because deletion
+        # is irreversible and the record is not. If this save fails, nothing has
+        # been destroyed. If the delete or the save below fails, the record
+        # already says destruction was started, which is what lets a retry
+        # finish and stops a reader believing the document is still retained.
+        started_at = datetime.now(timezone.utc)
+        metadata = self.repository.save(
+            metadata.model_copy(update={"purge_started_at": started_at, "updated_at": started_at})
+        )
         self.storage.delete(key=metadata.storage_key)
         now = datetime.now(timezone.utc)
         metadata = metadata.model_copy(
@@ -370,6 +380,22 @@ class ArchiveDocumentService:
             document_id=document_id,
         )
         metadata = self._get_existing_metadata(document_id)
+        if metadata.purge_started_at is not None:
+            # Refusal precedes every effect: no hold record is written, and the
+            # denial is audited. A hold cannot preserve an object whose deletion
+            # has already been ordered, and recording one would leave the
+            # document asserting a preservation that is not true.
+            self._record_allowed(
+                event_type=AccessEventType.LEGAL_HOLD_SET,
+                caller_context=caller_context,
+                trace_id=trace_id,
+                document_id=document_id,
+                operation_reason_code="purge_already_started",
+            )
+            raise PurgeAlreadyStartedError(
+                "destruction has already been started for this document; "
+                "a legal hold cannot preserve it"
+            )
         for existing in self.repository.list_legal_holds(document_id):
             if (
                 existing.hold_status is LegalHoldStatus.ACTIVE
@@ -515,11 +541,12 @@ class ArchiveDocumentService:
             return result
 
         evaluated = tuple(
-            self._preflight_item(
+            preflight_item(
                 document_id=document_id,
                 metadata=lookup.documents.get(document_id),
                 unavailable=document_id in lookup.unavailable_document_ids,
                 caller_context=caller_context,
+                authorization_policy=self.authorization_policy,
             )
             for document_id in document_ids
         )
@@ -653,49 +680,6 @@ class ArchiveDocumentService:
             trace_id=trace_id,
         )
         return metadata
-
-    def _preflight_item(
-        self,
-        *,
-        document_id: str,
-        metadata: ArchiveDocumentMetadata | None,
-        unavailable: bool,
-        caller_context: CallerContext,
-    ) -> tuple[ArchiveAccessPreflightItem, ArchiveAccessReasonCode]:
-        """Return the caller-facing item plus the granular reason for the audit record.
-
-        The two deliberately diverge for existence-revealing outcomes: a missing id, a
-        cross-tenant id, and a scope-less record all present as DENIED/not_accessible, so the
-        response cannot be used as an existence oracle. The audit keeps the real reason.
-        """
-        if unavailable:
-            item = ArchiveAccessPreflightItem(
-                document_id=document_id,
-                state=ArchiveAccessState.UNAVAILABLE,
-                reason_code=ArchiveAccessReasonCode.LOOKUP_UNAVAILABLE,
-            )
-            return item, ArchiveAccessReasonCode.LOOKUP_UNAVAILABLE
-        if metadata is None:
-            granular = ArchiveAccessReasonCode.DOCUMENT_NOT_FOUND
-        else:
-            decision = self.authorization_policy.document_scope_decision(
-                metadata=metadata,
-                caller_context=caller_context,
-            )
-            granular = decision.reason_code
-        if granular in EXISTENCE_REVEALING_REASON_CODES:
-            item = ArchiveAccessPreflightItem(
-                document_id=document_id,
-                state=ArchiveAccessState.DENIED,
-                reason_code=ArchiveAccessReasonCode.NOT_ACCESSIBLE,
-            )
-            return item, granular
-        item = ArchiveAccessPreflightItem(
-            document_id=document_id,
-            state=decision.state,
-            reason_code=decision.reason_code,
-        )
-        return item, granular
 
     def _record_preflight_audit(
         self,
@@ -877,6 +861,13 @@ class ArchiveDocumentService:
     ) -> tuple[ArchiveDocumentMetadata, bool, str]:
         if metadata.purge_status is PurgeStatus.PURGED:
             return metadata, True, "already_purged"
+        if metadata.purge_started_at is not None:
+            # Destruction was already begun under an authorized decision, so the
+            # object may be gone. The only completable outcome is to finish the
+            # record. Refusing here -- for a hold that raced the intent -- would
+            # strand the document reporting retained-under-hold with its bytes
+            # destroyed, which is a false assurance rather than a safe refusal.
+            return metadata, True, "purge_in_progress"
         if metadata.legal_hold_status is LegalHoldStatus.ACTIVE:
             metadata = self._update_purge_status(metadata, PurgeStatus.NOT_ELIGIBLE)
             return metadata, False, "legal_hold_active"

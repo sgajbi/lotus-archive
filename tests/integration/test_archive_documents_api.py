@@ -1,5 +1,7 @@
 from base64 import b64encode
+from datetime import datetime, timezone
 from pathlib import Path
+
 from typing import cast
 
 from fastapi.testclient import TestClient
@@ -1363,3 +1365,48 @@ def test_batch_access_preflight_requires_caller_identity(tmp_path: Path) -> None
 
     assert response.status_code == 401
     assert response.json()["error"]["code"] == "caller_context_missing"
+
+
+def test_a_hold_after_destruction_started_is_refused_at_the_api(tmp_path: Path) -> None:
+    """The refusal must reach the caller as a 409, not escape as a 500.
+
+    An exception with no handler still refuses the operation, so a service-level
+    test passes either way. What a consumer sees is the difference between a
+    stated conflict it can act on and an unexplained server error, and only a
+    request through the app proves which one this is.
+    """
+
+    service = _service(tmp_path)
+    app.dependency_overrides[archive_service] = lambda: service
+    client = TestClient(app)
+    try:
+        create_response = client.post(
+            "/documents", json=_payload(), headers=_headers(caller_service="lotus-render")
+        )
+        assert create_response.status_code == 201
+        document_id = create_response.json()["document_id"]
+
+        # A document whose destruction has begun: the intent was recorded and
+        # the run did not complete. Seeded on the record rather than by driving
+        # a purge, because this document's retention has not elapsed and the
+        # route would refuse before reaching storage -- which would test the
+        # wrong refusal.
+        stored = service.repository.get_by_document_id(document_id)
+        assert stored is not None
+        service.repository.save(
+            stored.model_copy(update={"purge_started_at": datetime.now(timezone.utc)})
+        )
+
+        hold_response = client.post(
+            f"/documents/{document_id}/legal-holds",
+            json={
+                "hold_reason": "Regulatory review",
+                "authority_reference": "REG-2026-01",
+            },
+            headers=_headers(),
+        )
+
+        assert hold_response.status_code == 409
+        assert hold_response.json()["error"]["code"] == "purge_already_started"
+    finally:
+        app.dependency_overrides.clear()

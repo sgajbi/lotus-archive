@@ -67,6 +67,17 @@ class LegalHoldNotFoundError(ArchiveError):
     pass
 
 
+class PurgeAlreadyStartedError(ArchiveError):
+    """A legal hold was requested on a document whose destruction has begun.
+
+    Refused rather than recorded, because a hold placed here would assert a
+    preservation the service can no longer deliver: the stored object may
+    already be gone, and no hold recovers it. Accepting it would produce the
+    worst available outcome -- a document reporting held-and-preserved with its
+    bytes destroyed, which reads as a clean green.
+    """
+
+
 class PurgeNotEligibleError(ArchiveError):
     pass
 
