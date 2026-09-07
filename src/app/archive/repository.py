@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from typing import Mapping, Protocol
 
 from app.archive.exceptions import DuplicateArchiveRequestConflict, HistoricalIntegrityError
 from app.archive.models import (
+    LegalHoldStatus,
     MUTABLE_DOCUMENT_FIELDS,
     ArchiveDocumentMetadata,
     LegalHoldRecord,
@@ -36,6 +38,23 @@ class ArchiveDocumentRepository(Protocol):
     ) -> ArchiveDocumentMetadata | None: ...
 
     def save(self, metadata: ArchiveDocumentMetadata) -> ArchiveDocumentMetadata: ...
+
+    def begin_purge(
+        self,
+        *,
+        document_id: str,
+        started_at: datetime,
+    ) -> ArchiveDocumentMetadata | None: ...
+
+    def admit_legal_hold(self, *, document_id: str) -> ArchiveDocumentMetadata | None: ...
+
+    def update_legal_hold_summary(
+        self,
+        *,
+        document_id: str,
+        legal_hold_status: LegalHoldStatus,
+        legal_hold_count: int,
+    ) -> ArchiveDocumentMetadata | None: ...
 
     def save_legal_hold(self, legal_hold: LegalHoldRecord) -> LegalHoldRecord: ...
 
@@ -124,6 +143,80 @@ class InMemoryArchiveDocumentRepository:
         self._by_document_id[metadata.document_id] = metadata
         self._by_archive_request_id[metadata.archive_request_id] = metadata.document_id
         return metadata
+
+    def begin_purge(
+        self,
+        *,
+        document_id: str,
+        started_at: datetime,
+    ) -> ArchiveDocumentMetadata | None:
+        """Claim the right to destroy, or return None because someone else holds it.
+
+        The condition and the write are one step. Reading the state, deciding,
+        and then saving a snapshot is what let a concurrent hold erase a
+        completed purge: the decision was correct at the instant it was taken
+        and the write that followed it enforced nothing.
+        """
+        existing = self._by_document_id.get(document_id)
+        if existing is None:
+            return None
+        if existing.purge_started_at is not None:
+            return existing
+        if existing.legal_hold_status is LegalHoldStatus.ACTIVE:
+            return None
+        claimed = existing.model_copy(
+            update={"purge_started_at": started_at, "updated_at": started_at}
+        )
+        self._by_document_id[document_id] = claimed
+        return claimed
+
+    def admit_legal_hold(self, *, document_id: str) -> ArchiveDocumentMetadata | None:
+        """Claim the document for preservation, or return None because destruction began.
+
+        Contends on the same row as `begin_purge`, so exactly one of the two
+        wins and the loser sees the winner's committed state rather than its own
+        stale read.
+        """
+        existing = self._by_document_id.get(document_id)
+        if existing is None:
+            return None
+        if existing.purge_started_at is not None:
+            return None
+        admitted = existing.model_copy(
+            update={
+                "legal_hold_status": LegalHoldStatus.ACTIVE,
+                "updated_at": datetime.now(timezone.utc),
+            }
+        )
+        self._by_document_id[document_id] = admitted
+        return admitted
+
+    def update_legal_hold_summary(
+        self,
+        *,
+        document_id: str,
+        legal_hold_status: LegalHoldStatus,
+        legal_hold_count: int,
+    ) -> ArchiveDocumentMetadata | None:
+        """Write ONLY the hold columns, against the row as it is stored now.
+
+        The caller cannot pass a snapshot here, so it cannot write one back. The
+        previous form re-serialised a whole document the caller had read
+        earlier, which is how a concurrent purge's `purge_status`,
+        `purge_started_at` and `purged_at` were silently reverted.
+        """
+        existing = self._by_document_id.get(document_id)
+        if existing is None:
+            return None
+        updated = existing.model_copy(
+            update={
+                "legal_hold_status": legal_hold_status,
+                "legal_hold_count": legal_hold_count,
+                "updated_at": datetime.now(timezone.utc),
+            }
+        )
+        self._by_document_id[document_id] = updated
+        return updated
 
     def save_legal_hold(self, legal_hold: LegalHoldRecord) -> LegalHoldRecord:
         self._legal_holds[legal_hold.legal_hold_id] = legal_hold

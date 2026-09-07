@@ -336,14 +336,28 @@ class ArchiveDocumentService:
             raise PurgeNotEligibleError("document is not purge eligible")
 
         # The intent is recorded before the object is deleted, because deletion
-        # is irreversible and the record is not. If this save fails, nothing has
+        # is irreversible and the record is not. If this claim fails, nothing has
         # been destroyed. If the delete or the save below fails, the record
         # already says destruction was started, which is what lets a retry
         # finish and stops a reader believing the document is still retained.
+        #
+        # Claimed conditionally rather than read-then-saved: the previous form
+        # decided on a snapshot and wrote it back wholesale, so a legal hold
+        # admitted in between was erased along with the purge state it had
+        # already committed. The condition and the write are now one step, and
+        # a hold that won the race makes this return None.
         started_at = datetime.now(timezone.utc)
-        metadata = self.repository.save(
-            metadata.model_copy(update={"purge_started_at": started_at, "updated_at": started_at})
-        )
+        claimed = self.repository.begin_purge(document_id=document_id, started_at=started_at)
+        if claimed is None:
+            self._record_allowed(
+                event_type=AccessEventType.PURGE_EXECUTION,
+                caller_context=caller_context,
+                trace_id=trace_id,
+                document_id=document_id,
+                operation_reason_code="legal_hold_active",
+            )
+            raise LegalHoldActiveError("legal hold blocks purge")
+        metadata = claimed
         self.storage.delete(key=metadata.storage_key)
         now = datetime.now(timezone.utc)
         metadata = metadata.model_copy(
@@ -379,23 +393,7 @@ class ArchiveDocumentService:
             trace_id=trace_id,
             document_id=document_id,
         )
-        metadata = self._get_existing_metadata(document_id)
-        if metadata.purge_started_at is not None:
-            # Refusal precedes every effect: no hold record is written, and the
-            # denial is audited. A hold cannot preserve an object whose deletion
-            # has already been ordered, and recording one would leave the
-            # document asserting a preservation that is not true.
-            self._record_allowed(
-                event_type=AccessEventType.LEGAL_HOLD_SET,
-                caller_context=caller_context,
-                trace_id=trace_id,
-                document_id=document_id,
-                operation_reason_code="purge_already_started",
-            )
-            raise PurgeAlreadyStartedError(
-                "destruction has already been started for this document; "
-                "a legal hold cannot preserve it"
-            )
+        self._get_existing_metadata(document_id)
         for existing in self.repository.list_legal_holds(document_id):
             if (
                 existing.hold_status is LegalHoldStatus.ACTIVE
@@ -414,6 +412,24 @@ class ArchiveDocumentService:
                     operation_reason_code="legal_hold_already_active",
                 )
                 return existing
+        # Claim the document for preservation before any hold record exists.
+        # Refusal precedes every effect: on refusal no hold is written, and the
+        # denial is audited. A hold cannot preserve an object whose deletion has
+        # already been ordered, and recording one would leave the document
+        # asserting a preservation that is not true.
+        admitted = self.repository.admit_legal_hold(document_id=document_id)
+        if admitted is None:
+            self._record_allowed(
+                event_type=AccessEventType.LEGAL_HOLD_SET,
+                caller_context=caller_context,
+                trace_id=trace_id,
+                document_id=document_id,
+                operation_reason_code="purge_already_started",
+            )
+            raise PurgeAlreadyStartedError(
+                "destruction has already been started for this document; "
+                "a legal hold cannot preserve it"
+            )
         legal_hold = LegalHoldRecord(
             legal_hold_id=f"hold_{uuid4().hex}",
             document_id=document_id,
@@ -422,7 +438,7 @@ class ArchiveDocumentService:
             requested_by=caller_context.actor_id,
         )
         legal_hold = self.repository.save_legal_hold(legal_hold)
-        self._refresh_legal_hold_summary(metadata)
+        self._refresh_legal_hold_summary(admitted)
         self._record_allowed(
             event_type=AccessEventType.LEGAL_HOLD_SET,
             caller_context=caller_context,
@@ -912,6 +928,16 @@ class ArchiveDocumentService:
         self,
         metadata: ArchiveDocumentMetadata,
     ) -> ArchiveDocumentMetadata:
+        """Recount active holds and write ONLY those two columns.
+
+        The caller's `metadata` is used for its document id and for deciding
+        whether anything changed. It is never written back: the repository
+        updates the hold columns against the stored row, so this method cannot
+        revert a `purge_status`, `purge_started_at` or `purged_at` committed by
+        another writer since the caller's read. That reversion is exactly how a
+        concurrent hold used to erase a completed purge and leave the record
+        asserting preservation over deleted bytes.
+        """
         active_holds = [
             hold
             for hold in self.repository.list_legal_holds(metadata.document_id)
@@ -923,15 +949,12 @@ class ArchiveDocumentService:
             and metadata.legal_hold_status is legal_hold_status
         ):
             return metadata
-        return self.repository.save(
-            metadata.model_copy(
-                update={
-                    "legal_hold_count": len(active_holds),
-                    "legal_hold_status": legal_hold_status,
-                    "updated_at": datetime.now(timezone.utc),
-                }
-            )
+        updated = self.repository.update_legal_hold_summary(
+            document_id=metadata.document_id,
+            legal_hold_status=legal_hold_status,
+            legal_hold_count=len(active_holds),
         )
+        return updated if updated is not None else metadata
 
     def _record_allowed(
         self,

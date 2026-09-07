@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from datetime import datetime, timezone
+
 from collections.abc import Callable, Mapping
 from typing import Any
 
@@ -12,6 +14,7 @@ from psycopg.types.json import Jsonb
 from app.archive.audit import AccessAuditEvent
 from app.archive.exceptions import DuplicateArchiveRequestConflict, HistoricalIntegrityError
 from app.archive.models import (
+    LegalHoldStatus,
     MUTABLE_DOCUMENT_FIELDS,
     ArchiveDocumentMetadata,
     LegalHoldRecord,
@@ -236,6 +239,98 @@ class PostgresArchiveDocumentRepository:
                 "archive request or storage key already belongs to another document"
             ) from exc
         return metadata
+
+    def begin_purge(
+        self,
+        *,
+        document_id: str,
+        started_at: datetime,
+    ) -> ArchiveDocumentMetadata | None:
+        """Conditional acquire of the destruction intent. One statement, one decision.
+
+        `WHERE purge_started_at IS NULL AND legal_hold_status <> 'active'` is the
+        mutual exclusion: a hold admitted by any worker or replica has already
+        written `active` to this row, so the update matches nothing and the
+        purge is refused. A process-local lock could not do this -- the deployed
+        shape is multiple workers against one database.
+
+        An already-claimed intent returns the current row rather than None, so a
+        retry of an interrupted purge is idempotent rather than refused.
+        """
+        with self._connect() as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """
+                UPDATE archive_documents
+                SET purge_started_at = %s, updated_at = %s
+                WHERE document_id = %s
+                  AND purge_started_at IS NULL
+                  AND legal_hold_status <> 'active'
+                RETURNING *
+                """,
+                (started_at, started_at, document_id),
+            )
+            row = cursor.fetchone()
+            if row is not None:
+                return ArchiveDocumentMetadata.model_validate(row)
+            # No row updated: either the intent is already held (idempotent
+            # retry) or a hold owns the document (refusal). Distinguish them.
+            cursor.execute(
+                "SELECT * FROM archive_documents WHERE document_id = %s",
+                (document_id,),
+            )
+            current = cursor.fetchone()
+        if current is None:
+            return None
+        metadata = ArchiveDocumentMetadata.model_validate(current)
+        return metadata if metadata.purge_started_at is not None else None
+
+    def admit_legal_hold(self, *, document_id: str) -> ArchiveDocumentMetadata | None:
+        """Conditional claim for preservation, contending on the same row.
+
+        Refuses once destruction has been ordered, because a hold cannot
+        preserve an object whose deletion is already committed to.
+        """
+        now = datetime.now(timezone.utc)
+        with self._connect() as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """
+                UPDATE archive_documents
+                SET legal_hold_status = 'active', updated_at = %s
+                WHERE document_id = %s
+                  AND purge_started_at IS NULL
+                RETURNING *
+                """,
+                (now, document_id),
+            )
+            row = cursor.fetchone()
+        return ArchiveDocumentMetadata.model_validate(row) if row is not None else None
+
+    def update_legal_hold_summary(
+        self,
+        *,
+        document_id: str,
+        legal_hold_status: LegalHoldStatus,
+        legal_hold_count: int,
+    ) -> ArchiveDocumentMetadata | None:
+        """Update only the hold columns. No caller snapshot reaches the row.
+
+        A whole-document write from a snapshot read earlier is what let a hold
+        revert a committed purge; naming the two columns makes that impossible
+        rather than merely unlikely.
+        """
+        now = datetime.now(timezone.utc)
+        with self._connect() as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """
+                UPDATE archive_documents
+                SET legal_hold_status = %s, legal_hold_count = %s, updated_at = %s
+                WHERE document_id = %s
+                RETURNING *
+                """,
+                (legal_hold_status.value, legal_hold_count, now, document_id),
+            )
+            row = cursor.fetchone()
+        return ArchiveDocumentMetadata.model_validate(row) if row is not None else None
 
     def save_legal_hold(self, legal_hold: LegalHoldRecord) -> LegalHoldRecord:
         with self._connect() as connection, connection.cursor() as cursor:
