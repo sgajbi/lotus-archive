@@ -2,6 +2,12 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import StrEnum
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:  # pragma: no cover - import cycle guard
+    from app.archive.authorization import ArchiveAuthorizationPolicy
+    from app.security.caller_context import CallerContext
+    from app.archive.models import ArchiveDocumentMetadata
 
 # One bound, enforced at both the API model and the service, so a non-HTTP caller or a moved
 # validation layer cannot silently widen the batch (issue #88).
@@ -83,3 +89,51 @@ def result_state_for_items(
     if unavailable_count:
         return ArchiveAccessResultState.PARTIAL
     return ArchiveAccessResultState.COMPLETE
+
+
+def preflight_item(
+    *,
+    document_id: str,
+    metadata: "ArchiveDocumentMetadata | None",
+    unavailable: bool,
+    caller_context: "CallerContext",
+    authorization_policy: "ArchiveAuthorizationPolicy",
+) -> tuple[ArchiveAccessPreflightItem, ArchiveAccessReasonCode]:
+    """Return the caller-facing item plus the granular reason for the audit record.
+
+    The two deliberately diverge for existence-revealing outcomes: a missing id, a
+    cross-tenant id, and a scope-less record all present as DENIED/not_accessible, so the
+    response cannot be used as an existence oracle. The audit keeps the real reason.
+
+    Lives here rather than on the service because it is a decision about preflight
+    state, not an orchestration step: it reads a policy and a record and returns a
+    result, with nothing to persist and nothing to sequence.
+    """
+    if unavailable:
+        item = ArchiveAccessPreflightItem(
+            document_id=document_id,
+            state=ArchiveAccessState.UNAVAILABLE,
+            reason_code=ArchiveAccessReasonCode.LOOKUP_UNAVAILABLE,
+        )
+        return item, ArchiveAccessReasonCode.LOOKUP_UNAVAILABLE
+    if metadata is None:
+        granular = ArchiveAccessReasonCode.DOCUMENT_NOT_FOUND
+    else:
+        decision = authorization_policy.document_scope_decision(
+            metadata=metadata,
+            caller_context=caller_context,
+        )
+        granular = decision.reason_code
+    if granular in EXISTENCE_REVEALING_REASON_CODES:
+        item = ArchiveAccessPreflightItem(
+            document_id=document_id,
+            state=ArchiveAccessState.DENIED,
+            reason_code=ArchiveAccessReasonCode.NOT_ACCESSIBLE,
+        )
+        return item, granular
+    item = ArchiveAccessPreflightItem(
+        document_id=document_id,
+        state=decision.state,
+        reason_code=decision.reason_code,
+    )
+    return item, granular

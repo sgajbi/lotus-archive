@@ -15,6 +15,25 @@ Three properties hold across everything below, and most of the design follows fr
    still prove what existed and that it was destroyed under policy.
 3. **Absence of a retention date means never.** A document with no `retain_until_date` is not
    purgeable, in perpetuity. The service fails closed toward keeping.
+4. **A destruction that has begun is always finished.** `purge_started_at` is recorded *before* the
+   stored object is deleted, and never cleared. Destruction is irreversible and the record of it is
+   not, so the intent has to be durable before the act.
+
+   The order matters more than it looks. Deleting first and recording second leaves a failure window
+   in which the bytes are gone and the metadata still says retained — indistinguishable from a
+   genuinely retained document, because nothing reconciles storage against metadata. That window was
+   also *unrecoverable*: a legal hold applied in it is legitimate against the record, the retry then
+   refuses with `legal_hold_active` forever, and Archive goes on issuing signed `LEGAL_HOLD`
+   decisions asserting the evidence is preserved for evidence that no longer exists.
+
+   Two rules follow. A purge that has started stays completable, because finishing the record is the
+   only honest outcome once the object may already be gone. And a legal hold requested on a document
+   whose destruction has begun is **refused** (`purge_already_started`) rather than recorded — a hold
+   cannot preserve what is already being destroyed, and accepting it would assert a preservation the
+   service cannot deliver.
+
+   A hold placed *before* any purge still blocks it, unchanged: the hold is evaluated before any
+   intent is recorded, so nothing is destroyed and nothing is marked.
 
 ## Retention
 
