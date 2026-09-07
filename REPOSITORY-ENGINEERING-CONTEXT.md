@@ -145,10 +145,13 @@ protection evidence exactly when it is most useful. OPERATOR REQUIREMENT: the li
 a repository Actions secret (`LOTUS_AUTOMERGE_TOKEN`) carrying `administration: read`, which
 `github.token` cannot carry; no Lotus repository held one when this landed, so the step FAILS
 CLOSED on the missing token rather than passing silently, and the gate's own context is
-deliberately not yet self-anchored in the required list. Three canonical comparison gaps are stated
-in the table rather than implied: source `app_id` bindings (lotus-gateway#740), four protection
-controls the API returns but the checker's hard-coded allowlist ignores (lotus-gateway#742), and
-only the zero-approval exception being bound to the weakness it documents (lotus-gateway#743).
+deliberately not yet self-anchored in the required list. Two canonical comparison gaps are stated
+in the table rather than implied: source `app_id` bindings (lotus-gateway#740) and only the
+zero-approval exception being bound to the weakness it documents (lotus-gateway#743). A third,
+four protection controls the checker's hard-coded allowlist ignored, is **closed**:
+lotus-gateway#742 corrected the canonical checker to compare `lock_branch`,
+`required_signatures`, `block_creations` and `allow_fork_syncing`, and this repository adopted
+that copy verbatim and declares all four.
 
 One operational caveat for any workflow-touching change here: a dispatcher tag write is refused
 when the tagged commit's workflow tree differs from the default branch tip's, so a multi-commit PR
