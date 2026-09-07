@@ -1,4 +1,4 @@
-.PHONY: install lint monetary-float-guard typecheck openapi-gate migration-gate complexity-gate source-size-gate dead-code-gate dependency-hygiene-gate code-health-gates test test-unit test-integration test-e2e test-coverage coverage-gate security-audit check ci docker-build docker-release-build release-evidence clean
+.PHONY: install lint test-pyramid-gate monetary-float-guard typecheck openapi-gate migration-gate complexity-gate source-size-gate dead-code-gate dependency-hygiene-gate code-health-gates test test-unit test-integration test-e2e test-coverage coverage-gate security-audit check ci docker-build docker-release-build release-evidence clean
 
 VENV_DIR ?= .venv
 LOTUS_ARCHIVE_VERSION ?= 0.1.0
@@ -47,6 +47,9 @@ migration-gate:
 	$(VENV_PYTHON) scripts/migration_gate.py
 	$(VENV_PYTHON) scripts/migration_schema_coverage.py
 
+test-pyramid-gate:
+	$(VENV_PYTHON) scripts/test_pyramid_gate.py
+
 test:
 	$(MAKE) test-unit
 
@@ -89,9 +92,9 @@ dependency-hygiene-gate:
 
 code-health-gates: complexity-gate source-size-gate dead-code-gate dependency-hygiene-gate
 
-check: lint typecheck code-health-gates openapi-gate migration-gate test
+check: lint typecheck code-health-gates openapi-gate migration-gate test-pyramid-gate test
 
-ci: lint typecheck code-health-gates openapi-gate migration-gate test-integration test-e2e test-coverage security-audit
+ci: lint typecheck code-health-gates openapi-gate migration-gate test-pyramid-gate test-integration test-e2e test-coverage security-audit
 
 docker-build:
 	docker build $(DOCKER_BUILD_ARGS) -t $(LOTUS_ARCHIVE_IMAGE_REF) .

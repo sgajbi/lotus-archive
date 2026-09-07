@@ -85,6 +85,9 @@ jobs:
         run: make code-health-gates
       - name: Migration Gate
         run: make migration-gate
+
+      - name: Test pyramid gate
+        run: make test-pyramid-gate
       - name: Security Audit
         run: make security-audit
 

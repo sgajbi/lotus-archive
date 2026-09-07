@@ -65,5 +65,8 @@ line-length = 100
 target-version = "py312"
 
 [tool.pytest.ini_options]
+markers = [
+    "governance: asserts about the repository -- its CI contracts, workflows, gates, documentation posture or migration schema -- rather than about product behaviour. Deselected from the test pyramid by scripts/test_pyramid_gate.py, because counting these distorts the shape of the *product's* coverage and makes the gate hostile to the repository asserting its own contracts. Applied by what a module tests, not by where it lives: tests/unit/test_governance_marker_classification.py holds the two directions honest.",
+]
 pythonpath = ["src"]
 testpaths = ["tests"]

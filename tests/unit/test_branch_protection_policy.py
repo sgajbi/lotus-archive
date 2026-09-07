@@ -250,6 +250,9 @@ REQUIRED_MERGEABILITY_CONTROLS = (
 )
 
 
+pytestmark = pytest.mark.governance
+
+
 def test_the_checker_still_requires_every_mergeability_control() -> None:
     """The independent assertion the parameterisation cannot make for itself.
 

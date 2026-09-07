@@ -4,6 +4,11 @@ from pathlib import Path
 import re
 
 
+import pytest
+
+
+pytestmark = pytest.mark.governance
+
 ROOT = Path(__file__).resolve().parents[2]
 DOCKERFILE = ROOT / "Dockerfile"
 

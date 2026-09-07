@@ -14,7 +14,6 @@ from __future__ import annotations
 from base64 import urlsafe_b64decode
 from datetime import UTC, datetime, timedelta
 
-import pytest
 from cryptography.hazmat.primitives.asymmetric.ed25519 import (
     Ed25519PrivateKey,
     Ed25519PublicKey,
@@ -33,8 +32,6 @@ from app.archive.idea_lifecycle_decisions.signing import (
     refuse_lifecycle_decision_against_bundle,
     verify_lifecycle_decision,
 )
-
-pytestmark = pytest.mark.governance
 
 
 def _signer(key_id: str = "managed-v1") -> Ed25519LifecycleDecisionSigner:
