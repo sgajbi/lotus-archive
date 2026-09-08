@@ -25,12 +25,17 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           MERGE_COMMIT_SHA: ${{ github.event.pull_request.merge_commit_sha }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
           COMMIT_COUNT: ${{ github.event.pull_request.commits }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
         run: |
           set -euo pipefail
           if [ -z "$MERGE_COMMIT_SHA" ]; then
             echo "::error::pull_request.merge_commit_sha is required for exact-main releasability dispatch"
+            exit 1
+          fi
+          if [ -z "$BASE_SHA" ]; then
+            echo "::error::pull_request.base.sha is required to bound the enumeration window"
             exit 1
           fi
 
@@ -52,10 +57,41 @@ jobs:
           # Judge ancestry against the freshly fetched main, not the event-time
           # checkout snapshot.
           git checkout --quiet --detach FETCH_HEAD
-          revisions="$(git rev-list -n "$COMMIT_COUNT" "$MERGE_COMMIT_SHA" | tac)"
+          # Enumerate by RANGE, not by count. `pull_request.commits` describes
+          # the branch when the event fired, not what landed: a rebase that
+          # drops a commit already on main leaves the count larger than the
+          # window, and `rev-list -n COUNT` then walks past the PR's history
+          # into commits earlier merges put there. Those are genuine ancestors
+          # of main and genuinely number COUNT, so the ancestry guard below and
+          # a count assertion BOTH pass on a wrong enumeration.
+          #
+          # Latent here rather than fired -- no merged PR in this repository's
+          # recent history declared more commits than it landed -- but it has
+          # fired in the estate. lotus-risk PR #270 declared 4 and landed 3, so
+          # the walk reached the base commit added by an earlier PR;
+          # lotus-gateway PR #744 reached base.sha, and because a commit is its
+          # own ancestor the guard refused the whole dispatch and nothing was
+          # gated. Reported estate-wide by lotus-platform-47 as
+          # lotus-platform#859.
+          revisions="$(git rev-list --reverse "$BASE_SHA..$MERGE_COMMIT_SHA")"
           if [ -z "$revisions" ]; then
             echo "::error::No revisions enumerated for merged PR #$PR_NUMBER at $MERGE_COMMIT_SHA"
             exit 1
+          fi
+
+          # The count stays as an ASYMMETRIC cross-check, because the two
+          # directions mean opposite things. Fewer revisions than the count is
+          # the ordinary rebase case -- a stale count over a complete window --
+          # and must not fail. More is the dangerous direction: the range spans
+          # revisions this PR did not add, which means BASE_SHA is not the base
+          # this merge actually built on.
+          revision_count="$(printf '%s\n' "$revisions" | wc -l | tr -d ' ')"
+          if [ "$revision_count" -gt "$COMMIT_COUNT" ]; then
+            echo "::error::Enumerated $revision_count revisions in $BASE_SHA..$MERGE_COMMIT_SHA but PR #$PR_NUMBER declared $COMMIT_COUNT; the range spans revisions the PR did not add."
+            exit 1
+          fi
+          if [ "$revision_count" -lt "$COMMIT_COUNT" ]; then
+            echo "::notice::PR #$PR_NUMBER declared $COMMIT_COUNT commits and landed $revision_count; enumerating the landed range."
           fi
 
           for revision in $revisions; do
