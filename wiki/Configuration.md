@@ -148,6 +148,14 @@ Both keys carry that one instant, so the changeover itself belongs to the incomi
 consumer treats a rotated key's window as closed at `not_after_utc`, not through it, or both
 keys would be valid at the changeover and neither answer would be wrong.
 
+**Key IDs must be unique across the published bundle.** The service refuses to start if a retained
+key repeats another retained key's ID, or if it reuses the active signing key's ID. Both would publish
+one ID twice, which `lotus-idea`'s trust bundle rejects outright — and which this service's own
+verifier cannot resolve, because there is no correct rule: preferring the active entry trusts a
+document that is already malformed, and preferring the retained one silently changes which key the
+operator believes is in force. A decision arriving against a duplicated ID is refused as
+`key_id_not_unique` rather than checked against whichever entry happened to come last.
+
 `..._REVOKED_KEY_IDS` carries the key ids whose signatures are withdrawn, as a JSON list of
 strings:
 
