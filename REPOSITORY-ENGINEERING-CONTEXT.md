@@ -190,6 +190,18 @@ closed:
 Audit a merge with `gh run list --commit <full-sha>`; `--branch main` misses the run, because the
 dispatch ref is a tag rather than `main`.
 
+The PostgreSQL proof is **required, not optional**. The hold/purge concurrency tests assert
+behaviour the in-memory repository cannot exhibit: mutual exclusion between writers is decided
+by `UPDATE ... WHERE ... RETURNING` against one row, and single-threaded Python has nothing to
+serialize. Without `LOTUS_ARCHIVE_TEST_DATABASE_URL` they skip, which is right on a machine with
+no database; in a lane that exists to run them a skip is a **false pass**, which is what they
+were for their whole existence before CI provided a database. Both CI lanes set
+`LOTUS_ARCHIVE_REQUIRE_DATABASE_PROOF=1`, which turns an absent database into a failure. Resolve
+the DSN through `tests/database_proof.required_database_url()` rather than reading the
+environment directly, and note that a module-level skip needs `allow_module_level=True` or it is
+a collection *error* — that broke `make test-pyramid-gate`, the lane that only collects, while
+every lane that runs tests passed.
+
 ## Standards And RFCs That Govern This Repository
 
 1. `lotus-platform/rfcs/RFC-0072-platform-wide-multi-lane-ci-validation-and-release-governance.md`
@@ -246,6 +258,25 @@ dispatch ref is a tag rather than `main`.
 16. Generated-document admission requires a non-empty `tenant_id` and `region`. The writer must use
     that source-backed scope directly in the storage key; do not add unspecified-scope fallbacks
     that allow a record to be stored but make every authorized read unavailable.
+17. **Retention state transitions write only the columns they decide, and never a caller's
+    document snapshot.** `repository.save(metadata)` writes every mutable column, so a
+    read-decide-save cycle is correct when it decides and enforces nothing when it writes: an
+    eligibility decision taken before a hold existed used to clear that committed hold, and the
+    same shape cleared `purge_started_at`/`purged_at` from a completed purge, after which a new
+    hold was admitted over destroyed bytes. Use `mark_purge_eligible`, `mark_purge_not_eligible`
+    and `complete_purge`. Eligibility carries the active-hold guard because it grants permission
+    to destroy; withdrawal deliberately does not, because it is the transition taken *because* a
+    hold is active. A refused transition re-reads and classifies the stored row rather than
+    returning the caller's snapshot.
+18. **Setting a legal hold is one transaction.** Admission, the hold record and the summary
+    recount commit together via `admit_and_record_legal_hold`. As three steps there was a window
+    in which the document said `legal_hold_status = active` while no hold record existed, and a
+    purge recounting holds in that window found none, wrote `clear` and deleted the object — the
+    hold then landed and its caller was told it succeeded. Do not split it for readability.
+    When testing this, **where a lock is taken decides what the test can detect**: locking the
+    document row stalls a non-atomic implementation at its first statement, before it exposes
+    anything, and a test built that way was measured to pass against the defect. Lock
+    `archive_legal_holds` to stall it at the INSERT instead.
 
 ## Context Maintenance Rule
 
