@@ -174,6 +174,12 @@ signed under a revoked key must be re-issued under the current key if they are s
 requires provisioning a replacement signer, since a service whose only key is revoked cannot sign at
 all.
 
+**A duplicated key ID is refused, not resolved.** If the published bundle carries one ID twice, a
+decision naming it is refused as `key_id_not_unique` rather than verified against whichever entry the
+lookup happened to keep. Silently picking one checked the signature against the wrong public key and
+the wrong window, and reported `signature_invalid` for a genuine decision. Configuration refuses the
+collision at startup as well, so the malformed document is never served.
+
 Managed key custody, rotation and consumer trust distribution remain open
 ([#55](https://github.com/sgajbi/lotus-archive/issues/55)). Treat the signing capability as
 uncertified.

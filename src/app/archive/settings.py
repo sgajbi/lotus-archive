@@ -130,6 +130,21 @@ class ArchiveRuntimeSettings(BaseSettings):
                 raise RuntimeConfigurationError(
                     "a retained lifecycle verification key window must end after it begins"
                 )
+        retained_ids = [key.key_id for key in self.retained_verification_keys()]
+        duplicates = sorted({i for i in retained_ids if retained_ids.count(i) > 1})
+        if duplicates:
+            raise RuntimeConfigurationError(
+                "retained lifecycle verification key IDs must be unique: " + ", ".join(duplicates)
+            )
+        if self.idea_lifecycle_decision_signing_key_id in retained_ids:
+            # The published bundle would carry one id twice, which lotus-idea's
+            # trust bundle rejects outright and which this service's own
+            # verifier cannot resolve. Refused at startup, where an operator can
+            # still see which list the duplicate came from.
+            raise RuntimeConfigurationError(
+                "the active signing key ID must not also appear in the retained "
+                f"verification keys: {self.idea_lifecycle_decision_signing_key_id}"
+            )
         revoked = self.revoked_key_ids()
         published = {key.key_id for key in self.retained_verification_keys()} | {
             self.idea_lifecycle_decision_signing_key_id

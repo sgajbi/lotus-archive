@@ -141,6 +141,11 @@ class LifecycleDecisionVerificationRefusal(str, Enum):
     issued" -- the second is evidence of a forged or back-dated decision, the
     first is an ordinary trust-distribution miss.
 
+    `KEY_ID_NOT_UNIQUE` is not a property of the decision at all -- it says the
+    published document is malformed, so no verdict about this signature can be
+    trusted. It is separated from `KEY_NOT_PUBLISHED` because "we cannot answer"
+    and "this key was never ours" send an operator to different places.
+
     `KEY_REVOKED` is a third answer again, and the reason it cannot collapse
     into either: the key was ours, the decision falls inside the window it
     genuinely signed in, and it is still refused. Reporting that as
@@ -151,6 +156,7 @@ class LifecycleDecisionVerificationRefusal(str, Enum):
     """
 
     KEY_NOT_PUBLISHED = "key_not_published"
+    KEY_ID_NOT_UNIQUE = "key_id_not_unique"
     KEY_REVOKED = "key_revoked"
     KEY_NOT_YET_VALID = "key_not_yet_valid"
     KEY_ALREADY_ROTATED = "key_already_rotated"
@@ -185,10 +191,26 @@ def refuse_lifecycle_decision_against_bundle(
     the moment its key rotated out, which is the failure retention removed.
     """
 
-    published = {key.key_id: key for key in bundle.keys}
-    key = published.get(decision.signing_key_id)
-    if key is None:
+    matching = [key for key in bundle.keys if key.key_id == decision.signing_key_id]
+    if not matching:
         return LifecycleDecisionVerificationRefusal.KEY_NOT_PUBLISHED
+    if len(matching) > 1:
+        # A dict comprehension keyed by `key_id` silently kept the last entry,
+        # so a bundle publishing one id twice -- an operator listing the active
+        # signer in the retained set, say -- resolved to whichever came last and
+        # checked the signature against the wrong public key. It reported
+        # `signature_invalid` for a genuine decision, or a window verdict from
+        # the wrong key's dates.
+        #
+        # Refused rather than resolved by a rule, because every rule here is
+        # wrong: preferring the active entry trusts a bundle that is already
+        # malformed, and preferring the revoked one silently changes which key
+        # the operator thinks is in force. lotus-idea's consumer contract
+        # rejects the whole bundle on duplicate ids, so accepting it here made
+        # this reference implementation more permissive than the consumer it
+        # exists to demonstrate.
+        return LifecycleDecisionVerificationRefusal.KEY_ID_NOT_UNIQUE
+    key = matching[0]
 
     if key.status is LifecycleKeyStatus.REVOKED:
         # Deliberately ahead of both window checks. Revocation withdraws the
