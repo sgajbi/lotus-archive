@@ -59,6 +59,7 @@ from app.archive.models import (
     LifecycleTransitionType,
     PurgeStatus,
 )
+from app.archive.purge_transitions import evaluate_purge
 from app.archive.repository import ArchiveDocumentRepository
 from app.archive.service_readiness import (
     ArchiveRuntimeReadiness,
@@ -359,15 +360,17 @@ class ArchiveDocumentService:
             raise LegalHoldActiveError("legal hold blocks purge")
         metadata = claimed
         self.storage.delete(key=metadata.storage_key)
-        now = datetime.now(timezone.utc)
-        metadata = metadata.model_copy(
-            update={
-                "purge_status": PurgeStatus.PURGED,
-                "purged_at": now,
-                "updated_at": now,
-            }
+        # Recorded against the stored row rather than by saving back the
+        # snapshot read before the delete. That snapshot carried every
+        # mutable column, so writing it wholesale reverted whatever another
+        # writer had committed meanwhile -- the same defect as above, on the
+        # path where the bytes are already gone and the record is all that
+        # is left to be wrong.
+        completed = self.repository.complete_purge(
+            document_id=document_id,
+            purged_at=datetime.now(timezone.utc),
         )
-        metadata = self.repository.save(metadata)
+        metadata = completed if completed is not None else metadata
         self._record_allowed(
             event_type=AccessEventType.PURGE_EXECUTION,
             caller_context=caller_context,
@@ -417,7 +420,23 @@ class ArchiveDocumentService:
         # denial is audited. A hold cannot preserve an object whose deletion has
         # already been ordered, and recording one would leave the document
         # asserting a preservation that is not true.
-        admitted = self.repository.admit_legal_hold(document_id=document_id)
+        legal_hold = LegalHoldRecord(
+            legal_hold_id=f"hold_{uuid4().hex}",
+            document_id=document_id,
+            hold_reason=command.hold_reason,
+            authority_reference=command.authority_reference,
+            requested_by=caller_context.actor_id,
+        )
+        # Admission, the hold row and the summary commit together. As three
+        # steps there was a window after admission and before the row
+        # existed in which a competing purge recounted active holds, found
+        # none, wrote `clear` and deleted the object -- after which this
+        # hold landed and returned success. The observed end state was
+        # PURGED metadata, one ACTIVE hold and absent bytes.
+        admitted = self.repository.admit_and_record_legal_hold(
+            document_id=document_id,
+            legal_hold=legal_hold,
+        )
         if admitted is None:
             self._record_allowed(
                 event_type=AccessEventType.LEGAL_HOLD_SET,
@@ -430,15 +449,6 @@ class ArchiveDocumentService:
                 "destruction has already been started for this document; "
                 "a legal hold cannot preserve it"
             )
-        legal_hold = LegalHoldRecord(
-            legal_hold_id=f"hold_{uuid4().hex}",
-            document_id=document_id,
-            hold_reason=command.hold_reason,
-            authority_reference=command.authority_reference,
-            requested_by=caller_context.actor_id,
-        )
-        legal_hold = self.repository.save_legal_hold(legal_hold)
-        self._refresh_legal_hold_summary(admitted)
         self._record_allowed(
             event_type=AccessEventType.LEGAL_HOLD_SET,
             caller_context=caller_context,
@@ -875,54 +885,8 @@ class ArchiveDocumentService:
         metadata: ArchiveDocumentMetadata,
         evaluation_date: date | None,
     ) -> tuple[ArchiveDocumentMetadata, bool, str]:
-        if metadata.purge_status is PurgeStatus.PURGED:
-            return metadata, True, "already_purged"
-        if metadata.purge_started_at is not None:
-            # Destruction was already begun under an authorized decision, so the
-            # object may be gone. The only completable outcome is to finish the
-            # record. Refusing here -- for a hold that raced the intent -- would
-            # strand the document reporting retained-under-hold with its bytes
-            # destroyed, which is a false assurance rather than a safe refusal.
-            return metadata, True, "purge_in_progress"
-        if metadata.legal_hold_status is LegalHoldStatus.ACTIVE:
-            metadata = self._update_purge_status(metadata, PurgeStatus.NOT_ELIGIBLE)
-            return metadata, False, "legal_hold_active"
-        if metadata.retain_until_date is None:
-            metadata = self._update_purge_status(metadata, PurgeStatus.NOT_ELIGIBLE)
-            return metadata, False, "retain_until_date_missing"
-        effective_date = evaluation_date or date.today()
-        if metadata.retain_until_date > effective_date:
-            metadata = self._update_purge_status(metadata, PurgeStatus.NOT_ELIGIBLE)
-            return metadata, False, "retention_period_active"
-        if metadata.purge_status is PurgeStatus.ELIGIBLE:
-            # Re-evaluating an already-eligible document changes nothing; rewriting
-            # updated_at here would churn the record without a state change.
-            return metadata, True, "retention_elapsed"
-        now = datetime.now(timezone.utc)
-        metadata = metadata.model_copy(
-            update={
-                "purge_status": PurgeStatus.ELIGIBLE,
-                "purge_eligible_at": metadata.purge_eligible_at or now,
-                "updated_at": now,
-            }
-        )
-        return self.repository.save(metadata), True, "retention_elapsed"
-
-    def _update_purge_status(
-        self,
-        metadata: ArchiveDocumentMetadata,
-        purge_status: PurgeStatus,
-    ) -> ArchiveDocumentMetadata:
-        if metadata.purge_status is purge_status:
-            return metadata
-        return self.repository.save(
-            metadata.model_copy(
-                update={
-                    "purge_status": purge_status,
-                    "updated_at": datetime.now(timezone.utc),
-                }
-            )
-        )
+        """Delegated to `purge_transitions`, which owns how a decision is committed."""
+        return evaluate_purge(self.repository, metadata, evaluation_date)
 
     def _refresh_legal_hold_summary(
         self,

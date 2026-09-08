@@ -1,12 +1,12 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
-import os
 from pathlib import Path
 
 import psycopg
 import pytest
 
+from tests.database_proof import required_database_url
 from app.archive.audit import AccessAuditEvent, AccessEventType, AuthorizationDecision
 from app.archive.models import ArchiveDocumentMetadata
 from app.archive.postgres_repository import (
@@ -16,11 +16,11 @@ from app.archive.postgres_repository import (
 from tests.unit.test_archive_metadata_model import valid_metadata_input
 
 ROOT = Path(__file__).resolve().parents[2]
-DATABASE_URL = os.getenv("LOTUS_ARCHIVE_TEST_DATABASE_URL", "")
-pytestmark = pytest.mark.skipif(
-    not DATABASE_URL,
-    reason="LOTUS_ARCHIVE_TEST_DATABASE_URL is required for PostgreSQL adapter proof",
-)
+# Resolved through the shared helper so an unreachable database FAILS the lane
+# that requires the proof instead of skipping it. These tests skipped in every
+# run for their whole existence before CI provided a database; a skip reported
+# as a pass is the same shape as a gate that cannot fail.
+DATABASE_URL = required_database_url()
 
 
 @pytest.fixture(autouse=True)

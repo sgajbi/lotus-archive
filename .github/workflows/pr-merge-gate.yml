@@ -101,6 +101,10 @@ jobs:
         env:
           COVERAGE_FILE: .coverage.${{ matrix.suite }}
           LOTUS_ARCHIVE_TEST_DATABASE_URL: postgresql://archive:archive@localhost:5432/archive_test
+          # An unreachable database must FAIL this lane, not reduce it to a skip.
+          # The proof asserts behaviour the in-memory double cannot exhibit, so a
+          # skipped run reports a pass for an assertion never evaluated.
+          LOTUS_ARCHIVE_REQUIRE_DATABASE_PROOF: "1"
         run: ./.venv/bin/python -m pytest ${{ matrix.path }} --cov=src --cov-report=
       - name: Upload coverage data
         uses: actions/upload-artifact@v7.0.1

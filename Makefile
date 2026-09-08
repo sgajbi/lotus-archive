@@ -74,7 +74,7 @@ coverage-gate:
 security-audit:
 	$(VENV_PYTHON) scripts/security_audit.py
 
-SOURCE_FILE_MAX_LINES ?= 987
+SOURCE_FILE_MAX_LINES ?= 951
 MAX_CYCLOMATIC_COMPLEXITY ?= 18
 MAX_HIGH_COMPLEXITY_FUNCTIONS ?= 0
 

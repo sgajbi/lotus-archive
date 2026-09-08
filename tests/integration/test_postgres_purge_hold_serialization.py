@@ -1,7 +1,7 @@
 """C5-ARC-01 proven against PostgreSQL, not the in-memory double.
 
 The in-memory repository has no conditional-update semantics: its `begin_purge`
-and `admit_legal_hold` are single-threaded Python that cannot demonstrate mutual
+and `admit_and_record_legal_hold` are single-threaded Python that cannot demonstrate mutual
 exclusion between concurrent writers. It shows the *decision*; only the database
 shows the *serialization*.
 
@@ -13,23 +13,28 @@ deployment with several workers or replicas.
 
 from __future__ import annotations
 
-import os
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import psycopg
 import pytest
 
-from app.archive.models import ArchiveDocumentMetadata, LegalHoldStatus, PurgeStatus
+from tests.database_proof import required_database_url
+from app.archive.models import (
+    ArchiveDocumentMetadata,
+    LegalHoldRecord,
+    LegalHoldStatus,
+    PurgeStatus,
+)
 from app.archive.postgres_repository import PostgresArchiveDocumentRepository
 from tests.unit.test_archive_metadata_model import valid_metadata_input
 
 ROOT = Path(__file__).resolve().parents[2]
-DATABASE_URL = os.getenv("LOTUS_ARCHIVE_TEST_DATABASE_URL", "")
-pytestmark = pytest.mark.skipif(
-    not DATABASE_URL,
-    reason="LOTUS_ARCHIVE_TEST_DATABASE_URL is required for PostgreSQL concurrency proof",
-)
+# Resolved through the shared helper so an unreachable database FAILS the lane
+# that requires the proof instead of skipping it. These tests skipped in every
+# run for their whole existence before CI provided a database; a skip reported
+# as a pass is the same shape as a gate that cannot fail.
+DATABASE_URL = required_database_url()
 
 
 @pytest.fixture(autouse=True)
@@ -44,6 +49,16 @@ def migrated_database() -> None:
 
 def _repository() -> PostgresArchiveDocumentRepository:
     return PostgresArchiveDocumentRepository(DATABASE_URL)
+
+
+def _hold(document_id: str, *, suffix: str = "a") -> LegalHoldRecord:
+    return LegalHoldRecord(
+        legal_hold_id=f"hold_{document_id}_{suffix}",
+        document_id=document_id,
+        hold_reason="litigation",
+        authority_reference="REF-1",
+        requested_by="actor_legal",
+    )
 
 
 def _stored(repository: PostgresArchiveDocumentRepository) -> ArchiveDocumentMetadata:
@@ -75,7 +90,9 @@ def test_only_one_of_two_concurrent_writers_claims_the_document() -> None:
     purge_claim = writer_a.begin_purge(
         document_id=document.document_id, started_at=datetime.now(UTC)
     )
-    hold_claim = writer_b.admit_legal_hold(document_id=document.document_id)
+    hold_claim = writer_b.admit_and_record_legal_hold(
+        document_id=document.document_id, legal_hold=_hold(document.document_id)
+    )
 
     assert purge_claim is not None, "the first writer must acquire the intent"
     assert hold_claim is None, "the second writer must be refused by the row, not by its own read"
@@ -92,7 +109,9 @@ def test_a_hold_admitted_first_refuses_a_concurrent_purge() -> None:
     writer_b = _repository()
     document = _stored(writer_a)
 
-    hold_claim = writer_a.admit_legal_hold(document_id=document.document_id)
+    hold_claim = writer_a.admit_and_record_legal_hold(
+        document_id=document.document_id, legal_hold=_hold(document.document_id)
+    )
     purge_claim = writer_b.begin_purge(
         document_id=document.document_id, started_at=datetime.now(UTC)
     )
@@ -174,7 +193,12 @@ def test_the_committed_transition_survives_a_new_connection() -> None:
 
     assert after_restart is not None
     assert after_restart.purge_started_at == claimed.purge_started_at
-    assert _repository().admit_legal_hold(document_id=document.document_id) is None
+    assert (
+        _repository().admit_and_record_legal_hold(
+            document_id=document.document_id, legal_hold=_hold(document.document_id)
+        )
+        is None
+    )
 
 
 def test_the_claims_refuse_an_unknown_document() -> None:
@@ -182,7 +206,12 @@ def test_the_claims_refuse_an_unknown_document() -> None:
     repository = _repository()
 
     assert repository.begin_purge(document_id="doc_absent", started_at=datetime.now(UTC)) is None
-    assert repository.admit_legal_hold(document_id="doc_absent") is None
+    assert (
+        repository.admit_and_record_legal_hold(
+            document_id="doc_absent", legal_hold=_hold("doc_absent")
+        )
+        is None
+    )
     assert (
         repository.update_legal_hold_summary(
             document_id="doc_absent",
