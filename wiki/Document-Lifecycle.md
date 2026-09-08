@@ -59,24 +59,37 @@ than one matter, and it stays held until the last one is released.
 
 ## Purge
 
-Purge evaluation runs the same five checks in the same order for both
+Purge evaluation runs the same checks in the same order for both
 `POST /documents/{document_id}/purge-evaluation` and `POST /documents/{document_id}/purge`. The
 order is the business rule:
 
 | # | condition | eligible | reason code |
 |---|---|---|---|
 | 1 | already purged | yes | `already_purged` |
-| 2 | a legal hold is active | **no** | `legal_hold_active` |
-| 3 | no `retain_until_date` | **no** | `retain_until_date_missing` |
-| 4 | `retain_until_date` is in the future | **no** | `retention_period_active` |
-| 5 | otherwise | yes | `retention_elapsed` |
+| 2 | destruction already begun | yes | `purge_in_progress` |
+| 3 | a legal hold is active | **no** | `legal_hold_active` |
+| 4 | no `retain_until_date` | **no** | `retain_until_date_missing` |
+| 5 | `retain_until_date` is in the future | **no** | `retention_period_active` |
+| 6 | otherwise | yes | `retention_elapsed` |
+
+A started purge is reported as **eligible** (`purge_in_progress`) rather than refused, because the
+object may already be gone and finishing the record is then the only honest outcome. That is why
+row 2 sits above the hold check: a hold that arrives after destruction began cannot preserve
+anything, and refusing the retry would leave the document reporting retained-under-hold with its
+bytes destroyed.
 
 Legal hold is checked **before** retention, so a held document is reported as held rather than as
 retained — the operator learns the actionable reason, not the incidental one. Retention is evaluated
 against the server's current date; callers cannot supply an evaluation date through the API.
 
 Evaluation is not read-only: it writes back the `purge_status` it computed (`eligible` or
-`not_eligible`), so the stored posture stays consistent with the answer just given.
+`not_eligible`), so the stored posture stays consistent with the answer just given. That write is
+**conditional** — see [Concurrent writers](#concurrent-writers) below. If another writer has
+committed a legal hold or a destruction since this evaluation read the document, the write is
+refused, the stored row is re-read, and the answer returned describes what the database actually
+holds. A seventh reason code, `purge_state_changed`, is reserved for a refusal this classification
+cannot explain; it is never eligible, because a state the service cannot account for is not
+permission to destroy.
 
 Execution then:
 
@@ -90,6 +103,37 @@ ineligibility raises a purge-not-eligible error.
 
 After purge the document remains addressable, but reads are denied at the scope check with
 `document_purged` rather than returning bytes that no longer exist.
+
+## Concurrent writers
+
+Archive runs as several workers against one database, so a hold and a purge can be decided at the
+same instant by different processes. The guarantee is that **exactly one wins, and the loser
+observes the winner's committed state rather than its own earlier read.**
+
+Two rules carry it, and both are enforced by the database rather than by service-level ordering:
+
+**Every transition writes only the columns it decides.** No caller's document snapshot is ever
+written back wholesale. A read-decide-save cycle is correct at the instant it decides and enforces
+nothing at the instant it writes: an eligibility decision taken before a hold existed used to write
+`legal_hold_status` back from that stale snapshot, clearing a committed hold and letting the object
+be deleted with an active hold record standing against it. The same shape could clear
+`purge_started_at` and `purged_at` from a completed purge, after which a new hold was admitted over
+bytes that were already gone.
+
+**Setting a hold is one transaction.** Admitting the hold, writing the hold record and refreshing
+the summary commit together. As three separate steps there was a window in which the document said
+`legal_hold_status = active` while no hold record existed yet — and a purge recounting active holds
+in that window found none, wrote `clear`, and deleted the object. The hold then landed and its
+caller was told it had succeeded. The observable end state was a purged document, one active hold
+record, absent bytes, and a signed `LEGAL_HOLD` lifecycle answer for a document that no longer
+existed.
+
+Irreversible state is never overwritten. `purge_started_at` and `purged_at` survive every competing
+writer, `purged_at` is stamped once and not restamped by a retry, and completing a purge requires an
+intent that was actually claimed — so no code path can record a destruction nobody ordered.
+
+These are proved against PostgreSQL with genuinely overlapping transactions, not by calling one
+writer after the other. See [Development and Testing](Development-and-Testing).
 
 ## Correction, supersession and reissue
 

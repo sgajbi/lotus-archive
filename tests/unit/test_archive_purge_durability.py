@@ -106,18 +106,19 @@ def test_a_purge_interrupted_after_deletion_can_still_be_completed(tmp_path: Pat
 
     service = _service(tmp_path)
     metadata = _archived(service)
-    real_save = service.repository.save
+    real_completion = service.repository.complete_purge
 
-    def failing_completion_save(record):  # type: ignore[no-untyped-def]
-        # Keyed on what is being written, not on how many saves have happened:
-        # `_evaluate_purge` may save an ELIGIBLE transition first, so a
-        # call-counting fake would interrupt the intent instead of the outcome
-        # and quietly test the wrong failure.
-        if record.purge_status is PurgeStatus.PURGED:
-            raise RuntimeError("ledger write failed")
-        return real_save(record)
+    def failing_completion_save(**kwargs):  # type: ignore[no-untyped-def]
+        # Injected at `complete_purge`, which IS the completion, so the
+        # injection needs no discriminator. It previously patched
+        # `repository.save` and keyed on `purge_status is PURGED`, because
+        # eligibility and completion both went through one whole-snapshot
+        # save and an unkeyed fake would have interrupted the intent instead
+        # of the outcome. Separating the transitions removed the ambiguity
+        # that discriminator existed to resolve.
+        raise RuntimeError("ledger write failed")
 
-    service.repository.save = failing_completion_save  # type: ignore[method-assign]
+    service.repository.complete_purge = failing_completion_save  # type: ignore[method-assign]
 
     with pytest.raises(RuntimeError):
         service.purge_document(
@@ -132,7 +133,7 @@ def test_a_purge_interrupted_after_deletion_can_still_be_completed(tmp_path: Pat
     assert interrupted.purge_started_at is not None
     assert not (tmp_path / "objects" / metadata.storage_key).exists(), "the bytes are gone"
 
-    service.repository.save = real_save  # type: ignore[method-assign]
+    service.repository.complete_purge = real_completion  # type: ignore[method-assign]
     completed, reason = service.purge_document(
         document_id=metadata.document_id,
         caller_context=_caller(),
@@ -157,18 +158,19 @@ def test_a_hold_that_races_the_intent_cannot_strand_the_document(tmp_path: Path)
 
     service = _service(tmp_path)
     metadata = _archived(service)
-    real_save = service.repository.save
+    real_completion = service.repository.complete_purge
 
-    def failing_completion_save(record):  # type: ignore[no-untyped-def]
-        # Keyed on what is being written, not on how many saves have happened:
-        # `_evaluate_purge` may save an ELIGIBLE transition first, so a
-        # call-counting fake would interrupt the intent instead of the outcome
-        # and quietly test the wrong failure.
-        if record.purge_status is PurgeStatus.PURGED:
-            raise RuntimeError("ledger write failed")
-        return real_save(record)
+    def failing_completion_save(**kwargs):  # type: ignore[no-untyped-def]
+        # Injected at `complete_purge`, which IS the completion, so the
+        # injection needs no discriminator. It previously patched
+        # `repository.save` and keyed on `purge_status is PURGED`, because
+        # eligibility and completion both went through one whole-snapshot
+        # save and an unkeyed fake would have interrupted the intent instead
+        # of the outcome. Separating the transitions removed the ambiguity
+        # that discriminator existed to resolve.
+        raise RuntimeError("ledger write failed")
 
-    service.repository.save = failing_completion_save  # type: ignore[method-assign]
+    service.repository.complete_purge = failing_completion_save  # type: ignore[method-assign]
     with pytest.raises(RuntimeError):
         service.purge_document(
             document_id=metadata.document_id,
@@ -176,7 +178,7 @@ def test_a_hold_that_races_the_intent_cannot_strand_the_document(tmp_path: Path)
             trace_id="trace-purge",
             evaluation_date=metadata.retain_until_date,
         )
-    service.repository.save = real_save  # type: ignore[method-assign]
+    service.repository.complete_purge = real_completion  # type: ignore[method-assign]
 
     # A hold recorded directly, as one racing the intent would have been.
     stranded = service.repository.get_by_document_id(metadata.document_id)

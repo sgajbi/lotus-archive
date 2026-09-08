@@ -284,11 +284,29 @@ class PostgresArchiveDocumentRepository:
         metadata = ArchiveDocumentMetadata.model_validate(current)
         return metadata if metadata.purge_started_at is not None else None
 
-    def admit_legal_hold(self, *, document_id: str) -> ArchiveDocumentMetadata | None:
-        """Conditional claim for preservation, contending on the same row.
+    def admit_and_record_legal_hold(
+        self,
+        *,
+        document_id: str,
+        legal_hold: LegalHoldRecord,
+    ) -> ArchiveDocumentMetadata | None:
+        """Admit, insert the hold and refresh the summary in ONE transaction.
 
-        Refuses once destruction has been ordered, because a hold cannot
-        preserve an object whose deletion is already committed to.
+        The three writes used to be three transactions, and the gap between the
+        first two was a real hole: admission committed `legal_hold_status =
+        active`, and until the INSERT landed a competing purge could recount
+        active holds, find **none**, write `clear`, and delete the object. The
+        hold row then arrived and the caller was told the hold succeeded --
+        PURGED metadata, one ACTIVE hold, absent bytes, and a lifecycle-action
+        answer of LEGAL_HOLD over a document that no longer existed.
+
+        Atomicity is the database's, not the service's, for the same reason
+        `apply_lifecycle_transition` gives: a compensating action after a
+        partial failure has to be written by the process that just failed.
+
+        The recount runs inside the transaction and counts the row this
+        statement inserted, so the summary can never describe a set of holds
+        that excludes the one being admitted.
         """
         now = datetime.now(timezone.utc)
         with self._connect() as connection, connection.cursor() as cursor:
@@ -301,6 +319,118 @@ class PostgresArchiveDocumentRepository:
                 RETURNING *
                 """,
                 (now, document_id),
+            )
+            if cursor.fetchone() is None:
+                return None
+            cursor.execute(_SAVE_LEGAL_HOLD_SQL, _values(legal_hold, _LEGAL_HOLD_COLUMNS))
+            cursor.execute(
+                """
+                UPDATE archive_documents
+                SET legal_hold_count = (
+                        SELECT count(*) FROM archive_legal_holds
+                        WHERE document_id = %s AND hold_status = 'active'
+                    ),
+                    updated_at = %s
+                WHERE document_id = %s
+                RETURNING *
+                """,
+                (document_id, now, document_id),
+            )
+            row = cursor.fetchone()
+        return ArchiveDocumentMetadata.model_validate(row) if row is not None else None
+
+    def mark_purge_eligible(
+        self,
+        *,
+        document_id: str,
+        eligible_at: datetime,
+    ) -> ArchiveDocumentMetadata | None:
+        """Grant eligibility conditionally, on the stored row.
+
+        Eligibility is the transition that grants permission to destroy, so it
+        carries the hold guard as well as the irreversibility guards. The
+        previous form read a snapshot, decided, and saved the whole document
+        back: a hold committed between the read and the write had its summary
+        columns overwritten from the stale snapshot, and the document was then
+        deleted with an ACTIVE hold record standing against it.
+
+        `COALESCE` keeps the first eligibility timestamp rather than restamping
+        it, so a re-evaluation cannot make an old decision look recent.
+        """
+        now = datetime.now(timezone.utc)
+        with self._connect() as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """
+                UPDATE archive_documents
+                SET purge_status = 'eligible',
+                    purge_eligible_at = COALESCE(purge_eligible_at, %s),
+                    updated_at = %s
+                WHERE document_id = %s
+                  AND purge_started_at IS NULL
+                  AND purge_status <> 'purged'
+                  AND legal_hold_status <> 'active'
+                RETURNING *
+                """,
+                (eligible_at, now, document_id),
+            )
+            row = cursor.fetchone()
+        return ArchiveDocumentMetadata.model_validate(row) if row is not None else None
+
+    def mark_purge_not_eligible(
+        self,
+        *,
+        document_id: str,
+    ) -> ArchiveDocumentMetadata | None:
+        """Withdraw eligibility. Protective, so it carries no hold guard.
+
+        This is the transition taken *because* a hold is active, so requiring
+        the absence of one would refuse exactly the case it exists to serve. It
+        still refuses a started or completed purge: withdrawing eligibility from
+        a document whose bytes are gone would rewrite the record to say
+        destruction was never permitted.
+        """
+        now = datetime.now(timezone.utc)
+        with self._connect() as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """
+                UPDATE archive_documents
+                SET purge_status = 'not_eligible', updated_at = %s
+                WHERE document_id = %s
+                  AND purge_started_at IS NULL
+                  AND purge_status <> 'purged'
+                RETURNING *
+                """,
+                (now, document_id),
+            )
+            row = cursor.fetchone()
+        return ArchiveDocumentMetadata.model_validate(row) if row is not None else None
+
+    def complete_purge(
+        self,
+        *,
+        document_id: str,
+        purged_at: datetime,
+    ) -> ArchiveDocumentMetadata | None:
+        """Record destruction against the stored row, never from a snapshot.
+
+        Requires a claimed intent: completing a purge nobody began would assert
+        a destruction no writer ordered. `purged_at` is set only once, so a
+        retry that finishes an interrupted purge does not restamp the moment the
+        bytes actually went.
+        """
+        now = datetime.now(timezone.utc)
+        with self._connect() as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """
+                UPDATE archive_documents
+                SET purge_status = 'purged',
+                    purged_at = COALESCE(purged_at, %s),
+                    updated_at = %s
+                WHERE document_id = %s
+                  AND purge_started_at IS NOT NULL
+                RETURNING *
+                """,
+                (purged_at, now, document_id),
             )
             row = cursor.fetchone()
         return ArchiveDocumentMetadata.model_validate(row) if row is not None else None

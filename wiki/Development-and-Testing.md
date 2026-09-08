@@ -41,6 +41,29 @@ No external dependency is needed for the default local profile; it uses the in-m
 filesystem storage. Durable adapter integration tests require PostgreSQL and set
 `LOTUS_ARCHIVE_TEST_DATABASE_URL`. See [Configuration](Configuration#what-can-actually-run).
 
+### The PostgreSQL proof is required, not optional
+
+The hold/purge concurrency tests assert behaviour the in-memory repository **cannot** exhibit:
+mutual exclusion between writers is decided by `UPDATE ... WHERE ... RETURNING` against one row, and
+single-threaded Python has nothing to serialize. They open independent connections, force one writer
+to block on a lock the other holds, and assert the block before releasing it — so a conditional
+update that had stopped being conditional would fail them.
+
+Without `LOTUS_ARCHIVE_TEST_DATABASE_URL` these skip, which is right on a machine with no database.
+In a lane that exists to run them a skip is a **false pass**: the gate reports success for an
+assertion never evaluated, which is what these tests did for their entire existence before CI
+provided a database. Set `LOTUS_ARCHIVE_REQUIRE_DATABASE_PROOF=1` to make an absent database a
+failure instead. Both CI lanes set it.
+
+To run them locally:
+
+```
+docker run -d --name archive-pg -e POSTGRES_USER=archive -e POSTGRES_PASSWORD=archive \
+  -e POSTGRES_DB=archive_test -p 5432:5432 postgres:16-alpine
+export LOTUS_ARCHIVE_TEST_DATABASE_URL=postgresql://archive:archive@localhost:5432/archive_test
+export LOTUS_ARCHIVE_REQUIRE_DATABASE_PROOF=1
+```
+
 Expect `/health/ready` to report `degraded` with reason `explicit_local_development_runtime`. That
 is the correct local state, not a fault.
 

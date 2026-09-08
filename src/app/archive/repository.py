@@ -11,6 +11,7 @@ from app.archive.models import (
     ArchiveDocumentMetadata,
     LegalHoldRecord,
     LifecycleRelationshipRecord,
+    PurgeStatus,
 )
 
 
@@ -46,7 +47,32 @@ class ArchiveDocumentRepository(Protocol):
         started_at: datetime,
     ) -> ArchiveDocumentMetadata | None: ...
 
-    def admit_legal_hold(self, *, document_id: str) -> ArchiveDocumentMetadata | None: ...
+    def admit_and_record_legal_hold(
+        self,
+        *,
+        document_id: str,
+        legal_hold: LegalHoldRecord,
+    ) -> ArchiveDocumentMetadata | None: ...
+
+    def mark_purge_eligible(
+        self,
+        *,
+        document_id: str,
+        eligible_at: datetime,
+    ) -> ArchiveDocumentMetadata | None: ...
+
+    def mark_purge_not_eligible(
+        self,
+        *,
+        document_id: str,
+    ) -> ArchiveDocumentMetadata | None: ...
+
+    def complete_purge(
+        self,
+        *,
+        document_id: str,
+        purged_at: datetime,
+    ) -> ArchiveDocumentMetadata | None: ...
 
     def update_legal_hold_summary(
         self,
@@ -170,26 +196,132 @@ class InMemoryArchiveDocumentRepository:
         self._by_document_id[document_id] = claimed
         return claimed
 
-    def admit_legal_hold(self, *, document_id: str) -> ArchiveDocumentMetadata | None:
-        """Claim the document for preservation, or return None because destruction began.
+    def admit_and_record_legal_hold(
+        self,
+        *,
+        document_id: str,
+        legal_hold: LegalHoldRecord,
+    ) -> ArchiveDocumentMetadata | None:
+        """Admit, persist the hold and refresh the summary as ONE step.
 
-        Contends on the same row as `begin_purge`, so exactly one of the two
-        wins and the loser sees the winner's committed state rather than its own
-        stale read.
+        Previously three: admit committed `active`, then the hold row was
+        inserted, then the summary was recounted. Between the first and second a
+        competing purge recounted, found **zero** hold rows, cleared `active` and
+        deleted the object -- after which the hold row landed and the caller was
+        told their hold succeeded. The observed end state was PURGED metadata,
+        one ACTIVE hold record and absent bytes, and the lifecycle-action
+        function then answered LEGAL_HOLD over a destroyed document.
+
+        No window exists now: the recount happens with the row already present,
+        and in the database implementation all three writes commit together.
         """
         existing = self._by_document_id.get(document_id)
-        if existing is None:
+        if existing is None or existing.purge_started_at is not None:
             return None
-        if existing.purge_started_at is not None:
-            return None
+        self._legal_holds[legal_hold.legal_hold_id] = legal_hold
+        active_count = sum(
+            1
+            for hold in self._legal_holds.values()
+            if hold.document_id == document_id and hold.hold_status is LegalHoldStatus.ACTIVE
+        )
+        now = datetime.now(timezone.utc)
         admitted = existing.model_copy(
             update={
                 "legal_hold_status": LegalHoldStatus.ACTIVE,
-                "updated_at": datetime.now(timezone.utc),
+                "legal_hold_count": active_count,
+                "updated_at": now,
             }
         )
         self._by_document_id[document_id] = admitted
         return admitted
+
+    def mark_purge_eligible(
+        self,
+        *,
+        document_id: str,
+        eligible_at: datetime,
+    ) -> ArchiveDocumentMetadata | None:
+        """Grant eligibility, refusing when another writer holds a stronger claim.
+
+        Eligibility is the transition that grants permission to destroy, so it
+        carries the hold guard as well as the irreversibility guards. An
+        eligibility decision taken from a snapshot and written back wholesale is
+        how a committed hold's summary was overwritten and the document deleted
+        with an ACTIVE hold record against it.
+        """
+        existing = self._by_document_id.get(document_id)
+        if existing is None:
+            return None
+        if existing.purge_started_at is not None or existing.purge_status is PurgeStatus.PURGED:
+            return None
+        if existing.legal_hold_status is LegalHoldStatus.ACTIVE:
+            return None
+        now = datetime.now(timezone.utc)
+        updated = existing.model_copy(
+            update={
+                "purge_status": PurgeStatus.ELIGIBLE,
+                "purge_eligible_at": existing.purge_eligible_at or eligible_at,
+                "updated_at": now,
+            }
+        )
+        self._by_document_id[document_id] = updated
+        return updated
+
+    def mark_purge_not_eligible(
+        self,
+        *,
+        document_id: str,
+    ) -> ArchiveDocumentMetadata | None:
+        """Withdraw eligibility. Strictly protective, so it carries no hold guard.
+
+        This is the transition taken *because* a hold is active, so requiring
+        the absence of one would refuse the case it exists to serve. It still
+        refuses to touch a started or completed purge: withdrawing eligibility
+        from a document whose bytes are already gone would rewrite history to
+        say destruction was never permitted.
+        """
+        existing = self._by_document_id.get(document_id)
+        if existing is None:
+            return None
+        if existing.purge_started_at is not None or existing.purge_status is PurgeStatus.PURGED:
+            return None
+        if existing.purge_status is PurgeStatus.NOT_ELIGIBLE:
+            return existing
+        now = datetime.now(timezone.utc)
+        updated = existing.model_copy(
+            update={"purge_status": PurgeStatus.NOT_ELIGIBLE, "updated_at": now}
+        )
+        self._by_document_id[document_id] = updated
+        return updated
+
+    def complete_purge(
+        self,
+        *,
+        document_id: str,
+        purged_at: datetime,
+    ) -> ArchiveDocumentMetadata | None:
+        """Record destruction against the stored row, never from a snapshot.
+
+        Only reachable behind a claimed intent, so it requires one: completing a
+        purge that was never begun would assert a destruction no writer ordered.
+        Idempotent on an already-purged row so an interrupted purge can be
+        retried to completion.
+        """
+        existing = self._by_document_id.get(document_id)
+        if existing is None or existing.purge_started_at is None:
+            return None
+        if existing.purge_status is PurgeStatus.PURGED:
+            return existing
+        now = datetime.now(timezone.utc)
+        updated = existing.model_copy(
+            update={
+                "purge_status": PurgeStatus.PURGED,
+                "purged_at": purged_at,
+                "updated_at": now,
+            }
+        )
+        self._by_document_id[document_id] = updated
+        return updated
 
     def update_legal_hold_summary(
         self,

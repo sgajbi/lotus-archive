@@ -228,14 +228,13 @@ def test_an_interrupted_purge_is_still_completable_after_the_change(tmp_path: Pa
     """
     service = _service(tmp_path)
     metadata = _archived(service)
-    real_save = service.repository.save
+    real_completion = service.repository.complete_purge
 
-    def fail_completion(record: ArchiveDocumentMetadata) -> ArchiveDocumentMetadata:
-        if record.purge_status is PurgeStatus.PURGED:
-            raise RuntimeError("ledger write failed")
-        return real_save(record)
+    def fail_completion(**kwargs: object) -> ArchiveDocumentMetadata:
+        # `complete_purge` IS the completion, so no discriminator is needed.
+        raise RuntimeError("ledger write failed")
 
-    service.repository.save = fail_completion  # type: ignore[assignment,method-assign]
+    service.repository.complete_purge = fail_completion  # type: ignore[method-assign]
     with pytest.raises(RuntimeError):
         service.purge_document(
             document_id=metadata.document_id,
@@ -243,7 +242,7 @@ def test_an_interrupted_purge_is_still_completable_after_the_change(tmp_path: Pa
             trace_id="t-purge",
             evaluation_date=metadata.retain_until_date,
         )
-    service.repository.save = real_save  # type: ignore[method-assign]
+    service.repository.complete_purge = real_completion  # type: ignore[method-assign]
 
     completed, reason = service.purge_document(
         document_id=metadata.document_id,
@@ -349,7 +348,17 @@ def test_the_claims_refuse_an_unknown_document(tmp_path: Path) -> None:
     repository = InMemoryArchiveDocumentRepository()
 
     assert repository.begin_purge(document_id="doc_absent", started_at=datetime.now(UTC)) is None
-    assert repository.admit_legal_hold(document_id="doc_absent") is None
+    absent_hold = LegalHoldRecord(
+        legal_hold_id="hold_absent",
+        document_id="doc_absent",
+        hold_reason="litigation",
+        authority_reference="REF-ABSENT",
+        requested_by="actor_legal",
+    )
+    assert (
+        repository.admit_and_record_legal_hold(document_id="doc_absent", legal_hold=absent_hold)
+        is None
+    )
     assert (
         repository.update_legal_hold_summary(
             document_id="doc_absent",
