@@ -65,10 +65,11 @@ def register_archive_exception_handlers(
     @app.exception_handler(AuthorizationFailedError)
     async def authorization_failed_exception_handler(
         request: Request,
-        _exc: AuthorizationFailedError,
+        exc: AuthorizationFailedError,
     ) -> JSONResponse:
+        code = "document_purged" if exc.reason_code == "document_purged" else "authorization_failed"
         return error_response(
-            code="authorization_failed",
+            code=code,
             http_status=status.HTTP_403_FORBIDDEN,
             correlation_id=correlation_id(request),
             service=service_name,
