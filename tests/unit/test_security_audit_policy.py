@@ -116,6 +116,6 @@ def test_runtime_image_pins_starlette_above_known_fixed_versions() -> None:
     assert "fastapi==0.139.0" in dependencies
     assert "starlette==1.3.1" in dependencies
     assert "prometheus-fastapi-instrumentator==8.0.2" in dependencies
-    assert "httpx2==2.5.0" in dev_dependencies
+    assert "httpx2==2.12.0" in dev_dependencies
     assert "httpx==0.28.0" not in dev_dependencies
     assert "cryptography==50.0.0" in dependencies
