@@ -20,13 +20,12 @@ counted as product coverage. Corrected, the shape changed from an apparently
 unit-heavy 84.1% to 80.3%, comfortably inside the band. The suite was never
 misshapen; its classification was.
 
-**The e2e bucket is ungated.** Archive has two e2e tests, 0.58% of product
-tests, against a floor that would be 3%. Neither honest option was available in
-this change: banking a 0.5% floor would convert a real gap into a green check,
-and writing eight tests to move a percentage is the superficial coverage this
-repository's guidance rejects. So e2e is counted in the total -- it must be, or
-every other ratio is measured against the wrong denominator -- and reported on
-every run without gating, naming archive#156, which owns raising it.
+**The e2e bucket is gated at a measured floor.** Its named product journeys are
+archive/read-back, hold/refuse/release/purge, durable restart/interrupted-purge
+completion, and lifecycle-decision verification from the published key bundle.
+Together with health and metadata smoke proof, those journeys measured 1.61%
+when the floor was established. The 1.5% floor protects that thin outer layer
+without making a ratio the reason to add tests.
 """
 
 from __future__ import annotations
@@ -43,9 +42,6 @@ ROOT = Path(__file__).resolve().parents[1]
 # Tests that assert about the repository rather than the product. Deselected from every bucket.
 NON_PRODUCT_MARKER_EXPRESSION = "not governance"
 
-#: Issue owning the e2e coverage this gate cannot yet enforce.
-UNGATED_E2E_ISSUE = "archive#156"
-
 # Decimal places used when reporting a ratio. Displayed values are rounded *away* from the bound
 # they failed, so a failure message can never print a number that satisfies its own bound.
 _DISPLAY_PRECISION = 4
@@ -57,11 +53,6 @@ class BucketPolicy:
     path: str
     min_ratio: float
     max_ratio: float
-    #: False while the lane's coverage cannot hold a meaningful bound. The bucket
-    #: is still collected and still counted in the total; only the comparison is
-    #: skipped, and the reason is printed on every run.
-    gated: bool = True
-    ungated_reason: str = ""
 
 
 BUCKET_POLICIES = (
@@ -70,13 +61,8 @@ BUCKET_POLICIES = (
     BucketPolicy(
         name="e2e",
         path="tests/e2e",
-        min_ratio=0.03,
+        min_ratio=0.015,
         max_ratio=0.10,
-        gated=False,
-        ungated_reason=(
-            f"only 2 e2e tests exist, far below the 3% floor; see {UNGATED_E2E_ISSUE}. "
-            "The bound stays declared so raising the coverage is what turns it on"
-        ),
     ),
 )
 
@@ -179,7 +165,7 @@ def _failure_message(policy: BucketPolicy, count: int, total: int, percent: floa
     plural = "" if needed == 1 else "s"
     return (
         f"test pyramid gate failed for {policy.name}: {count} of {total} product tests is "
-        f"{_rounded_away_from(percent, below_bound=below)}%, {side} {bound * 100:.0f}% {limit}. "
+        f"{_rounded_away_from(percent, below_bound=below)}%, {side} {bound * 100:g}% {limit}. "
         f"Adding {needed} product test{plural} to {where} clears it - the total moves with the "
         f"bucket, so a count derived from the current total is not enough."
     )
@@ -202,16 +188,10 @@ def main() -> int:
     for policy in BUCKET_POLICIES:
         count = counts[policy.name]
         percent = count / total * 100
-        if not policy.gated:
-            print(
-                f"{policy.name}: {count} product tests ({percent:.2f}%) "
-                f"UNGATED - {policy.ungated_reason}"
-            )
-            continue
         to_floor, to_ceiling = _headroom(policy, count, total)
         print(
             f"{policy.name}: {count} product tests ({percent:.2f}%) "
-            f"target {policy.min_ratio * 100:.0f}%..{policy.max_ratio * 100:.0f}% "
+            f"target {policy.min_ratio * 100:g}%..{policy.max_ratio * 100:g}% "
             f"| headroom: {to_floor} elsewhere before the floor, "
             f"{to_ceiling} here before the ceiling"
         )
