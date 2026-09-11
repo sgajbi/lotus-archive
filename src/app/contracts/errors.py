@@ -26,6 +26,7 @@ SAFE_ERROR_MESSAGES: dict[str, str] = {
     "authorization_failed": "The caller is not authorized for this archive action.",
     "document_not_found": "The requested archived document was not found.",
     "document_binary_missing": "The archived document binary could not be found.",
+    "document_purged": "The archived document binary was purged under its retention lifecycle.",
     "document_checksum_mismatch": "The archived document failed integrity verification.",
     "declared_checksum_mismatch": (
         "The declared artifact checksum does not match the received bytes; custody refused."

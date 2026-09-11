@@ -893,6 +893,13 @@ def test_retention_legal_hold_and_purge_api_flow(tmp_path: Path) -> None:
         assert purge_response.json()["purged"] is True
         assert purge_response.json()["purge_status"] == "purged"
 
+        purged_download = client.get(
+            f"/documents/{document_id}/download",
+            headers=_headers(caller_service="lotus-gateway"),
+        )
+        assert purged_download.status_code == 403
+        assert purged_download.json()["error"]["code"] == "document_purged"
+
         events_response = client.get(
             f"/documents/{document_id}/access-events",
             headers=_headers(),
@@ -902,11 +909,15 @@ def test_retention_legal_hold_and_purge_api_flow(tmp_path: Path) -> None:
         operation_reason_codes = [
             event["operation_reason_code"] for event in events_response.json()["events"]
         ]
+        authorization_reason_codes = [
+            event["authorization_reason_code"] for event in events_response.json()["events"]
+        ]
         assert "legal_hold_set" in event_types
         assert "legal_hold_release" in event_types
         assert "purge_execution" in event_types
         assert "legal_hold_active" in operation_reason_codes
         assert "purged" in operation_reason_codes
+        assert "document_purged" in authorization_reason_codes
     finally:
         app.dependency_overrides.clear()
 

@@ -414,7 +414,12 @@ async def list_document_source_events(
     responses={
         200: {"description": "Archived document binary."},
         401: {"description": "Required caller context is missing."},
-        403: {"description": "The caller is not authorized to download the document."},
+        403: {
+            "description": (
+                "The caller is not authorized to download the document, or the governed binary "
+                "was purged."
+            )
+        },
         404: {"description": "The document metadata or binary was not found."},
         409: {"description": "The stored binary failed checksum verification."},
     },

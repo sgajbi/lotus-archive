@@ -141,6 +141,7 @@ downstream should treat a preflight `allowed` as authorisation.
 | `401` | `caller_context_missing` | `x-caller-service`, `x-actor-type` or `x-actor-id` absent |
 | `401` | `caller_scope_missing` | `x-tenant-id` or `x-region` absent on a scoped read |
 | `403` | `authorization_failed` | the caller service is not permitted, or document scope does not match |
+| `403` | `document_purged` | the document record remains, but its governed binary was purged |
 | `403` | `lifecycle_decision_tenant_forbidden` | lifecycle decision requested outside the caller's tenant |
 | `404` | `document_not_found` | unknown `document_id` |
 | `404` | `document_binary_missing` | metadata exists, the object does not |
