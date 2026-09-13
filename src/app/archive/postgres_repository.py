@@ -609,15 +609,6 @@ class PostgresArchiveDocumentRepository:
             ArchiveDocumentMetadata.model_validate(document_row),
         )
 
-    def get_legal_hold(self, legal_hold_id: str) -> LegalHoldRecord | None:
-        with self._connect() as connection, connection.cursor() as cursor:
-            cursor.execute(
-                "SELECT * FROM archive_legal_holds WHERE legal_hold_id = %s",
-                (legal_hold_id,),
-            )
-            row = cursor.fetchone()
-        return LegalHoldRecord.model_validate(row) if row is not None else None
-
     def list_legal_holds(self, document_id: str) -> list[LegalHoldRecord]:
         with self._connect() as connection, connection.cursor() as cursor:
             cursor.execute(
