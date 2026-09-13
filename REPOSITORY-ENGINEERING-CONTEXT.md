@@ -258,25 +258,42 @@ every lane that runs tests passed.
 16. Generated-document admission requires a non-empty `tenant_id` and `region`. The writer must use
     that source-backed scope directly in the storage key; do not add unspecified-scope fallbacks
     that allow a record to be stored but make every authorized read unavailable.
-17. **Retention state transitions write only the columns they decide, and never a caller's
-    document snapshot.** `repository.save(metadata)` writes every mutable column, so a
-    read-decide-save cycle is correct when it decides and enforces nothing when it writes: an
-    eligibility decision taken before a hold existed used to clear that committed hold, and the
-    same shape cleared `purge_started_at`/`purged_at` from a completed purge, after which a new
-    hold was admitted over destroyed bytes. Use `mark_purge_eligible`, `mark_purge_not_eligible`
-    and `complete_purge`. Eligibility carries the active-hold guard because it grants permission
-    to destroy; withdrawal deliberately does not, because it is the transition taken *because* a
-    hold is active. A refused transition re-reads and classifies the stored row rather than
-    returning the caller's snapshot.
-18. **Setting a legal hold is one transaction.** Admission, the hold record and the summary
-    recount commit together via `admit_and_record_legal_hold`. As three steps there was a window
-    in which the document said `legal_hold_status = active` while no hold record existed, and a
-    purge recounting holds in that window found none, wrote `clear` and deleted the object — the
-    hold then landed and its caller was told it succeeded. Do not split it for readability.
-    When testing this, **where a lock is taken decides what the test can detect**: locking the
-    document row stalls a non-atomic implementation at its first statement, before it exposes
-    anything, and a test built that way was measured to pass against the defect. Lock
-    `archive_legal_holds` to stall it at the INSERT instead.
+17. **Every aggregate writer writes only the columns it decides, and never a caller's document
+    snapshot.** `repository.save()` writes only `updated_at` on an existing row and refuses any
+    other difference; retention, hold and lifecycle columns move exclusively through their owning
+    transitions (`begin_purge`, `mark_purge_eligible`, `mark_purge_not_eligible`,
+    `complete_purge`, `admit_and_record_legal_hold`, `release_and_record_legal_hold`,
+    `refresh_legal_hold_summary`, `apply_lifecycle_transition`). A read-decide-save cycle is
+    correct when it decides and enforces nothing when it writes: an eligibility decision taken
+    before a hold existed used to clear that committed hold, the same shape cleared
+    `purge_started_at`/`purged_at` from a completed purge, and the whole-row lifecycle save
+    could do both from a stale snapshot (issue #166). Eligibility carries the active-hold guard
+    because it grants permission to destroy; withdrawal deliberately does not, because it is the
+    transition taken *because* a hold is active. Both destructive transitions also carry a
+    NOT EXISTS active-hold-ROW belt for legacy rows whose summary drifted before recounts became
+    derived; migration 013 heals such drift idempotently. A refused transition re-reads and
+    classifies the stored row rather than returning the caller's snapshot. Tests that need a
+    state the guarded writers refuse seed it explicitly (`seed_document_state`, raw SQL), never
+    through `save()`.
+18. **Hold and lifecycle writes serialize on the document row, and derive there.** Admission,
+    release and the read-triggered summary refresh each commit the hold write and the recount in
+    ONE transaction that locks the `archive_documents` row FIRST; the recount is derived from the
+    hold rows inside that transaction, and no caller-computed status/count is accepted as
+    authority. The lock order (document row, then hold rows) is what makes the derivation
+    current: PostgreSQL READ COMMITTED re-evaluates only a blocked UPDATE's WHERE clause against
+    the new row version — its SET subqueries keep the statement snapshot — so a single
+    "recount-in-UPDATE" statement without the preceding `SELECT ... FOR UPDATE` still writes a
+    stale count after unblocking (issue #166). Lifecycle transitions lock BOTH document rows in
+    sorted id order, re-validate every precondition on the locked rows via
+    `lifecycle_transitions.validate_lifecycle_preconditions`, and write only the pointer/origin
+    columns plus the relationship record; exact replays converge on the recorded relationship,
+    and legacy half-erased chains surface the one-successor unique index as a typed
+    `SupersessionConflictError`. When testing any of this, **where a lock is taken decides what
+    the test can detect**: locking the document row stalls a non-atomic implementation at its
+    first statement, before it exposes anything — lock `archive_legal_holds` to catch a split
+    admission at its INSERT, and hold the document row from an in-flight writer's own statements
+    to catch a stale recount or snapshot write (see
+    `tests/integration/test_postgres_aggregate_boundary_overlap.py`).
 
 ## Context Maintenance Rule
 

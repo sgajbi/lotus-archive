@@ -317,7 +317,9 @@ def test_the_summary_refresh_cannot_revert_committed_purge_state(tmp_path: Path)
 
     # A hold record exists in the store, so the recount disagrees with the
     # stale snapshot and the method performs a write.
-    service.repository.save_legal_hold(
+    seeding = service.repository
+    assert isinstance(seeding, InMemoryArchiveDocumentRepository)
+    seeding.save_legal_hold(
         LegalHoldRecord(
             legal_hold_id="hold_stale_writer",
             document_id=metadata.document_id,

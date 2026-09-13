@@ -190,7 +190,7 @@ def test_in_memory_lifecycle_transition_refused_by_stored_state_writes_nothing()
 
     repository = InMemoryArchiveDocumentRepository()
     source = repository.save(_metadata("doc_1", "archive-request-1"))
-    target = repository.save(_metadata("doc_2", "archive-request-2"))
+    repository.save(_metadata("doc_2", "archive-request-2"))
     purged = repository.begin_purge(
         document_id="doc_2", started_at=datetime(2026, 8, 29, tzinfo=timezone.utc)
     )
@@ -211,3 +211,71 @@ def test_in_memory_lifecycle_transition_refused_by_stored_state_writes_nothing()
     assert repository.get_by_document_id("doc_1") == source
     assert repository.get_by_document_id("doc_2") == completed
     assert repository.list_lifecycle_relationships("doc_1") == []
+
+
+def test_in_memory_belts_refuse_destruction_under_a_drifted_summary() -> None:
+    """Legacy drift: an active hold ROW under a CLEAR summary. Both destructive
+    transitions must refuse on the row, and the refresh heals the summary."""
+    from app.archive.models import LegalHoldRecord
+
+    repository = InMemoryArchiveDocumentRepository()
+    metadata = repository.save(_metadata("doc_drift", "archive-request-drift"))
+    repository.save_legal_hold(
+        LegalHoldRecord(
+            legal_hold_id="hold_drift",
+            document_id="doc_drift",
+            hold_reason="litigation",
+            authority_reference="REF-1",
+            requested_by="actor_legal",
+        )
+    )
+    assert metadata.legal_hold_status is LegalHoldStatus.CLEAR, "the drifted pair is in place"
+
+    now = datetime(2026, 9, 13, tzinfo=timezone.utc)
+    assert repository.begin_purge(document_id="doc_drift", started_at=now) is None
+    assert repository.mark_purge_eligible(document_id="doc_drift", eligible_at=now) is None
+
+    healed = repository.refresh_legal_hold_summary("doc_drift")
+    assert healed is not None
+    assert healed.legal_hold_status is LegalHoldStatus.ACTIVE
+    assert healed.legal_hold_count == 1
+
+
+def test_in_memory_release_refuses_unknown_and_foreign_holds() -> None:
+    """A hold that does not exist for THIS document is the caller's refusal."""
+    from app.archive.models import LegalHoldRecord
+
+    repository = InMemoryArchiveDocumentRepository()
+    repository.save(_metadata("doc_1", "archive-request-1"))
+    repository.save(_metadata("doc_2", "archive-request-2"))
+    repository.save_legal_hold(
+        LegalHoldRecord(
+            legal_hold_id="hold_other_doc",
+            document_id="doc_2",
+            hold_reason="litigation",
+            authority_reference="REF-1",
+            requested_by="actor_legal",
+        )
+    )
+    released_at = datetime(2026, 9, 13, tzinfo=timezone.utc)
+
+    assert (
+        repository.release_and_record_legal_hold(
+            document_id="doc_1",
+            legal_hold_id="hold_absent",
+            released_by="actor_legal",
+            released_at=released_at,
+            release_reason="not applicable",
+        )
+        is None
+    )
+    assert (
+        repository.release_and_record_legal_hold(
+            document_id="doc_1",
+            legal_hold_id="hold_other_doc",
+            released_by="actor_legal",
+            released_at=released_at,
+            release_reason="not applicable",
+        )
+        is None
+    ), "a foreign document's hold must be indistinguishable from an absent one"

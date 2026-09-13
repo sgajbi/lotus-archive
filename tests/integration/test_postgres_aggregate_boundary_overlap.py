@@ -247,9 +247,7 @@ def test_a_release_blocked_by_an_admission_keeps_the_new_hold_counted() -> None:
     )
     assert metadata.legal_hold_count == 1
 
-    assert (
-        _repository().begin_purge(document_id=document_id, started_at=datetime.now(UTC)) is None
-    )
+    assert _repository().begin_purge(document_id=document_id, started_at=datetime.now(UTC)) is None
     assert _active_hold_rows(document_id) == [f"hold_{document_id}_b"]
 
 
@@ -466,8 +464,7 @@ def test_a_legacy_half_erased_chain_conflicts_as_a_typed_refusal() -> None:
     )
     with psycopg.connect(DATABASE_URL, autocommit=True) as connection:
         connection.execute(
-            "UPDATE archive_documents SET superseded_by_document_id = NULL "
-            "WHERE document_id = %s",
+            "UPDATE archive_documents SET superseded_by_document_id = NULL WHERE document_id = %s",
             (source_id,),
         )
 

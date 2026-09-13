@@ -67,4 +67,4 @@ def transition_pointers_agree(
         return False
     if source.superseded_by_document_id != target.document_id:
         return False
-    return getattr(target, origin_field) == source.document_id
+    return bool(getattr(target, origin_field) == source.document_id)

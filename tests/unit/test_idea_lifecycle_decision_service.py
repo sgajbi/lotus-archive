@@ -437,6 +437,7 @@ def test_a_purged_document_with_a_stranded_hold_signs_disposal_not_preservation(
     assert repository.begin_purge(document_id=document_id, started_at=now) is not None
     assert repository.complete_purge(document_id=document_id, purged_at=now) is not None
     # The stranded hold row, seeded past the guards as the legacy race left it.
+    assert isinstance(repository, InMemoryArchiveDocumentRepository)
     repository.save_legal_hold(
         LegalHoldRecord(
             legal_hold_id="hold_stranded",
