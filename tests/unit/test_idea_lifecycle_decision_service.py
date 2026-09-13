@@ -26,6 +26,7 @@ from app.archive.idea_lifecycle_decisions.signing import (
     Ed25519LifecycleDecisionSigner,
     verify_lifecycle_decision,
 )
+from app.archive.models import LegalHoldRecord
 from app.archive.repository import InMemoryArchiveDocumentRepository
 from app.archive.service import ArchiveDocumentService
 from app.archive.storage import FilesystemObjectStorage
@@ -412,3 +413,82 @@ def _hold_command() -> LegalHoldCreateCommand:
         hold_reason="Regulatory inquiry",
         authority_reference="LEGAL-2026-001",
     )
+
+
+def test_a_purged_document_with_a_stranded_hold_signs_disposal_not_preservation(
+    tmp_path: Path,
+) -> None:
+    """Destruction outranks a preservation claim in the signed action (issue #166).
+
+    The legacy corruption end-state is PURGED metadata plus a stranded ACTIVE
+    hold row; migration 013 (and any read-refresh) heals the drifted summary to
+    ACTIVE. Under the old hold-first ordering that healed row signed
+    LEGAL_HOLD - a preservation assurance over bytes that are gone. The action
+    must tell the truth about destruction while the stranded-hold FACT stays
+    visible in the signed payload.
+    """
+    archive, document_id, audit = _archive(
+        tmp_path,
+        retention_start_date="2019-01-01",
+        retain_until_date="2020-01-01",
+    )
+    repository = archive.repository
+    now = datetime(2026, 9, 13, tzinfo=UTC)
+    assert repository.begin_purge(document_id=document_id, started_at=now) is not None
+    assert repository.complete_purge(document_id=document_id, purged_at=now) is not None
+    # The stranded hold row, seeded past the guards as the legacy race left it.
+    repository.save_legal_hold(
+        LegalHoldRecord(
+            legal_hold_id="hold_stranded",
+            document_id=document_id,
+            hold_reason="Regulatory inquiry",
+            authority_reference="LEGAL-2026-001",
+            requested_by="report-worker",
+        )
+    )
+    healed = repository.refresh_legal_hold_summary(document_id)
+    assert healed is not None and healed.legal_hold_status == "active"
+
+    decision = _decision_service(tmp_path, archive, audit).issue(
+        document_id=document_id,
+        request=_request(),
+        idempotency_key="decision-key-stranded-hold",
+        caller_context=_idea_context(),
+        trace_id="trace-decision-stranded-hold",
+    )
+
+    assert decision.lifecycle_action == "DISPOSAL_EXECUTED", (
+        "a purged document must never sign a preservation claim"
+    )
+    assert decision.decision_reason_code == "purge_executed"
+    assert decision.legal_hold_status == "active", "the stranded-hold fact stays visible"
+    assert decision.legal_hold_count == 1
+    assert decision.disposal_authorized is False
+
+
+def test_an_interrupted_purge_signs_disposal_in_progress_not_retention(
+    tmp_path: Path,
+) -> None:
+    """A durable destruction intent means the bytes may already be gone; the
+    signed action must not claim the document is retained or disposal-eligible."""
+    archive, document_id, audit = _archive(
+        tmp_path,
+        retention_start_date="2019-01-01",
+        retain_until_date="2020-01-01",
+    )
+    claimed = archive.repository.begin_purge(
+        document_id=document_id, started_at=datetime(2026, 9, 13, tzinfo=UTC)
+    )
+    assert claimed is not None
+
+    decision = _decision_service(tmp_path, archive, audit).issue(
+        document_id=document_id,
+        request=_request(),
+        idempotency_key="decision-key-interrupted-purge",
+        caller_context=_idea_context(),
+        trace_id="trace-decision-interrupted-purge",
+    )
+
+    assert decision.lifecycle_action == "DISPOSAL_EXECUTED"
+    assert decision.decision_reason_code == "purge_in_progress"
+    assert decision.disposal_authorized is False

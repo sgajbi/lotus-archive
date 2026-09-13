@@ -12,13 +12,23 @@ from psycopg_pool import ConnectionPool
 from psycopg.types.json import Jsonb
 
 from app.archive.audit import AccessAuditEvent
-from app.archive.exceptions import DuplicateArchiveRequestConflict, HistoricalIntegrityError
+from app.archive.exceptions import (
+    DocumentNotFoundError,
+    DuplicateArchiveRequestConflict,
+    HistoricalIntegrityError,
+    SupersessionConflictError,
+    UnsupportedLifecycleTransitionError,
+)
+from app.archive.lifecycle_transitions import (
+    transition_pointers_agree,
+    validate_lifecycle_preconditions,
+)
 from app.archive.models import (
-    LegalHoldStatus,
-    MUTABLE_DOCUMENT_FIELDS,
+    LIFECYCLE_TARGET_ORIGIN_FIELD,
     ArchiveDocumentMetadata,
     LegalHoldRecord,
     LifecycleRelationshipRecord,
+    LifecycleTransitionType,
 )
 from app.archive.repository import ArchiveDocumentBatchLookup
 
@@ -70,11 +80,18 @@ def _insert_sql(
     return sql
 
 
+# save() may write ONLY `updated_at` on an existing row. Retention, hold and
+# lifecycle columns move exclusively through their owning transitions
+# (`begin_purge`, `admit_and_record_legal_hold`, `refresh_legal_hold_summary`,
+# `apply_lifecycle_transition`, ...), so a caller snapshot handed to save()
+# cannot revert state another writer committed since the snapshot was read
+# (issue #166). Every other column difference resolves the conflict by updating
+# nothing, which save() reports as HistoricalIntegrityError.
 _SAVE_DOCUMENT_SQL = _insert_sql(
     "archive_documents",
     _DOCUMENT_COLUMNS,
     conflict_key="document_id",
-    mutable_columns=MUTABLE_DOCUMENT_FIELDS,
+    mutable_columns=frozenset({"updated_at"}),
 )
 _SAVE_LEGAL_HOLD_SQL = _insert_sql(
     "archive_legal_holds", _LEGAL_HOLD_COLUMNS, conflict_key="legal_hold_id"
@@ -88,6 +105,42 @@ _RECORD_AUDIT_SQL = (
     f"INSERT INTO archive_access_audit ({', '.join(_AUDIT_COLUMNS)}) "
     f"VALUES ({', '.join(['%s'] * len(_AUDIT_COLUMNS))})"
 )
+
+# The summary is DERIVED from the hold rows in the same statement that writes
+# it - the repository never accepts a caller-computed status or count (issue
+# #166). Runs only after this transaction holds the document row lock: every
+# hold writer takes that lock first, so once it is granted the recount's
+# snapshot includes every committed hold write, and later writers wait until
+# this transaction commits. The change predicate keeps an unchanged summary
+# from churning `updated_at`. Parameters: (updated_at, document_id, document_id).
+_REFRESH_HOLD_SUMMARY_SQL = """
+    UPDATE archive_documents AS d
+    SET legal_hold_status = h.derived_status,
+        legal_hold_count = h.derived_count,
+        updated_at = %s
+    FROM (
+        SELECT
+            CASE WHEN count(*) > 0 THEN 'active' ELSE 'clear' END AS derived_status,
+            count(*)::int AS derived_count
+        FROM archive_legal_holds
+        WHERE document_id = %s AND hold_status = 'active'
+    ) AS h
+    WHERE d.document_id = %s
+      AND (d.legal_hold_status IS DISTINCT FROM h.derived_status
+           OR d.legal_hold_count IS DISTINCT FROM h.derived_count)
+    RETURNING d.*
+"""
+
+# One statement per transition type, generated from the code-owned column
+# mapping so no request value ever reaches SQL text. Parameters:
+# (source_document_id, updated_at, target_document_id).
+_TARGET_ORIGIN_UPDATE_SQL: dict[LifecycleTransitionType, str] = {
+    transition: (
+        f"UPDATE archive_documents SET {origin_field} = %s, updated_at = %s "
+        "WHERE document_id = %s RETURNING *"
+    )
+    for transition, origin_field in LIFECYCLE_TARGET_ORIGIN_FIELD.items()
+}
 
 
 DEFAULT_POOL_MIN_SIZE = 1
@@ -256,6 +309,14 @@ class PostgresArchiveDocumentRepository:
 
         An already-claimed intent returns the current row rather than None, so a
         retry of an interrupted purge is idempotent rather than refused.
+
+        The NOT EXISTS belt consults the hold ROWS as well as the summary. It is
+        not the concurrency mechanism - a blocked UPDATE re-checks only the
+        locked row's columns against the new version, not subqueries on other
+        tables - the summary column carries the race. The belt refuses
+        destruction for LEGACY rows whose summary drifted before recounts became
+        derived-in-transaction (issue #166): an active hold row must veto
+        destruction even when a historic race left the summary saying clear.
         """
         with self._connect() as connection, connection.cursor() as cursor:
             cursor.execute(
@@ -265,9 +326,13 @@ class PostgresArchiveDocumentRepository:
                 WHERE document_id = %s
                   AND purge_started_at IS NULL
                   AND legal_hold_status <> 'active'
+                  AND NOT EXISTS (
+                      SELECT 1 FROM archive_legal_holds
+                      WHERE document_id = %s AND hold_status = 'active'
+                  )
                 RETURNING *
                 """,
-                (started_at, started_at, document_id),
+                (started_at, started_at, document_id, document_id),
             )
             row = cursor.fetchone()
             if row is not None:
@@ -356,6 +421,10 @@ class PostgresArchiveDocumentRepository:
 
         `COALESCE` keeps the first eligibility timestamp rather than restamping
         it, so a re-evaluation cannot make an old decision look recent.
+
+        The NOT EXISTS belt mirrors `begin_purge`: eligibility grants permission
+        to destroy, so a legacy active hold ROW vetoes it even when a historic
+        race left the summary column saying clear (issue #166).
         """
         now = datetime.now(timezone.utc)
         with self._connect() as connection, connection.cursor() as cursor:
@@ -369,9 +438,13 @@ class PostgresArchiveDocumentRepository:
                   AND purge_started_at IS NULL
                   AND purge_status <> 'purged'
                   AND legal_hold_status <> 'active'
+                  AND NOT EXISTS (
+                      SELECT 1 FROM archive_legal_holds
+                      WHERE document_id = %s AND hold_status = 'active'
+                  )
                 RETURNING *
                 """,
-                (eligible_at, now, document_id),
+                (eligible_at, now, document_id, document_id),
             )
             row = cursor.fetchone()
         return ArchiveDocumentMetadata.model_validate(row) if row is not None else None
@@ -435,37 +508,106 @@ class PostgresArchiveDocumentRepository:
             row = cursor.fetchone()
         return ArchiveDocumentMetadata.model_validate(row) if row is not None else None
 
-    def update_legal_hold_summary(
+    def refresh_legal_hold_summary(
         self,
-        *,
         document_id: str,
-        legal_hold_status: LegalHoldStatus,
-        legal_hold_count: int,
     ) -> ArchiveDocumentMetadata | None:
-        """Update only the hold columns. No caller snapshot reaches the row.
+        """Recount from the hold rows AT WRITE TIME, under the document row lock.
 
-        A whole-document write from a snapshot read earlier is what let a hold
-        revert a committed purge; naming the two columns makes that impossible
-        rather than merely unlikely.
+        The previous port took a status and count the service had derived from
+        an earlier read and wrote them unconditionally in a later transaction.
+        A hold admitted between that read and this write was overwritten with
+        the stale CLEAR/0 - and `begin_purge` trusts exactly this column, so the
+        stale recount re-armed destruction against an ACTIVE hold (issue #166).
+
+        The FOR UPDATE is what makes the derivation current rather than merely
+        repository-owned: every hold writer locks the document row for its whole
+        transaction, so once this lock is granted the recount statement's
+        snapshot contains every committed hold write, and any concurrent
+        admission or release waits until this commits. Without the lock, this
+        statement could block mid-execution on a concurrent admission and then
+        still evaluate its subquery against the pre-admission snapshot -
+        PostgreSQL READ COMMITTED re-checks a blocked UPDATE's WHERE clause, not
+        its subqueries.
         """
         now = datetime.now(timezone.utc)
         with self._connect() as connection, connection.cursor() as cursor:
             cursor.execute(
+                "SELECT * FROM archive_documents WHERE document_id = %s FOR UPDATE",
+                (document_id,),
+            )
+            locked = cursor.fetchone()
+            if locked is None:
+                return None
+            cursor.execute(_REFRESH_HOLD_SUMMARY_SQL, (now, document_id, document_id))
+            row = cursor.fetchone()
+        return ArchiveDocumentMetadata.model_validate(row if row is not None else locked)
+
+    def release_and_record_legal_hold(
+        self,
+        *,
+        document_id: str,
+        legal_hold_id: str,
+        released_by: str,
+        released_at: datetime,
+        release_reason: str,
+    ) -> tuple[LegalHoldRecord, ArchiveDocumentMetadata] | None:
+        """Release the hold row and recount the summary in ONE transaction.
+
+        The mirror of `admit_and_record_legal_hold`, and the same lock order:
+        document row first, then hold rows. As two transactions - write the
+        hold row, refresh from a separate read - the refresh raced a concurrent
+        admission and wrote a stale CLEAR/0 over it (issue #166).
+
+        The release itself is conditional on `hold_status = 'active'`, so
+        releasing an already-released hold converges on the recorded release
+        facts rather than restamping them. None means the hold does not exist
+        for this document; the caller owns that refusal.
+        """
+        now = datetime.now(timezone.utc)
+        with self._connect() as connection, connection.cursor() as cursor:
+            cursor.execute(
+                "SELECT document_id FROM archive_documents WHERE document_id = %s FOR UPDATE",
+                (document_id,),
+            )
+            if cursor.fetchone() is None:
+                return None
+            cursor.execute(
                 """
-                UPDATE archive_documents
-                SET legal_hold_status = %s, legal_hold_count = %s, updated_at = %s
-                WHERE document_id = %s
+                UPDATE archive_legal_holds
+                SET hold_status = 'clear',
+                    released_by = %s,
+                    released_at = %s,
+                    release_reason = %s
+                WHERE legal_hold_id = %s AND document_id = %s AND hold_status = 'active'
                 RETURNING *
                 """,
-                (legal_hold_status.value, legal_hold_count, now, document_id),
+                (released_by, released_at, release_reason, legal_hold_id, document_id),
             )
-            row = cursor.fetchone()
-        return ArchiveDocumentMetadata.model_validate(row) if row is not None else None
-
-    def save_legal_hold(self, legal_hold: LegalHoldRecord) -> LegalHoldRecord:
-        with self._connect() as connection, connection.cursor() as cursor:
-            cursor.execute(_SAVE_LEGAL_HOLD_SQL, _values(legal_hold, _LEGAL_HOLD_COLUMNS))
-        return legal_hold
+            hold_row = cursor.fetchone()
+            if hold_row is None:
+                cursor.execute(
+                    "SELECT * FROM archive_legal_holds "
+                    "WHERE legal_hold_id = %s AND document_id = %s",
+                    (legal_hold_id, document_id),
+                )
+                hold_row = cursor.fetchone()
+                if hold_row is None:
+                    return None
+            cursor.execute(_REFRESH_HOLD_SUMMARY_SQL, (now, document_id, document_id))
+            document_row = cursor.fetchone()
+            if document_row is None:
+                cursor.execute(
+                    "SELECT * FROM archive_documents WHERE document_id = %s",
+                    (document_id,),
+                )
+                document_row = cursor.fetchone()
+        if document_row is None:  # pragma: no cover - the row is locked above
+            return None
+        return (
+            LegalHoldRecord.model_validate(hold_row),
+            ArchiveDocumentMetadata.model_validate(document_row),
+        )
 
     def get_legal_hold(self, legal_hold_id: str) -> LegalHoldRecord | None:
         with self._connect() as connection, connection.cursor() as cursor:
@@ -485,49 +627,102 @@ class PostgresArchiveDocumentRepository:
             rows = cursor.fetchall()
         return [LegalHoldRecord.model_validate(row) for row in rows]
 
-    def save_lifecycle_relationship(
-        self,
-        relationship: LifecycleRelationshipRecord,
-    ) -> LifecycleRelationshipRecord:
-        with self._connect() as connection, connection.cursor() as cursor:
-            cursor.execute(
-                _SAVE_LIFECYCLE_SQL,
-                _values(relationship, _LIFECYCLE_COLUMNS),
-            )
-        return relationship
-
     def apply_lifecycle_transition(
         self,
-        source: ArchiveDocumentMetadata,
-        target: ArchiveDocumentMetadata,
+        *,
+        source_document_id: str,
+        target_document_id: str,
+        transition_type: LifecycleTransitionType,
         relationship: LifecycleRelationshipRecord,
-    ) -> LifecycleRelationshipRecord:
-        """All three writes in ONE transaction. A crash or failure between them would leave a
-        half-linked supersession chain that the validation guards make unrepairable through the
-        API, so the database - not service-level compensation - owns the atomicity. The guarded
-        upsert applies to both documents, so history stays immutable inside the transaction too.
-        """
-        try:
-            with self._connect() as connection, connection.cursor() as cursor:
-                for metadata in (source, target):
-                    cursor.execute(_SAVE_DOCUMENT_SQL, _document_values(metadata))
-                    if cursor.rowcount == 0:
-                        raise HistoricalIntegrityError(
-                            "immutable document fields cannot change after archival"
-                        )
-                cursor.execute(_SAVE_LIFECYCLE_SQL, _values(relationship, _LIFECYCLE_COLUMNS))
-        except UniqueViolation as exc:
-            raise DuplicateArchiveRequestConflict(
-                "archive request or storage key already belongs to another document"
-            ) from exc
-        return relationship
+    ) -> tuple[LifecycleRelationshipRecord, ArchiveDocumentMetadata, ArchiveDocumentMetadata]:
+        """Lock both rows, re-validate the STORED state, write only decided columns.
 
-    def delete_lifecycle_relationship(self, lifecycle_relationship_id: str) -> None:
+        The previous shape wrote two caller snapshots whole through the guarded
+        upsert. Its immutability guard excluded every MUTABLE_DOCUMENT_FIELD, so
+        purge intent/timestamps/status and hold status/count were written from
+        snapshots read before the service's validation - a purge or hold that
+        committed in between was silently reverted (issue #166). Now:
+
+        * both document rows are locked FOR UPDATE in sorted id order, so two
+          transitions touching the same pair cannot deadlock and the
+          preconditions are validated against rows no other writer can move;
+        * the preconditions run on the LOCKED rows via the same domain policy
+          the service uses for its fast refusal;
+        * the writes name exactly the columns this transition decides -
+          `superseded_by_document_id`, the transition's origin field and
+          `updated_at` - plus the relationship row, all in one transaction.
+
+        An exact replay - both stored pointers already record this transition
+        and its relationship row exists - converges on the recorded
+        relationship instead of conflicting.
+        """
+        if transition_type not in _TARGET_ORIGIN_UPDATE_SQL:
+            raise UnsupportedLifecycleTransitionError("unsupported lifecycle transition")
+        now = datetime.now(timezone.utc)
         with self._connect() as connection, connection.cursor() as cursor:
-            cursor.execute(
-                "DELETE FROM archive_lifecycle_relationships WHERE lifecycle_relationship_id = %s",
-                (lifecycle_relationship_id,),
+            locked: dict[str, ArchiveDocumentMetadata] = {}
+            for document_id in sorted({source_document_id, target_document_id}):
+                cursor.execute(
+                    "SELECT * FROM archive_documents WHERE document_id = %s FOR UPDATE",
+                    (document_id,),
+                )
+                row = cursor.fetchone()
+                if row is None:
+                    raise DocumentNotFoundError("archive document was not found")
+                locked[document_id] = ArchiveDocumentMetadata.model_validate(row)
+            source = locked[source_document_id]
+            target = locked[target_document_id]
+            if transition_pointers_agree(
+                source=source, target=target, transition_type=transition_type
+            ):
+                cursor.execute(
+                    "SELECT * FROM archive_lifecycle_relationships "
+                    "WHERE source_document_id = %s AND target_document_id = %s "
+                    "AND transition_type = %s",
+                    (source_document_id, target_document_id, transition_type.value),
+                )
+                existing = cursor.fetchone()
+                if existing is not None:
+                    return (
+                        LifecycleRelationshipRecord.model_validate(existing),
+                        source,
+                        target,
+                    )
+            validate_lifecycle_preconditions(
+                source=source, target=target, transition_type=transition_type
             )
+            try:
+                cursor.execute(
+                    "UPDATE archive_documents "
+                    "SET superseded_by_document_id = %s, updated_at = %s "
+                    "WHERE document_id = %s RETURNING *",
+                    (target_document_id, now, source_document_id),
+                )
+                source_row = cursor.fetchone()
+                cursor.execute(
+                    _TARGET_ORIGIN_UPDATE_SQL[transition_type],
+                    (source_document_id, now, target_document_id),
+                )
+                target_row = cursor.fetchone()
+                cursor.execute(_SAVE_LIFECYCLE_SQL, _values(relationship, _LIFECYCLE_COLUMNS))
+            except UniqueViolation as exc:
+                # Unreachable through concurrent writers - the second
+                # transaction re-validates on the locked rows and refuses
+                # first. Reachable through LEGACY drift: the old whole-row
+                # save could clear `superseded_by_document_id` while the
+                # relationship row survived, so the one-successor/one-origin
+                # indexes are the last guard standing for that pair. A typed
+                # conflict, not a raw driver error.
+                raise SupersessionConflictError(
+                    "document already has a recorded lifecycle relationship"
+                ) from exc
+        if source_row is None or target_row is None:  # pragma: no cover - rows locked above
+            raise DocumentNotFoundError("archive document was not found")
+        return (
+            relationship,
+            ArchiveDocumentMetadata.model_validate(source_row),
+            ArchiveDocumentMetadata.model_validate(target_row),
+        )
 
     def list_lifecycle_relationships(
         self,

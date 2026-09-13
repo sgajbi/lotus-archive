@@ -548,10 +548,14 @@ def test_lifecycle_transition_persists_nothing_when_the_atomic_unit_fails(
     class FailingRelationshipRepository(InMemoryArchiveDocumentRepository):
         def apply_lifecycle_transition(
             self,
-            source: ArchiveDocumentMetadata,
-            target: ArchiveDocumentMetadata,
+            *,
+            source_document_id: str,
+            target_document_id: str,
+            transition_type: LifecycleTransitionType,
             relationship: LifecycleRelationshipRecord,
-        ) -> LifecycleRelationshipRecord:
+        ) -> tuple[
+            LifecycleRelationshipRecord, ArchiveDocumentMetadata, ArchiveDocumentMetadata
+        ]:
             raise RuntimeError("relationship store unavailable")
 
     repository = FailingRelationshipRepository()
@@ -1002,10 +1006,12 @@ def test_current_document_resolution_detects_cycle(tmp_path: Path) -> None:
         caller_context=_caller("lotus-render"),
         trace_id="trace-second",
     )
-    service.repository.save(
+    # A cycle cannot be produced by the guarded transition, so it is seeded
+    # directly - this is deliberately corrupted storage, not a reachable state.
+    service.repository.seed_document_state(
         first.model_copy(update={"superseded_by_document_id": second.document_id})
     )
-    service.repository.save(
+    service.repository.seed_document_state(
         second.model_copy(update={"superseded_by_document_id": first.document_id})
     )
 
@@ -1299,10 +1305,12 @@ def test_chain_fields_without_a_relationship_record_conflict_not_echo(tmp_path: 
         caller_context=_caller("lotus-render"),
         trace_id="trace-create-new",
     )
-    service.repository.save(
+    # Chain fields without the relationship row cannot be produced by the
+    # guarded transition; the corruption is seeded directly.
+    service.repository.seed_document_state(
         historical.model_copy(update={"superseded_by_document_id": current.document_id})
     )
-    service.repository.save(
+    service.repository.seed_document_state(
         current.model_copy(update={"supersedes_document_id": historical.document_id})
     )
 

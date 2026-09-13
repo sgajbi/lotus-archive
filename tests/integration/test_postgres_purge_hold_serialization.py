@@ -147,38 +147,52 @@ def test_reclaiming_an_existing_intent_is_idempotent_not_refused() -> None:
     )
 
 
-def test_a_stale_writer_cannot_revert_committed_purge_state() -> None:
-    """The column-scoped summary write, against a real row.
+def test_a_summary_refresh_cannot_revert_committed_purge_state() -> None:
+    """The derived, column-scoped summary write, against a real row.
 
-    A caller holding a pre-purge snapshot updates the hold counters after a
-    purge has committed. The counters must move and the purge state must not,
-    because the repository is given values rather than a document to serialise.
+    A stranded active hold row is seeded past the guards (the legacy corruption
+    shape), then the summary is refreshed after a purge has committed. The hold
+    columns must move to what the rows derive and the purge state must not,
+    because the repository derives the summary itself and writes only those
+    columns - no caller snapshot or caller-computed count exists to be stale.
     """
     repository = _repository()
     document = _stored(repository)
-    stale = repository.get_by_document_id(document.document_id)
-    assert stale is not None and stale.purge_started_at is None
 
     claimed = repository.begin_purge(document_id=document.document_id, started_at=datetime.now(UTC))
     assert claimed is not None
-    purged = repository.save(
-        claimed.model_copy(
-            update={"purge_status": PurgeStatus.PURGED, "purged_at": datetime.now(UTC)}
-        )
+    purged = repository.complete_purge(
+        document_id=document.document_id, purged_at=datetime.now(UTC)
     )
+    assert purged is not None
 
-    repository.update_legal_hold_summary(
-        document_id=document.document_id,
-        legal_hold_status=LegalHoldStatus.ACTIVE,
-        legal_hold_count=1,
-    )
+    # The stranded hold row, exactly as the historic race left it: written
+    # directly because every guarded writer now refuses to create this state.
+    with psycopg.connect(DATABASE_URL, autocommit=True) as connection:
+        connection.execute(
+            "INSERT INTO archive_legal_holds "
+            "(legal_hold_id, document_id, hold_reason, authority_reference, requested_by, "
+            " hold_status, requested_at) "
+            "VALUES (%s, %s, %s, %s, %s, 'active', %s)",
+            (
+                "hold_stranded",
+                document.document_id,
+                "litigation",
+                "REF-1",
+                "actor_legal",
+                datetime.now(UTC),
+            ),
+        )
+
+    refreshed = repository.refresh_legal_hold_summary(document.document_id)
+    assert refreshed is not None
 
     final = repository.get_by_document_id(document.document_id)
     assert final is not None
-    assert final.purge_status is PurgeStatus.PURGED
+    assert final.purge_status is PurgeStatus.PURGED, "a summary refresh must not revert the purge"
     assert final.purge_started_at == purged.purge_started_at
     assert final.purged_at == purged.purged_at
-    assert final.legal_hold_status is LegalHoldStatus.ACTIVE
+    assert final.legal_hold_status is LegalHoldStatus.ACTIVE, "the derived summary counts the row"
     assert final.legal_hold_count == 1
 
 
@@ -212,11 +226,14 @@ def test_the_claims_refuse_an_unknown_document() -> None:
         )
         is None
     )
+    assert repository.refresh_legal_hold_summary("doc_absent") is None
     assert (
-        repository.update_legal_hold_summary(
+        repository.release_and_record_legal_hold(
             document_id="doc_absent",
-            legal_hold_status=LegalHoldStatus.ACTIVE,
-            legal_hold_count=1,
+            legal_hold_id="hold_absent",
+            released_by="actor_legal",
+            released_at=datetime.now(UTC),
+            release_reason="not applicable",
         )
         is None
     )

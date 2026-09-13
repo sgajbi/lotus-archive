@@ -359,11 +359,14 @@ def test_the_claims_refuse_an_unknown_document(tmp_path: Path) -> None:
         repository.admit_and_record_legal_hold(document_id="doc_absent", legal_hold=absent_hold)
         is None
     )
+    assert repository.refresh_legal_hold_summary("doc_absent") is None
     assert (
-        repository.update_legal_hold_summary(
+        repository.release_and_record_legal_hold(
             document_id="doc_absent",
-            legal_hold_status=LegalHoldStatus.ACTIVE,
-            legal_hold_count=1,
+            legal_hold_id="hold_absent",
+            released_by="actor_legal",
+            released_at=datetime.now(UTC),
+            release_reason="not applicable",
         )
         is None
     )
