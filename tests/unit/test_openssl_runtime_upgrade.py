@@ -24,13 +24,35 @@ def _upgrade_instruction() -> str:
     return match.group(0)
 
 
-def test_openssl_remediation_is_targeted_and_version_guarded() -> None:
+#: Every base-image package the remediation block upgrades, with the minimum
+#: version its dpkg assertion requires. The Dockerfile block and this table
+#: must move together: a package listed here but not asserted in the block (or
+#: the reverse) is drift in the temporary remediation this test exists to keep
+#: honest and removable.
+REMEDIATED_PACKAGE_FLOORS = {
+    "openssl": "3.5.7-1~deb13u2",
+    "gzip": "1.13-1+deb13u1",
+    "libpcre2-8-0": "10.46-1~deb13u2",
+    "libsqlite3-0": "3.46.1-7+deb13u2",
+    "perl-base": "5.40.1-6+deb13u1",
+}
+
+
+def test_remediation_is_targeted_and_version_guarded() -> None:
     instruction = _upgrade_instruction()
 
     assert "--only-upgrade" in instruction
     assert "openssl libssl3t64 openssl-provider-legacy" in instruction
+    assert "gzip libpcre2-8-0 libsqlite3-0 perl-base" in instruction
     assert 'dpkg --compare-versions "$(dpkg-query' in instruction
-    assert 'openssl)" ge \\\n        "3.5.7-1~deb13u2"' in instruction
+    for package, floor in REMEDIATED_PACKAGE_FLOORS.items():
+        assert f'{package})" ge \\\n        "{floor}"' in instruction, (
+            f"the remediation block must assert {package} >= {floor}"
+        )
+    asserted = re.findall(r"--showformat='\$\{Version\}'\s+([a-z0-9.+-]+)\)", instruction)
+    assert sorted(asserted) == sorted(REMEDIATED_PACKAGE_FLOORS), (
+        "every dpkg version assertion must be listed in REMEDIATED_PACKAGE_FLOORS, and vice versa"
+    )
     assert re.search(r"apt-get\s+upgrade", instruction) is None
     assert re.search(r"(?:apt|apt-get)\s+dist-upgrade", instruction) is None
 
