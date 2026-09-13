@@ -17,6 +17,25 @@
 -- lifecycle save is unrecoverable from remaining metadata alone (a reverted
 -- purge is indistinguishable from a never-purged row without consulting the
 -- object store), so no purge column is rewritten by this repair.
+--
+-- The repair SERIALIZES against aggregate writers BEFORE deriving (issue
+-- #170). The lock below is not decoration: as a bare UPDATE ... FROM, this
+-- statement takes its snapshot at start, blocks on any in-flight admission's
+-- document-row lock, and under READ COMMITTED re-evaluates only its WHERE
+-- clause against the new row version after unblocking - the FROM-derived
+-- table keeps the stale snapshot - so the repair wrote a pre-admission
+-- CLEAR/0 over a hold committed while it waited. EXCLUSIVE mode conflicts
+-- with every writer's first lock (ROW EXCLUSIVE from admission's UPDATE,
+-- ROW SHARE from release/refresh's SELECT ... FOR UPDATE) while leaving
+-- plain reads untouched; once granted, no writer is mid-flight and the
+-- UPDATE's fresh statement snapshot sees every committed hold. The whole
+-- file is applied as one implicit transaction by the governed application
+-- path (a single multi-statement execute), so the lock holds through the
+-- UPDATE and releases at commit. No external writer-quiescence step is
+-- required to run this migration; the barrier is the file's own first
+-- statement.
+LOCK TABLE archive_documents IN EXCLUSIVE MODE;
+
 UPDATE archive_documents AS d
 SET legal_hold_status = derived.derived_status,
     legal_hold_count = derived.derived_count,

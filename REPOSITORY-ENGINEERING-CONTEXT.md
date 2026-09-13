@@ -271,7 +271,12 @@ every lane that runs tests passed.
     because it grants permission to destroy; withdrawal deliberately does not, because it is the
     transition taken *because* a hold is active. Both destructive transitions also carry a
     NOT EXISTS active-hold-ROW belt for legacy rows whose summary drifted before recounts became
-    derived; migration 013 heals such drift idempotently. A refused transition re-reads and
+    derived; migration 013 heals such drift idempotently AND self-serializes - its first
+    statement takes `LOCK TABLE archive_documents IN EXCLUSIVE MODE`, because as a bare
+    UPDATE ... FROM the repair carried the same READ COMMITTED stale-derivation defect as the
+    old runtime recount and could overwrite a hold admitted while it was blocked (issue #170).
+    No writer-quiescence step is required to run it; the barrier is the file's own first
+    statement, proven by the migration-vs-admission overlap test. A refused transition re-reads and
     classifies the stored row rather than returning the caller's snapshot. Tests that need a
     state the guarded writers refuse seed it explicitly (`seed_document_state`, raw SQL), never
     through `save()`.
