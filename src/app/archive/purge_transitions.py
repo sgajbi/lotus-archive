@@ -85,8 +85,9 @@ def reclassify_refused_transition(
     this module exists to remove.
 
     Total over the guard conditions: `mark_purge_eligible` refuses on a started
-    purge, a completed purge or an active hold, and `mark_purge_not_eligible` on
-    the first two. Each has a branch here.
+    purge, a completed purge, an active hold summary or an active hold ROW (the
+    legacy-drift belt), and `mark_purge_not_eligible` on the first two. Each has
+    a branch here.
     """
     current = repository.get_by_document_id(document_id)
     if current is None:
@@ -96,6 +97,14 @@ def reclassify_refused_transition(
     if current.purge_started_at is not None:
         return current, True, "purge_in_progress"
     if current.legal_hold_status is LegalHoldStatus.ACTIVE:
+        return current, False, "legal_hold_active"
+    if any(
+        hold.hold_status is LegalHoldStatus.ACTIVE
+        for hold in repository.list_legal_holds(document_id)
+    ):
+        # The hold-ROW belt in the guarded transitions refused: a legacy row
+        # whose summary drifted before recounts became derived-in-transaction
+        # (issue #166) still carries an active hold, and that hold is the reason.
         return current, False, "legal_hold_active"
     # No guard condition holds, so a guard gained a case without a branch here.
     # Refuse rather than guess: the caller is asking whether destruction is

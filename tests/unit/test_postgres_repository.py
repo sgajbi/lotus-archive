@@ -13,6 +13,7 @@ from app.archive.exceptions import DuplicateArchiveRequestConflict
 from app.archive.models import (
     ArchiveDocumentMetadata,
     LegalHoldRecord,
+    LegalHoldStatus,
     LifecycleTransitionType,
     LifecycleRelationshipRecord,
 )
@@ -29,11 +30,13 @@ class FakeCursor:
         *,
         row: Mapping[str, object] | None = None,
         rows: list[Mapping[str, object]] | None = None,
+        fetchone_queue: list[Mapping[str, object] | None] | None = None,
         error: BaseException | None = None,
         rowcount: int = 1,
     ) -> None:
         self.row = row
         self.rows = rows or []
+        self.fetchone_queue = fetchone_queue
         self.executions: list[tuple[str, object]] = []
         self.error = error
         self.rowcount = rowcount
@@ -50,6 +53,8 @@ class FakeCursor:
         self.executions.append((query, parameters))
 
     def fetchone(self) -> Mapping[str, object] | None:
+        if self.fetchone_queue is not None:
+            return self.fetchone_queue.pop(0) if self.fetchone_queue else None
         return self.row
 
     def fetchall(self) -> list[Mapping[str, object]]:
@@ -229,34 +234,25 @@ def test_postgres_repository_persists_legal_hold_and_lifecycle_records() -> None
         transition_reason_code="archive_document_supersession_requested",
         requested_by="operations-user",
     )
-    save_hold = FakeCursor()
     get_hold = FakeCursor(row=_row(hold))
     list_holds = FakeCursor(rows=[_row(hold)])
-    save_relationship = FakeCursor()
     list_relationships = FakeCursor(rows=[_row(relationship)])
-    delete_relationship = FakeCursor()
     repository = PostgresArchiveDocumentRepository(
         "postgresql://unused",
         connection_factory=ConnectionSequence(
-            save_hold,
             get_hold,
             list_holds,
-            save_relationship,
             list_relationships,
-            delete_relationship,
         ),
     )
 
-    assert repository.save_legal_hold(hold) == hold
     assert repository.get_legal_hold(hold.legal_hold_id) == hold
     assert repository.list_legal_holds(hold.document_id) == [hold]
-    assert repository.save_lifecycle_relationship(relationship) == relationship
     assert repository.list_lifecycle_relationships("doc_1") == [relationship]
-    repository.delete_lifecycle_relationship(relationship.lifecycle_relationship_id)
 
-    assert "INSERT INTO archive_legal_holds" in save_hold.executions[0][0]
-    assert "INSERT INTO archive_lifecycle_relationships" in save_relationship.executions[0][0]
-    assert "DELETE FROM archive_lifecycle_relationships" in delete_relationship.executions[0][0]
+    assert "FROM archive_legal_holds" in get_hold.executions[0][0]
+    assert "ORDER BY requested_at" in list_holds.executions[0][0]
+    assert "FROM archive_lifecycle_relationships" in list_relationships.executions[0][0]
 
 
 def test_postgres_access_audit_repository_persists_and_lists_events() -> None:
@@ -287,29 +283,33 @@ def test_postgres_access_audit_repository_persists_and_lists_events() -> None:
     assert "IS NOT DISTINCT FROM %s" in listing.executions[0][0]
 
 
-def test_save_sql_updates_only_mutable_columns_and_guards_every_immutable_one() -> None:
-    """The upsert must not be able to rewrite history, column by column."""
-    from app.archive.models import MUTABLE_DOCUMENT_FIELDS
+def test_save_sql_updates_only_updated_at_and_guards_every_other_column() -> None:
+    """save() may write ONLY `updated_at` on an existing row (issue #166).
+
+    Retention, hold and lifecycle columns move exclusively through their owning
+    transitions, so the ON CONFLICT update must not be ABLE to carry a caller
+    snapshot into any of them - and every other column, immutable identity and
+    transition-owned posture alike, must be guarded for equality.
+    """
     from app.archive.postgres_repository import _DOCUMENT_COLUMNS, _SAVE_DOCUMENT_SQL
 
     set_clause = _SAVE_DOCUMENT_SQL.split("DO UPDATE SET ", 1)[1].split(" WHERE ", 1)[0]
     updated = {part.split(" = ")[0].strip() for part in set_clause.split(", ")}
-    assert updated == MUTABLE_DOCUMENT_FIELDS, (
-        "the ON CONFLICT update must set exactly the registered mutable fields; "
-        f"unexpected={sorted(updated - MUTABLE_DOCUMENT_FIELDS)} "
-        f"missing={sorted(MUTABLE_DOCUMENT_FIELDS - updated)}"
+    assert updated == {"updated_at"}, (
+        "the ON CONFLICT update must set exactly updated_at; "
+        f"unexpected={sorted(updated - {'updated_at'})}"
     )
 
     guard_clause = _SAVE_DOCUMENT_SQL.split(" WHERE ", 1)[1]
-    immutable = [
+    guarded = [
         column
         for column in _DOCUMENT_COLUMNS
-        if column != "document_id" and column not in MUTABLE_DOCUMENT_FIELDS
+        if column not in {"document_id", "updated_at"}
     ]
-    for column in immutable:
+    for column in guarded:
         assert f"archive_documents.{column} IS NOT DISTINCT FROM EXCLUDED.{column}" in (
             guard_clause
-        ), f"immutable column {column} is not guarded"
+        ), f"column {column} is not guarded against save() rewrite"
 
 
 def test_save_raises_historical_integrity_error_when_the_guard_blocks_the_update() -> None:
@@ -440,59 +440,144 @@ def test_pooled_connection_factory_configures_and_opens_the_pool(
     assert callable(factory) and callable(close)
 
 
-def test_lifecycle_transition_is_one_transaction_with_guarded_document_writes() -> None:
-    """Both document upserts and the relationship insert share a single connection, and the
-    immutability guard applies inside the transaction too."""
-    from app.archive.models import LifecycleTransitionType, LifecycleRelationshipRecord
-
-    cursor = FakeCursor(rowcount=1)
-    repository = PostgresArchiveDocumentRepository(
-        "postgresql://unused",
-        connection_factory=ConnectionSequence(cursor),
+def _lifecycle_relationship(relationship_id: str = "life_1") -> LifecycleRelationshipRecord:
+    return LifecycleRelationshipRecord(
+        lifecycle_relationship_id=relationship_id,
+        source_document_id="doc_source",
+        target_document_id="doc_target",
+        transition_type=LifecycleTransitionType.SUPERSEDE,
+        transition_reason="Approved replacement",
+        transition_reason_code="document_superseded_by_newer_version",
+        requested_by="ops-user",
     )
+
+
+def test_lifecycle_transition_locks_both_rows_then_writes_only_decided_columns() -> None:
+    """One connection: two sorted FOR UPDATE locks, two column-scoped updates,
+    one relationship insert. No whole-snapshot upsert can appear here - that
+    shape is what reverted committed purge and hold state (issue #166)."""
     source = _metadata("doc_source", "req-source")
     target = _metadata("doc_target", "req-target")
-    relationship = LifecycleRelationshipRecord(
-        lifecycle_relationship_id="life_1",
-        source_document_id="doc_source",
-        target_document_id="doc_target",
-        transition_type=LifecycleTransitionType.SUPERSEDE,
-        transition_reason="Approved replacement",
-        transition_reason_code="document_superseded_by_newer_version",
-        requested_by="ops-user",
+    source_after = source.model_copy(update={"superseded_by_document_id": "doc_target"})
+    target_after = target.model_copy(update={"supersedes_document_id": "doc_source"})
+    cursor = FakeCursor(
+        fetchone_queue=[_row(source), _row(target), _row(source_after), _row(target_after)],
     )
-
-    repository.apply_lifecycle_transition(source, target, relationship)
-
-    queries = [query for query, _ in cursor.executions]
-    assert len(queries) == 3, "exactly three statements, one connection"
-    assert "ON CONFLICT (document_id) DO UPDATE SET" in queries[0]
-    assert "ON CONFLICT (document_id) DO UPDATE SET" in queries[1]
-    assert "archive_lifecycle_relationships" in queries[2]
-
-
-def test_lifecycle_transition_raises_historical_integrity_inside_the_transaction() -> None:
-    from app.archive.exceptions import HistoricalIntegrityError
-    from app.archive.models import LifecycleTransitionType, LifecycleRelationshipRecord
-
-    cursor = FakeCursor(rowcount=0)
     repository = PostgresArchiveDocumentRepository(
         "postgresql://unused",
         connection_factory=ConnectionSequence(cursor),
     )
-    relationship = LifecycleRelationshipRecord(
-        lifecycle_relationship_id="life_2",
+
+    relationship, updated_source, updated_target = repository.apply_lifecycle_transition(
         source_document_id="doc_source",
         target_document_id="doc_target",
         transition_type=LifecycleTransitionType.SUPERSEDE,
-        transition_reason="Approved replacement",
-        transition_reason_code="document_superseded_by_newer_version",
-        requested_by="ops-user",
+        relationship=_lifecycle_relationship(),
     )
 
-    with pytest.raises(HistoricalIntegrityError):
-        repository.apply_lifecycle_transition(
-            _metadata("doc_source", "req-source"),
-            _metadata("doc_target", "req-target"),
-            relationship,
+    queries = [query for query, _ in cursor.executions]
+    assert len(queries) == 5, "exactly five statements, one connection"
+    assert "FOR UPDATE" in queries[0] and cursor.executions[0][1] == ("doc_source",)
+    assert "FOR UPDATE" in queries[1] and cursor.executions[1][1] == ("doc_target",)
+    assert "SET superseded_by_document_id = %s, updated_at = %s" in queries[2]
+    assert "SET supersedes_document_id = %s, updated_at = %s" in queries[3]
+    assert "INSERT INTO archive_lifecycle_relationships" in queries[4]
+    for query in queries:
+        assert "ON CONFLICT (document_id)" not in query, (
+            "the transition must never route a document snapshot through the save upsert"
         )
+    assert relationship.lifecycle_relationship_id == "life_1"
+    assert updated_source.superseded_by_document_id == "doc_target"
+    assert updated_target.supersedes_document_id == "doc_source"
+
+
+def test_lifecycle_transition_refuses_on_the_locked_rows_before_any_write() -> None:
+    """The stored state decides: a purged target read UNDER THE LOCK refuses the
+    transition, and no mutating statement runs after the refusal."""
+    from app.archive.exceptions import UnsupportedLifecycleTransitionError
+    from app.archive.models import PurgeStatus
+
+    source = _metadata("doc_source", "req-source")
+    purged_target = _metadata("doc_target", "req-target").model_copy(
+        update={
+            "purge_status": PurgeStatus.PURGED,
+            "purge_started_at": datetime(2026, 9, 1, tzinfo=timezone.utc),
+            "purged_at": datetime(2026, 9, 1, 1, tzinfo=timezone.utc),
+        }
+    )
+    cursor = FakeCursor(fetchone_queue=[_row(source), _row(purged_target)])
+    repository = PostgresArchiveDocumentRepository(
+        "postgresql://unused",
+        connection_factory=ConnectionSequence(cursor),
+    )
+
+    with pytest.raises(UnsupportedLifecycleTransitionError):
+        repository.apply_lifecycle_transition(
+            source_document_id="doc_source",
+            target_document_id="doc_target",
+            transition_type=LifecycleTransitionType.SUPERSEDE,
+            relationship=_lifecycle_relationship("life_refused"),
+        )
+
+    queries = [query for query, _ in cursor.executions]
+    assert len(queries) == 2, "the refusal must precede every write"
+    assert all("FOR UPDATE" in query for query in queries)
+
+
+def test_refresh_summary_locks_the_document_then_derives_in_sql() -> None:
+    """The recount is DERIVED in the statement, under the lock taken first;
+    no caller-computed status or count parameter exists to be stale."""
+    metadata = _metadata()
+    cursor = FakeCursor(fetchone_queue=[_row(metadata), _row(metadata)])
+    repository = PostgresArchiveDocumentRepository(
+        "postgresql://unused",
+        connection_factory=ConnectionSequence(cursor),
+    )
+
+    refreshed = repository.refresh_legal_hold_summary(metadata.document_id)
+
+    assert refreshed == metadata
+    lock_query, lock_params = cursor.executions[0]
+    assert "FOR UPDATE" in lock_query and lock_params == (metadata.document_id,)
+    refresh_query, refresh_params = cursor.executions[1]
+    assert "hold_status = 'active'" in refresh_query
+    assert "count(*)" in refresh_query
+    assert "legal_hold_status IS DISTINCT FROM" in refresh_query
+    assert not any(
+        isinstance(parameter, (int, LegalHoldStatus)) for parameter in refresh_params  # type: ignore[union-attr]
+    ), "no caller-computed status or count may reach the summary write"
+
+
+def test_release_and_record_legal_hold_is_one_transaction() -> None:
+    """Document lock first, conditional hold release, derived recount - one
+    connection, mirroring the admission boundary."""
+    hold = LegalHoldRecord(
+        legal_hold_id="hold_1",
+        document_id="doc_1",
+        hold_reason="Regulatory inquiry",
+        authority_reference="AUTH-1",
+        requested_by="operations-user",
+    )
+    metadata = _metadata()
+    cursor = FakeCursor(
+        fetchone_queue=[{"document_id": "doc_1"}, _row(hold), _row(metadata)],
+    )
+    repository = PostgresArchiveDocumentRepository(
+        "postgresql://unused",
+        connection_factory=ConnectionSequence(cursor),
+    )
+
+    released = repository.release_and_record_legal_hold(
+        document_id="doc_1",
+        legal_hold_id="hold_1",
+        released_by="compliance-officer",
+        released_at=datetime(2026, 9, 13, tzinfo=timezone.utc),
+        release_reason="matter closed",
+    )
+
+    assert released is not None
+    queries = [query for query, _ in cursor.executions]
+    assert len(queries) == 3, "lock, conditional release, derived recount - one connection"
+    assert "FOR UPDATE" in queries[0]
+    assert "hold_status = 'active'" in queries[1] and "SET hold_status = 'clear'" in queries[1]
+    assert "legal_hold_status IS DISTINCT FROM" in queries[2]

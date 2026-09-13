@@ -180,10 +180,12 @@ def test_a_hold_that_races_the_intent_cannot_strand_the_document(tmp_path: Path)
         )
     service.repository.complete_purge = real_completion  # type: ignore[method-assign]
 
-    # A hold recorded directly, as one racing the intent would have been.
+    # A drifted ACTIVE summary seeded directly, as the historic race would have
+    # left it. The guarded writers refuse this state now, so it is seeded past
+    # them - this is legacy corruption the retry must still complete through.
     stranded = service.repository.get_by_document_id(metadata.document_id)
     assert stranded is not None
-    service.repository.save(
+    service.repository.seed_document_state(
         stranded.model_copy(update={"legal_hold_status": LegalHoldStatus.ACTIVE})
     )
 

@@ -251,10 +251,26 @@ class IdeaLifecycleDecisionService:
 
 
 def _decision_action(metadata: ArchiveDocumentMetadata) -> tuple[IdeaLifecycleAction, str]:
-    if metadata.legal_hold_status is LegalHoldStatus.ACTIVE:
-        return IdeaLifecycleAction.LEGAL_HOLD, "legal_hold_active"
+    """Destruction outranks preservation claims - in this order, deliberately.
+
+    A signed LEGAL_HOLD action asserts the evidence is preserved under hold.
+    Issuing it for a document whose bytes are gone is the C5 false assurance
+    this module's own migration comments record, and the legacy corruption
+    end-state - PURGED metadata plus a stranded ACTIVE hold row - becomes
+    signable exactly that way once migration 013 heals the drifted summary to
+    ACTIVE (issue #166). So a completed purge signs DISPOSAL_EXECUTED first; a
+    durable destruction intent (`purge_started_at`) signs DISPOSAL_EXECUTED
+    with `purge_in_progress`, because the object may already be gone and the
+    only completable outcome is finishing the record. The stranded-hold fact
+    stays visible in the signed payload's `legal_hold_status`/`legal_hold_count`;
+    the ACTION tells the truth about destruction.
+    """
     if metadata.purge_status is PurgeStatus.PURGED:
         return IdeaLifecycleAction.DISPOSAL_EXECUTED, "purge_executed"
+    if metadata.purge_started_at is not None:
+        return IdeaLifecycleAction.DISPOSAL_EXECUTED, "purge_in_progress"
+    if metadata.legal_hold_status is LegalHoldStatus.ACTIVE:
+        return IdeaLifecycleAction.LEGAL_HOLD, "legal_hold_active"
     if metadata.purge_status is PurgeStatus.ELIGIBLE:
         return IdeaLifecycleAction.DISPOSAL_ELIGIBLE, "retention_elapsed"
     return IdeaLifecycleAction.RETAIN, "retention_period_active"

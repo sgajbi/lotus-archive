@@ -46,11 +46,13 @@ from app.archive.exceptions import (
     PurgeNotEligibleError,
     StorageReadFailedError,
     SupersessionConflictError,
-    UnsupportedLifecycleTransitionError,
+)
+from app.archive.lifecycle_transitions import (
+    transition_pointers_agree,
+    validate_lifecycle_preconditions,
 )
 from app.archive.metrics import archive_metric
 from app.archive.models import (
-    LIFECYCLE_TARGET_ORIGIN_FIELD,
     LIFECYCLE_TRANSITION_REASON_CODES,
     ArchiveDocumentMetadata,
     LegalHoldRecord,
@@ -475,20 +477,21 @@ class ArchiveDocumentService:
             document_id=document_id,
         )
         self._get_existing_metadata(document_id)
-        legal_hold = self.repository.get_legal_hold(legal_hold_id)
-        if legal_hold is None or legal_hold.document_id != document_id:
+        # Release and recount commit together, under the same document
+        # serialization boundary as admission. As two steps - write the hold
+        # row, then refresh from a separate read - the refresh raced a
+        # concurrent admission and overwrote its summary with a stale CLEAR/0,
+        # which is exactly the column `begin_purge` trusts (issue #166).
+        released = self.repository.release_and_record_legal_hold(
+            document_id=document_id,
+            legal_hold_id=legal_hold_id,
+            released_by=caller_context.actor_id,
+            released_at=datetime.now(timezone.utc),
+            release_reason=release_reason,
+        )
+        if released is None:
             raise LegalHoldNotFoundError("legal hold was not found")
-        if legal_hold.hold_status is LegalHoldStatus.ACTIVE:
-            legal_hold = legal_hold.model_copy(
-                update={
-                    "hold_status": LegalHoldStatus.CLEAR,
-                    "released_by": caller_context.actor_id,
-                    "released_at": datetime.now(timezone.utc),
-                    "release_reason": release_reason,
-                }
-            )
-            legal_hold = self.repository.save_legal_hold(legal_hold)
-        self._refresh_legal_hold_summary(self._get_existing_metadata(document_id))
+        legal_hold, _ = released
         self._record_allowed(
             event_type=AccessEventType.LEGAL_HOLD_RELEASE,
             caller_context=caller_context,
@@ -770,22 +773,16 @@ class ArchiveDocumentService:
                 operation_reason_code="lifecycle_transition_already_recorded",
             )
             return already_applied, self._resolve_current_document(target)
-        self._validate_lifecycle_transition(
+        # Fast refusal on the unlocked reads, for a precise error without taking
+        # locks. It authorizes nothing: the repository re-validates the SAME
+        # preconditions on the rows it has locked, because a snapshot decision
+        # says nothing about the row that is actually written (issue #166).
+        validate_lifecycle_preconditions(
             source=source,
             target=target,
             transition_type=transition_type,
         )
 
-        now = datetime.now(timezone.utc)
-        source = source.model_copy(
-            update={
-                "superseded_by_document_id": target.document_id,
-                "updated_at": now,
-            }
-        )
-        # _validate_lifecycle_transition already rejected any type outside the mapping.
-        origin_field = LIFECYCLE_TARGET_ORIGIN_FIELD[transition_type]
-        target = target.model_copy(update={"updated_at": now, origin_field: source.document_id})
         relationship = LifecycleRelationshipRecord(
             lifecycle_relationship_id=f"life_{uuid4().hex}",
             source_document_id=source.document_id,
@@ -796,21 +793,34 @@ class ArchiveDocumentService:
             requested_by=caller_context.actor_id,
         )
 
-        # One atomic unit in the repository: a crash between these writes would leave a
-        # half-linked chain that the validation guards make unrepairable through the API.
-        # The previous service-level compensation could not survive a process crash and
-        # failed for the same reasons the forward writes did.
-        saved_relationship = self.repository.apply_lifecycle_transition(
-            source, target, relationship
+        # One atomic unit in the repository: both documents locked in
+        # deterministic order, stored preconditions re-validated, and ONLY the
+        # columns this transition decides written - never these snapshots. A
+        # crash between the writes would leave a half-linked chain that the
+        # validation guards make unrepairable through the API, so the database
+        # owns the atomicity.
+        saved_relationship, _, target_after = self.repository.apply_lifecycle_transition(
+            source_document_id=source.document_id,
+            target_document_id=target.document_id,
+            transition_type=transition_type,
+            relationship=relationship,
+        )
+        replayed = (
+            saved_relationship.lifecycle_relationship_id
+            != relationship.lifecycle_relationship_id
         )
         self._record_allowed(
             event_type=event_type,
             caller_context=caller_context,
             trace_id=trace_id,
             document_id=source.document_id,
-            operation_reason_code="lifecycle_transition_recorded",
+            operation_reason_code=(
+                "lifecycle_transition_already_recorded"
+                if replayed
+                else "lifecycle_transition_recorded"
+            ),
         )
-        return saved_relationship, self._resolve_current_document(target)
+        return saved_relationship, self._resolve_current_document(target_after)
 
     def _find_applied_transition(
         self,
@@ -826,12 +836,9 @@ class ArchiveDocumentService:
         the relationship record exists. Anything less is a genuine conflict and falls
         through to the validation guards.
         """
-        origin_field = LIFECYCLE_TARGET_ORIGIN_FIELD.get(transition_type)
-        if origin_field is None:
-            return None
-        if source.superseded_by_document_id != target.document_id:
-            return None
-        if getattr(target, origin_field) != source.document_id:
+        if not transition_pointers_agree(
+            source=source, target=target, transition_type=transition_type
+        ):
             return None
         for relationship in self.repository.list_lifecycle_relationships(source.document_id):
             if (
@@ -841,31 +848,6 @@ class ArchiveDocumentService:
             ):
                 return relationship
         return None
-
-    def _validate_lifecycle_transition(
-        self,
-        *,
-        source: ArchiveDocumentMetadata,
-        target: ArchiveDocumentMetadata,
-        transition_type: LifecycleTransitionType,
-    ) -> None:
-        if source.document_id == target.document_id:
-            raise UnsupportedLifecycleTransitionError("document cannot transition to itself")
-        if source.purge_status is PurgeStatus.PURGED or target.purge_status is PurgeStatus.PURGED:
-            raise UnsupportedLifecycleTransitionError("purged documents cannot transition")
-        if source.superseded_by_document_id is not None:
-            raise SupersessionConflictError("source document is already historical")
-        if target.superseded_by_document_id is not None:
-            raise SupersessionConflictError("target document is already historical")
-        existing_origin = (
-            target.supersedes_document_id
-            or target.correction_of_document_id
-            or target.reissue_of_document_id
-        )
-        if existing_origin is not None:
-            raise SupersessionConflictError("target document already has a lifecycle origin")
-        if transition_type not in LIFECYCLE_TARGET_ORIGIN_FIELD:
-            raise UnsupportedLifecycleTransitionError("unsupported lifecycle transition")
 
     def _resolve_current_document(
         self,
@@ -892,33 +874,20 @@ class ArchiveDocumentService:
         self,
         metadata: ArchiveDocumentMetadata,
     ) -> ArchiveDocumentMetadata:
-        """Recount active holds and write ONLY those two columns.
+        """Reconcile the stored summary from the hold rows, in the repository.
 
-        The caller's `metadata` is used for its document id and for deciding
-        whether anything changed. It is never written back: the repository
-        updates the hold columns against the stored row, so this method cannot
-        revert a `purge_status`, `purge_started_at` or `purged_at` committed by
-        another writer since the caller's read. That reversion is exactly how a
-        concurrent hold used to erase a completed purge and leave the record
-        asserting preservation over deleted bytes.
+        The service computes NOTHING here: the previous form recounted holds in
+        one repository call and handed the stale status/count to an
+        unconditional write in a later transaction, so a hold admitted in
+        between was overwritten with CLEAR/0 - exactly the summary column
+        `begin_purge` trusts (issue #166). The repository now derives the
+        summary from the hold rows inside the same transaction that writes it,
+        under the document row lock, so this read-triggered refresh can only
+        ever heal drift, never introduce it. The caller's `metadata` supplies
+        the document id and the fallback when the document has vanished.
         """
-        active_holds = [
-            hold
-            for hold in self.repository.list_legal_holds(metadata.document_id)
-            if hold.hold_status is LegalHoldStatus.ACTIVE
-        ]
-        legal_hold_status = LegalHoldStatus.ACTIVE if active_holds else LegalHoldStatus.CLEAR
-        if (
-            metadata.legal_hold_count == len(active_holds)
-            and metadata.legal_hold_status is legal_hold_status
-        ):
-            return metadata
-        updated = self.repository.update_legal_hold_summary(
-            document_id=metadata.document_id,
-            legal_hold_status=legal_hold_status,
-            legal_hold_count=len(active_holds),
-        )
-        return updated if updated is not None else metadata
+        refreshed = self.repository.refresh_legal_hold_summary(metadata.document_id)
+        return refreshed if refreshed is not None else metadata
 
     def _record_allowed(
         self,

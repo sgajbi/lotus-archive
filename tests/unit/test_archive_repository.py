@@ -57,25 +57,34 @@ def test_in_memory_save_refuses_to_change_immutable_fields() -> None:
     assert repository.get_by_document_id(metadata.document_id) == metadata
 
 
-def test_in_memory_save_allows_every_governed_posture_mutation() -> None:
-    """The full mutable set is writable; anything narrower would break purge and lifecycle."""
+def test_in_memory_save_refuses_transition_owned_columns() -> None:
+    """save() writes only `updated_at` on an existing row (issue #166).
+
+    Retention, hold and lifecycle columns move exclusively through their owning
+    transitions. A caller snapshot that differs in any of them is refused, so a
+    stale snapshot handed to save() cannot revert state another writer
+    committed since the snapshot was read.
+    """
     repository = InMemoryArchiveDocumentRepository()
     metadata = _metadata("doc_immutability", "req-immutability")
     repository.save(metadata)
 
     now = datetime(2026, 8, 29, 12, 0, tzinfo=timezone.utc)
-    updated = metadata.model_copy(
-        update={
-            "purge_status": PurgeStatus.ELIGIBLE,
-            "purge_eligible_at": now,
-            "legal_hold_status": LegalHoldStatus.ACTIVE,
-            "legal_hold_count": 2,
-            "superseded_by_document_id": "doc_new",
-            "updated_at": now,
-        }
-    )
-    repository.save(updated)
-    assert repository.get_by_document_id(metadata.document_id) == updated
+    for field, value in {
+        "purge_status": PurgeStatus.ELIGIBLE,
+        "purge_eligible_at": now,
+        "legal_hold_status": LegalHoldStatus.ACTIVE,
+        "legal_hold_count": 2,
+        "superseded_by_document_id": "doc_new",
+    }.items():
+        with pytest.raises(HistoricalIntegrityError) as excinfo:
+            repository.save(metadata.model_copy(update={field: value}))
+        assert field in str(excinfo.value)
+    assert repository.get_by_document_id(metadata.document_id) == metadata
+
+    touched = repository.save(metadata.model_copy(update={"updated_at": now}))
+    assert touched.updated_at == now
+    assert touched.model_copy(update={"updated_at": metadata.updated_at}) == metadata
 
 
 def test_mutable_field_registry_matches_what_the_service_actually_mutates() -> None:
@@ -117,52 +126,88 @@ def _relationship(relationship_id: str = "lifecycle_1") -> LifecycleRelationship
     )
 
 
-def test_in_memory_lifecycle_relationships_roundtrip_and_delete() -> None:
-    repository = InMemoryArchiveDocumentRepository()
-    saved = repository.save_lifecycle_relationship(_relationship())
+def test_in_memory_lifecycle_transition_writes_only_the_decided_columns() -> None:
+    """The transition touches the pointer columns and `updated_at`, nothing else.
 
-    assert saved.lifecycle_relationship_id == "lifecycle_1"
+    In particular the retention and hold columns of BOTH documents survive
+    untouched, because the repository writes decided columns rather than the
+    caller's snapshots (issue #166).
+    """
+    repository = InMemoryArchiveDocumentRepository()
+    source = repository.save(_metadata("doc_1", "archive-request-1"))
+    target = repository.save(_metadata("doc_2", "archive-request-2"))
+
+    relationship, updated_source, updated_target = repository.apply_lifecycle_transition(
+        source_document_id="doc_1",
+        target_document_id="doc_2",
+        transition_type=LifecycleTransitionType.SUPERSEDE,
+        relationship=_relationship(),
+    )
+
+    assert relationship.lifecycle_relationship_id == "lifecycle_1"
+    assert updated_source.superseded_by_document_id == "doc_2"
+    assert updated_target.supersedes_document_id == "doc_1"
+    unchanged = {
+        field
+        for field in type(source).model_fields
+        if field not in {"superseded_by_document_id", "supersedes_document_id", "updated_at"}
+    }
+    for field in unchanged:
+        assert getattr(updated_source, field) == getattr(source, field)
+        assert getattr(updated_target, field) == getattr(target, field)
     listed = repository.list_lifecycle_relationships("doc_1")
     assert [item.lifecycle_relationship_id for item in listed] == ["lifecycle_1"]
 
-    repository.delete_lifecycle_relationship("lifecycle_1")
-    assert repository.list_lifecycle_relationships("doc_1") == []
-    # Deleting an unknown id is a no-op, never an error.
-    repository.delete_lifecycle_relationship("lifecycle_missing")
+
+def test_in_memory_lifecycle_transition_converges_on_an_exact_replay() -> None:
+    """A replay whose pointers and relationship all agree returns the recorded
+    relationship instead of conflicting - identical retries converge."""
+    repository = InMemoryArchiveDocumentRepository()
+    repository.save(_metadata("doc_1", "archive-request-1"))
+    repository.save(_metadata("doc_2", "archive-request-2"))
+    first, _, _ = repository.apply_lifecycle_transition(
+        source_document_id="doc_1",
+        target_document_id="doc_2",
+        transition_type=LifecycleTransitionType.SUPERSEDE,
+        relationship=_relationship(),
+    )
+
+    replayed, _, _ = repository.apply_lifecycle_transition(
+        source_document_id="doc_1",
+        target_document_id="doc_2",
+        transition_type=LifecycleTransitionType.SUPERSEDE,
+        relationship=_relationship("lifecycle_retry"),
+    )
+
+    assert replayed.lifecycle_relationship_id == first.lifecycle_relationship_id
+    assert len(repository.list_lifecycle_relationships("doc_1")) == 1
 
 
-def test_in_memory_lifecycle_transition_restores_source_when_target_save_fails() -> None:
-    """The atomic unit: all three writes or none. When the target save
-    fails, the already-written source is restored from the snapshot and
-    the relationship is never recorded."""
+def test_in_memory_lifecycle_transition_refused_by_stored_state_writes_nothing() -> None:
+    """Validation runs against the STORED rows, and a refusal leaves no partial
+    write: no pointer moved, no relationship recorded (issue #166)."""
+    from app.archive.exceptions import UnsupportedLifecycleTransitionError
 
-    class _TargetRejectingRepository(InMemoryArchiveDocumentRepository):
-        _fail_on: str | None = None
+    repository = InMemoryArchiveDocumentRepository()
+    source = repository.save(_metadata("doc_1", "archive-request-1"))
+    target = repository.save(_metadata("doc_2", "archive-request-2"))
+    purged = repository.begin_purge(
+        document_id="doc_2", started_at=datetime(2026, 8, 29, tzinfo=timezone.utc)
+    )
+    assert purged is not None
+    completed = repository.complete_purge(
+        document_id="doc_2", purged_at=datetime(2026, 8, 29, 1, tzinfo=timezone.utc)
+    )
+    assert completed is not None
 
-        def save(self, metadata: ArchiveDocumentMetadata) -> ArchiveDocumentMetadata:
-            if self._fail_on == metadata.document_id:
-                raise RuntimeError("target store unavailable")
-            return super().save(metadata)
-
-    repository = _TargetRejectingRepository()
-    source = _metadata("doc_1", "archive-request-1")
-    target = _metadata("doc_2", "archive-request-2")
-    repository.save(source)
-    repository.save(target)
-    # The transition writes the source with its supersession pointer set;
-    # after the target save fails, the ORIGINAL (pointer-free) source must
-    # be back in place.
-    updated_source = source.model_copy(update={"superseded_by_document_id": target.document_id})
-
-    repository._fail_on = target.document_id
-    with pytest.raises(RuntimeError, match="target store unavailable"):
+    with pytest.raises(UnsupportedLifecycleTransitionError):
         repository.apply_lifecycle_transition(
-            updated_source,
-            target,
-            _relationship("lifecycle_rollback"),
+            source_document_id="doc_1",
+            target_document_id="doc_2",
+            transition_type=LifecycleTransitionType.SUPERSEDE,
+            relationship=_relationship("lifecycle_refused"),
         )
 
-    restored = repository.get_by_document_id(source.document_id)
-    assert restored is not None
-    assert restored.superseded_by_document_id is None
-    assert repository.list_lifecycle_relationships(source.document_id) == []
+    assert repository.get_by_document_id("doc_1") == source
+    assert repository.get_by_document_id("doc_2") == completed
+    assert repository.list_lifecycle_relationships("doc_1") == []
