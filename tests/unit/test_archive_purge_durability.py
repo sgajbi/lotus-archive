@@ -185,7 +185,9 @@ def test_a_hold_that_races_the_intent_cannot_strand_the_document(tmp_path: Path)
     # them - this is legacy corruption the retry must still complete through.
     stranded = service.repository.get_by_document_id(metadata.document_id)
     assert stranded is not None
-    service.repository.seed_document_state(
+    seeding = service.repository
+    assert isinstance(seeding, InMemoryArchiveDocumentRepository)
+    seeding.seed_document_state(
         stranded.model_copy(update={"legal_hold_status": LegalHoldStatus.ACTIVE})
     )
 

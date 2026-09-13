@@ -806,8 +806,7 @@ class ArchiveDocumentService:
             relationship=relationship,
         )
         replayed = (
-            saved_relationship.lifecycle_relationship_id
-            != relationship.lifecycle_relationship_id
+            saved_relationship.lifecycle_relationship_id != relationship.lifecycle_relationship_id
         )
         self._record_allowed(
             event_type=event_type,

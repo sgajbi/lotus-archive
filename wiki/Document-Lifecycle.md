@@ -120,17 +120,42 @@ be deleted with an active hold record standing against it. The same shape could 
 `purge_started_at` and `purged_at` from a completed purge, after which a new hold was admitted over
 bytes that were already gone.
 
-**Setting a hold is one transaction.** Admitting the hold, writing the hold record and refreshing
-the summary commit together. As three separate steps there was a window in which the document said
-`legal_hold_status = active` while no hold record existed yet — and a purge recounting active holds
-in that window found none, wrote `clear`, and deleted the object. The hold then landed and its
-caller was told it had succeeded. The observable end state was a purged document, one active hold
-record, absent bytes, and a signed `LEGAL_HOLD` lifecycle answer for a document that no longer
-existed.
+**Setting a hold is one transaction — and so is releasing one.** Admitting the hold, writing the
+hold record and refreshing the summary commit together. As three separate steps there was a window
+in which the document said `legal_hold_status = active` while no hold record existed yet — and a
+purge recounting active holds in that window found none, wrote `clear`, and deleted the object. The
+hold then landed and its caller was told it had succeeded. The observable end state was a purged
+document, one active hold record, absent bytes, and a signed `LEGAL_HOLD` lifecycle answer for a
+document that no longer existed. Release shared a smaller version of the same hole until issue
+#166: the hold row cleared in one transaction and the summary recounted in another, so a recount
+taken before a concurrent admission committed could overwrite the new hold's summary with a stale
+`clear` — the exact column the purge guard trusts.
+
+**Hold summaries are derived where they are written.** No caller-computed status or count is
+accepted as authority. Every summary writer — admission, release, and the read-triggered refresh
+behind retention, purge-evaluation and lifecycle-posture reads — locks the document row first and
+recounts from the hold rows inside the same transaction, so a refresh that waited on a concurrent
+admission counts the hold whose commit it waited on. As a belt for rows written before this
+contract existed, the destructive transitions also refuse while any active hold **row** stands,
+even if a historic race left the summary saying `clear`, and migration 013 heals such drifted
+summaries idempotently.
+
+**Lifecycle transitions re-validate the rows they lock.** Supersede, correct and reissue lock both
+documents in deterministic id order, re-check every precondition against the stored rows, and write
+only the columns the transition decides — the supersession pointer, the origin field and
+`updated_at` — plus the relationship record. A purge or hold that commits while the transition
+waits on the lock either refuses it (a purged document cannot transition) or survives it untouched
+(a hold does not forbid supersession, and its summary is not the transition's to write). Before
+issue #166 the transition wrote both documents back as whole snapshots, which could revert a
+completed purge to never-destroyed and admit a new hold over absent bytes.
 
 Irreversible state is never overwritten. `purge_started_at` and `purged_at` survive every competing
 writer, `purged_at` is stamped once and not restamped by a retry, and completing a purge requires an
-intent that was actually claimed — so no code path can record a destruction nobody ordered.
+intent that was actually claimed — so no code path can record a destruction nobody ordered. The
+signed Idea lifecycle decision ranks destruction above preservation for the same reason: a purged
+document signs `DISPOSAL_EXECUTED` even when a stranded legacy hold row survives beside it, and a
+document whose destruction has begun but not completed signs `purge_in_progress` rather than
+claiming retention.
 
 These are proved against PostgreSQL with genuinely overlapping transactions, not by calling one
 writer after the other. See [Development and Testing](Development-and-Testing).

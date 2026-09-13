@@ -234,23 +234,19 @@ def test_postgres_repository_persists_legal_hold_and_lifecycle_records() -> None
         transition_reason_code="archive_document_supersession_requested",
         requested_by="operations-user",
     )
-    get_hold = FakeCursor(row=_row(hold))
     list_holds = FakeCursor(rows=[_row(hold)])
     list_relationships = FakeCursor(rows=[_row(relationship)])
     repository = PostgresArchiveDocumentRepository(
         "postgresql://unused",
         connection_factory=ConnectionSequence(
-            get_hold,
             list_holds,
             list_relationships,
         ),
     )
 
-    assert repository.get_legal_hold(hold.legal_hold_id) == hold
     assert repository.list_legal_holds(hold.document_id) == [hold]
     assert repository.list_lifecycle_relationships("doc_1") == [relationship]
 
-    assert "FROM archive_legal_holds" in get_hold.executions[0][0]
     assert "ORDER BY requested_at" in list_holds.executions[0][0]
     assert "FROM archive_lifecycle_relationships" in list_relationships.executions[0][0]
 
@@ -302,9 +298,7 @@ def test_save_sql_updates_only_updated_at_and_guards_every_other_column() -> Non
 
     guard_clause = _SAVE_DOCUMENT_SQL.split(" WHERE ", 1)[1]
     guarded = [
-        column
-        for column in _DOCUMENT_COLUMNS
-        if column not in {"document_id", "updated_at"}
+        column for column in _DOCUMENT_COLUMNS if column not in {"document_id", "updated_at"}
     ]
     for column in guarded:
         assert f"archive_documents.{column} IS NOT DISTINCT FROM EXCLUDED.{column}" in (
@@ -543,9 +537,10 @@ def test_refresh_summary_locks_the_document_then_derives_in_sql() -> None:
     assert "hold_status = 'active'" in refresh_query
     assert "count(*)" in refresh_query
     assert "legal_hold_status IS DISTINCT FROM" in refresh_query
-    assert not any(
-        isinstance(parameter, (int, LegalHoldStatus)) for parameter in refresh_params  # type: ignore[union-attr]
-    ), "no caller-computed status or count may reach the summary write"
+    parameters = cast(tuple[object, ...], refresh_params)
+    assert not any(isinstance(parameter, (int, LegalHoldStatus)) for parameter in parameters), (
+        "no caller-computed status or count may reach the summary write"
+    )
 
 
 def test_release_and_record_legal_hold_is_one_transaction() -> None:
@@ -581,3 +576,109 @@ def test_release_and_record_legal_hold_is_one_transaction() -> None:
     assert "FOR UPDATE" in queries[0]
     assert "hold_status = 'active'" in queries[1] and "SET hold_status = 'clear'" in queries[1]
     assert "legal_hold_status IS DISTINCT FROM" in queries[2]
+
+
+def test_release_converges_on_an_already_released_hold() -> None:
+    """A hold already released keeps its ORIGINAL release facts: the
+    conditional update matches nothing, the stored row is answered, and the
+    unchanged summary skips its write."""
+    released_hold = LegalHoldRecord(
+        legal_hold_id="hold_1",
+        document_id="doc_1",
+        hold_status=LegalHoldStatus.CLEAR,
+        hold_reason="Regulatory inquiry",
+        authority_reference="AUTH-1",
+        requested_by="operations-user",
+        released_by="first-releaser",
+        released_at=datetime(2026, 9, 1, tzinfo=timezone.utc),
+        release_reason="matter closed first",
+    )
+    metadata = _metadata()
+    cursor = FakeCursor(
+        fetchone_queue=[
+            {"document_id": "doc_1"},  # FOR UPDATE lock
+            None,  # conditional release matches nothing
+            _row(released_hold),  # stored hold answered as-is
+            None,  # summary unchanged, refresh writes nothing
+            _row(metadata),  # stored document answered as-is
+        ],
+    )
+    repository = PostgresArchiveDocumentRepository(
+        "postgresql://unused",
+        connection_factory=ConnectionSequence(cursor),
+    )
+
+    released = repository.release_and_record_legal_hold(
+        document_id="doc_1",
+        legal_hold_id="hold_1",
+        released_by="second-releaser",
+        released_at=datetime(2026, 9, 13, tzinfo=timezone.utc),
+        release_reason="retry",
+    )
+
+    assert released is not None
+    hold, document = released
+    assert hold.released_by == "first-releaser", "a retry must not restamp the release facts"
+    assert hold.release_reason == "matter closed first"
+    assert document == metadata
+    assert len(cursor.executions) == 5
+
+
+def test_release_returns_none_for_an_unknown_hold() -> None:
+    """No hold row for this document: the caller owns the refusal."""
+    cursor = FakeCursor(
+        fetchone_queue=[{"document_id": "doc_1"}, None, None],
+    )
+    repository = PostgresArchiveDocumentRepository(
+        "postgresql://unused",
+        connection_factory=ConnectionSequence(cursor),
+    )
+
+    assert (
+        repository.release_and_record_legal_hold(
+            document_id="doc_1",
+            legal_hold_id="hold_absent",
+            released_by="actor",
+            released_at=datetime(2026, 9, 13, tzinfo=timezone.utc),
+            release_reason="not applicable",
+        )
+        is None
+    )
+
+
+def test_lifecycle_transition_rejects_an_unknown_transition_type() -> None:
+    """Refused before any connection is taken - the origin-column mapping is
+    the allowlist, and nothing outside it may reach SQL text."""
+    from app.archive.exceptions import UnsupportedLifecycleTransitionError
+
+    repository = PostgresArchiveDocumentRepository(
+        "postgresql://unused",
+        connection_factory=ConnectionSequence(),
+    )
+
+    with pytest.raises(UnsupportedLifecycleTransitionError):
+        repository.apply_lifecycle_transition(
+            source_document_id="doc_source",
+            target_document_id="doc_target",
+            transition_type=cast(LifecycleTransitionType, "retract"),
+            relationship=_lifecycle_relationship("life_unknown"),
+        )
+
+
+def test_lifecycle_transition_requires_both_documents() -> None:
+    """An absent document fails closed inside the transaction."""
+    from app.archive.exceptions import DocumentNotFoundError
+
+    cursor = FakeCursor(fetchone_queue=[None])
+    repository = PostgresArchiveDocumentRepository(
+        "postgresql://unused",
+        connection_factory=ConnectionSequence(cursor),
+    )
+
+    with pytest.raises(DocumentNotFoundError):
+        repository.apply_lifecycle_transition(
+            source_document_id="doc_source",
+            target_document_id="doc_target",
+            transition_type=LifecycleTransitionType.SUPERSEDE,
+            relationship=_lifecycle_relationship("life_absent"),
+        )

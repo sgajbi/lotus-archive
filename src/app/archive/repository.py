@@ -98,8 +98,6 @@ class ArchiveDocumentRepository(Protocol):
         document_id: str,
     ) -> ArchiveDocumentMetadata | None: ...
 
-    def get_legal_hold(self, legal_hold_id: str) -> LegalHoldRecord | None: ...
-
     def list_legal_holds(self, document_id: str) -> list[LegalHoldRecord]: ...
 
     def apply_lifecycle_transition(
@@ -109,9 +107,7 @@ class ArchiveDocumentRepository(Protocol):
         target_document_id: str,
         transition_type: LifecycleTransitionType,
         relationship: LifecycleRelationshipRecord,
-    ) -> tuple[
-        LifecycleRelationshipRecord, ArchiveDocumentMetadata, ArchiveDocumentMetadata
-    ]: ...
+    ) -> tuple[LifecycleRelationshipRecord, ArchiveDocumentMetadata, ArchiveDocumentMetadata]: ...
 
     def list_lifecycle_relationships(
         self,
@@ -446,9 +442,6 @@ class InMemoryArchiveDocumentRepository:
         self._legal_holds[legal_hold.legal_hold_id] = legal_hold
         return legal_hold
 
-    def get_legal_hold(self, legal_hold_id: str) -> LegalHoldRecord | None:
-        return self._legal_holds.get(legal_hold_id)
-
     def list_legal_holds(self, document_id: str) -> list[LegalHoldRecord]:
         return [
             legal_hold
@@ -483,9 +476,7 @@ class InMemoryArchiveDocumentRepository:
         target = self._by_document_id.get(target_document_id)
         if source is None or target is None:
             raise DocumentNotFoundError("archive document was not found")
-        if transition_pointers_agree(
-            source=source, target=target, transition_type=transition_type
-        ):
+        if transition_pointers_agree(source=source, target=target, transition_type=transition_type):
             for existing in self._lifecycle_relationships.values():
                 if (
                     existing.source_document_id == source_document_id

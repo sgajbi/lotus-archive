@@ -1404,7 +1404,9 @@ def test_a_hold_after_destruction_started_is_refused_at_the_api(tmp_path: Path) 
         # wrong refusal.
         stored = service.repository.get_by_document_id(document_id)
         assert stored is not None
-        service.repository.seed_document_state(
+        seeding = service.repository
+        assert isinstance(seeding, InMemoryArchiveDocumentRepository)
+        seeding.seed_document_state(
             stored.model_copy(update={"purge_started_at": datetime.now(timezone.utc)})
         )
 
