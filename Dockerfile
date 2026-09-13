@@ -43,15 +43,30 @@ ENV LOTUS_ARCHIVE_SERVICE_NAME=lotus-archive \
 # published 3.5.7-1~deb13u2. Upgraded here rather than waiting for the upstream image, because the
 # release and pull-request vulnerability gates both fail on it - see issue #85.
 #
+# Same shape for the 2026-09-13 batch the pull-request scan refused (12 findings, 3 CRITICAL /
+# 9 HIGH, all with published Debian fixes): gzip CVE-2026-41992 (1.13-1+deb13u1), libpcre2-8-0
+# CVE-2026-86145 / CVE-2026-89161 (10.46-1~deb13u2), libsqlite3-0 CVE-2026-11822 / CVE-2026-11824
+# (3.46.1-7+deb13u2), and perl-base CVE-2026-13221 et al. (5.40.1-6+deb13u1).
+#
 # Targeted, not a blanket `apt-get upgrade`: a distribution-wide upgrade in an image build changes
 # far more than the finding requires and makes the diff unreviewable. Remove this block once the
-# base image carries 3.5.7 or later; `tests/unit/test_openssl_runtime_upgrade.py` records how to
-# check, so it does not linger after it stops being needed.
+# base image carries 3.5.7 or later and the deb13u point releases above;
+# `tests/unit/test_openssl_runtime_upgrade.py` records how to check, so it does not linger after
+# it stops being needed.
 RUN apt-get update \
     && apt-get install --yes --no-install-recommends --only-upgrade \
         openssl libssl3t64 openssl-provider-legacy \
+        gzip libpcre2-8-0 libsqlite3-0 perl-base \
     && dpkg --compare-versions "$(dpkg-query --show --showformat='${Version}' openssl)" ge \
         "3.5.7-1~deb13u2" \
+    && dpkg --compare-versions "$(dpkg-query --show --showformat='${Version}' gzip)" ge \
+        "1.13-1+deb13u1" \
+    && dpkg --compare-versions "$(dpkg-query --show --showformat='${Version}' libpcre2-8-0)" ge \
+        "10.46-1~deb13u2" \
+    && dpkg --compare-versions "$(dpkg-query --show --showformat='${Version}' libsqlite3-0)" ge \
+        "3.46.1-7+deb13u2" \
+    && dpkg --compare-versions "$(dpkg-query --show --showformat='${Version}' perl-base)" ge \
+        "5.40.1-6+deb13u1" \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
