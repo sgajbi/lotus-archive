@@ -483,3 +483,66 @@ def test_a_legacy_half_erased_chain_conflicts_as_a_typed_refusal() -> None:
         item.lifecycle_relationship_id
         for item in _repository().list_lifecycle_relationships(source_id)
     ] == ["life_chain"]
+
+
+def test_the_migration_repair_blocked_by_an_admission_does_not_overwrite_its_hold() -> None:
+    """Issue #170: the standalone repair must serialize BEFORE deriving its snapshot.
+
+    Reverse legacy drift is seeded - summary ACTIVE/1 with no hold rows - and a
+    hold admission holds the document row uncommitted when migration 013 runs
+    through its actual entry point (the file text on its own connection, the
+    way every environment applies it). An unserialized repair derives CLEAR/0
+    for the document - the admission is invisible to its statement snapshot -
+    blocks on the admission's lock, and under READ COMMITTED writes that stale
+    CLEAR/0 after the admission commits: only the WHERE clause is re-evaluated
+    against the new row version, never the FROM-derived table. That is the
+    repair itself recreating the drift it exists to heal, on the exact summary
+    column reads and signed posture trust.
+
+    The healed end state must agree with the committed ACTIVE hold row, purge
+    fields must stay untouched, and an unchanged rerun must remain idempotent.
+    """
+    document_id = "doc_migration_race"
+    repository = _repository()
+    _stored(repository, document_id)
+    # The reverse drift shape, seeded past the guards: a summary asserting a
+    # hold that has no row behind it, as the historic stale recount left rows.
+    with psycopg.connect(DATABASE_URL, autocommit=True) as connection:
+        connection.execute(
+            "UPDATE archive_documents SET legal_hold_status = 'active', legal_hold_count = 1 "
+            "WHERE document_id = %s",
+            (document_id,),
+        )
+    reconcile_sql = RECONCILE_MIGRATION.read_text(encoding="utf-8")
+
+    def run_repair() -> None:
+        # Fixture-style application: one autocommit connection, the whole file.
+        with psycopg.connect(DATABASE_URL, autocommit=True) as migrator:
+            migrator.execute(reconcile_sql)
+
+    overlap = _Overlap()
+    with psycopg.connect(DATABASE_URL) as blocker:
+        _begin_admission(blocker, document_id, f"hold_{document_id}_b")
+        overlap.run(run_repair)
+        overlap.assert_still_blocked()
+        blocker.commit()
+    overlap.finish()
+
+    healed = repository.get_by_document_id(document_id)
+    assert healed is not None
+    assert healed.legal_hold_status is LegalHoldStatus.ACTIVE, (
+        "the repair unblocked after the admission committed, so its derivation must include "
+        "the admitted hold - a CLEAR here is the repair writing its pre-admission snapshot"
+    )
+    assert healed.legal_hold_count == 1
+    assert _active_hold_rows(document_id) == [f"hold_{document_id}_b"]
+    assert healed.purge_status is PurgeStatus.NOT_ELIGIBLE, "the repair never touches purge fields"
+    assert healed.purge_started_at is None
+    assert healed.purged_at is None
+
+    # An unchanged rerun through the same entry point stays idempotent.
+    with psycopg.connect(DATABASE_URL, autocommit=True) as connection:
+        connection.execute(reconcile_sql)
+    second = repository.get_by_document_id(document_id)
+    assert second is not None
+    assert second.updated_at == healed.updated_at, "a no-drift rerun must update nothing"

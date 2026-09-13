@@ -138,7 +138,12 @@ recounts from the hold rows inside the same transaction, so a refresh that waite
 admission counts the hold whose commit it waited on. As a belt for rows written before this
 contract existed, the destructive transitions also refuse while any active hold **row** stands,
 even if a historic race left the summary saying `clear`, and migration 013 heals such drifted
-summaries idempotently.
+summaries idempotently. The repair holds itself to the same serialization contract as the runtime
+writers: its first statement takes an exclusive lock on the documents table, so it derives only
+after every in-flight hold write has committed or rolled back — an unserialized repair could
+otherwise overwrite a hold admitted while it was blocked, recreating the exact drift it exists to
+heal. Running the migration needs no separate writer-quiescence step; plain reads are unaffected
+for its duration.
 
 **Lifecycle transitions re-validate the rows they lock.** Supersede, correct and reissue lock both
 documents in deterministic id order, re-check every precondition against the stored rows, and write
