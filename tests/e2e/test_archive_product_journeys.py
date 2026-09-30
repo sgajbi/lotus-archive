@@ -219,6 +219,70 @@ def test_published_bundle_alone_verifies_idea_lifecycle_decision(
     )
 
 
+def test_foreign_document_scope_cannot_read_audit_or_mutate_durable_lifecycle(
+    assembled_archive: TestClient,
+) -> None:
+    source_id = _archive_expired_document(assembled_archive, "scope-source")
+    target = assembled_archive.post(
+        "/documents",
+        json=_document_payload("scope-target"),
+        headers=_headers("lotus-render", "scope-target-create"),
+    )
+    assert target.status_code == 201
+    target_id = target.json()["document_id"]
+
+    def foreign_headers(suffix: str) -> dict[str, str]:
+        return {
+            **_headers("lotus-report", suffix),
+            "X-Tenant-Id": "tenant-other",
+        }
+
+    audit = assembled_archive.get(
+        f"/documents/{source_id}/access-events",
+        headers=foreign_headers("scope-audit"),
+    )
+    hold = assembled_archive.post(
+        f"/documents/{source_id}/legal-holds",
+        json={"hold_reason": "Foreign review", "authority_reference": "CASE-FOREIGN"},
+        headers=foreign_headers("scope-hold"),
+    )
+    lifecycle = assembled_archive.post(
+        f"/documents/{source_id}/supersede",
+        json={
+            "target_document_id": target_id,
+            "transition_reason": "Foreign replacement",
+        },
+        headers=foreign_headers("scope-lifecycle"),
+    )
+    purge = assembled_archive.post(
+        f"/documents/{source_id}/purge",
+        headers=foreign_headers("scope-purge"),
+    )
+
+    assert [response.status_code for response in (audit, hold, lifecycle, purge)] == [403] * 4
+    service = app.state.archive_service
+    metadata = service.repository.get_by_document_id(source_id)
+    assert metadata is not None
+    assert metadata.superseded_by_document_id is None
+    assert metadata.purge_started_at is None
+    assert service.repository.list_legal_holds(source_id) == []
+    assert service.repository.list_lifecycle_relationships(source_id) == []
+    assert (service.storage.root / metadata.storage_key).is_file()
+
+    owner_current = assembled_archive.get(
+        f"/documents/{source_id}/current",
+        headers=_headers("lotus-report", "scope-owner-current"),
+    )
+    assert owner_current.status_code == 200
+    assert owner_current.json()["document_id"] == source_id
+
+    denied_traces = {f"trace-e2e-scope-{name}" for name in ("audit", "hold", "lifecycle", "purge")}
+    events = service.audit_repository.list_by_document_id(source_id)
+    matching = [event for event in events if event.trace_id in denied_traces]
+    assert {event.trace_id for event in matching} == denied_traces
+    assert all(event.authorization_decision.value == "denied" for event in matching)
+
+
 class _DeleteThenFailOnceStorage(FilesystemObjectStorage):
     def __init__(self, root: Path) -> None:
         super().__init__(root, namespace="e2e")

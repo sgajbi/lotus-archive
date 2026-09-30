@@ -104,6 +104,28 @@ class ArchiveAuthorizationPolicy:
         metadata: ArchiveDocumentMetadata,
         caller_context: CallerContext,
     ) -> ArchiveAccessDecision:
+        tenant_scope_decision = self.document_tenant_scope_decision(
+            metadata=metadata,
+            caller_context=caller_context,
+        )
+        if tenant_scope_decision.state is not ArchiveAccessState.ALLOWED:
+            return tenant_scope_decision
+        if metadata.purge_status is PurgeStatus.PURGED:
+            return ArchiveAccessDecision(
+                state=ArchiveAccessState.UNAVAILABLE,
+                reason_code=ArchiveAccessReasonCode.DOCUMENT_PURGED,
+            )
+        return ArchiveAccessDecision(
+            state=ArchiveAccessState.ALLOWED,
+            reason_code=ArchiveAccessReasonCode.ACCESS_ALLOWED,
+        )
+
+    def document_tenant_scope_decision(
+        self,
+        *,
+        metadata: ArchiveDocumentMetadata,
+        caller_context: CallerContext,
+    ) -> ArchiveAccessDecision:
         if not caller_context.tenant_id or not caller_context.region:
             return ArchiveAccessDecision(
                 state=ArchiveAccessState.DENIED,
@@ -122,11 +144,6 @@ class ArchiveAuthorizationPolicy:
                 state=ArchiveAccessState.DENIED,
                 reason_code=ArchiveAccessReasonCode.CALLER_SCOPE_MISMATCH,
             )
-        if metadata.purge_status is PurgeStatus.PURGED:
-            return ArchiveAccessDecision(
-                state=ArchiveAccessState.UNAVAILABLE,
-                reason_code=ArchiveAccessReasonCode.DOCUMENT_PURGED,
-            )
         return ArchiveAccessDecision(
             state=ArchiveAccessState.ALLOWED,
             reason_code=ArchiveAccessReasonCode.ACCESS_ALLOWED,
@@ -140,11 +157,83 @@ class ArchiveAuthorizationPolicy:
         audit_repository: AccessAuditRepository,
         trace_id: str,
     ) -> None:
-        require_caller_scope(caller_context)
+        self._require_audited_caller_scope(
+            metadata=metadata,
+            caller_context=caller_context,
+            audit_repository=audit_repository,
+            trace_id=trace_id,
+        )
         decision = self.document_scope_decision(
             metadata=metadata,
             caller_context=caller_context,
         )
+        self._enforce_document_scope_decision(
+            decision=decision,
+            metadata=metadata,
+            caller_context=caller_context,
+            audit_repository=audit_repository,
+            trace_id=trace_id,
+        )
+
+    def authorize_document_tenant_scope(
+        self,
+        *,
+        metadata: ArchiveDocumentMetadata,
+        caller_context: CallerContext,
+        audit_repository: AccessAuditRepository,
+        trace_id: str,
+    ) -> None:
+        """Authorize persisted tenant/region without changing lifecycle availability semantics."""
+        self._require_audited_caller_scope(
+            metadata=metadata,
+            caller_context=caller_context,
+            audit_repository=audit_repository,
+            trace_id=trace_id,
+        )
+        decision = self.document_tenant_scope_decision(
+            metadata=metadata,
+            caller_context=caller_context,
+        )
+        self._enforce_document_scope_decision(
+            decision=decision,
+            metadata=metadata,
+            caller_context=caller_context,
+            audit_repository=audit_repository,
+            trace_id=trace_id,
+        )
+
+    @staticmethod
+    def _require_audited_caller_scope(
+        *,
+        metadata: ArchiveDocumentMetadata,
+        caller_context: CallerContext,
+        audit_repository: AccessAuditRepository,
+        trace_id: str,
+    ) -> None:
+        try:
+            require_caller_scope(caller_context)
+        except CallerScopeMissingError:
+            audit_repository.record(
+                access_audit_event(
+                    event_type=AccessEventType.AUTHORIZATION_DENIED,
+                    caller_context=caller_context,
+                    trace_id=trace_id,
+                    authorization_decision=AuthorizationDecision.DENIED,
+                    authorization_reason_code="caller_scope_missing",
+                    document_id=metadata.document_id,
+                )
+            )
+            raise
+
+    @staticmethod
+    def _enforce_document_scope_decision(
+        *,
+        decision: ArchiveAccessDecision,
+        metadata: ArchiveDocumentMetadata,
+        caller_context: CallerContext,
+        audit_repository: AccessAuditRepository,
+        trace_id: str,
+    ) -> None:
         if decision.state is ArchiveAccessState.ALLOWED:
             return
         audit_repository.record(

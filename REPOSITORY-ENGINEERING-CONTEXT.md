@@ -299,6 +299,16 @@ every lane that runs tests passed.
     admission at its INSERT, and hold the document row from an in-flight writer's own statements
     to catch a stale recount or snapshot write (see
     `tests/integration/test_postgres_aggregate_boundary_overlap.py`).
+19. **Document-bound lifecycle authority is persisted scope, not caller service alone.** Audit,
+    source-event, and retention reads, purge evaluation/execution, and legal-hold admission/release authorize the
+    document's stored tenant and region before lookup, refresh, replay, or mutation. Supersede,
+    correct, and reissue authorize both source and target, plus every resolved lifecycle successor,
+    before looking up an existing transition, so legacy cross-scope chains cannot leak through
+    current/source-event responses or obtain replay success.
+    Missing caller scope is refused as `401 caller_scope_missing`; scope mismatch remains the
+    product-safe `403 authorization_failed`, and both write a denied audit event without an allowed
+    event for the refused operation. PostgreSQL HTTP regressions prove no denied hold or relationship
+    row is written and a denied purge retains the filesystem test object (issue #172).
 
 ## Context Maintenance Rule
 

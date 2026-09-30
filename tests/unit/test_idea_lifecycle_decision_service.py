@@ -391,6 +391,7 @@ def _report_context() -> CallerContext:
         actor_id="report-worker",
         correlation_id="corr-hold-001",
         tenant_id="tenant-private-bank",
+        region="SG",
     )
 
 

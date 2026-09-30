@@ -320,9 +320,9 @@ async def get_document(
     response_model=ArchiveDocumentResponse,
     summary="Get current document in lifecycle",
     description=(
-        "Returns the current archived document after following supersession, correction, and "
-        "reissue relationships. Historical document metadata remains available through the "
-        "standard metadata endpoint."
+        "Returns the current archived document after authorizing every document traversed through "
+        "supersession, correction, and reissue relationships. Historical document metadata "
+        "remains available through the standard metadata endpoint."
     ),
     responses={
         200: {"description": "Current archived document metadata."},
@@ -352,8 +352,8 @@ async def get_current_document(
     summary="List archived document source events",
     description=(
         "Returns archive-owned generated-document source events for downstream portfolio-memory "
-        "consumers. The response preserves document lifecycle, correction, supersession, and "
-        "client-delivery reissue lineage without exposing raw document bytes, storage keys, raw "
+        "consumers after authorizing every document traversed in its lifecycle. The response "
+        "preserves lineage without exposing raw document bytes, storage keys, raw "
         "client references, or report payloads."
     ),
     responses={
@@ -451,8 +451,9 @@ async def download_document(
     response_model=AccessEventListResponse,
     summary="List document access events",
     description=(
-        "Returns audit events recorded for one archived document. This endpoint is for support "
-        "and operator investigation, not customer-facing document access."
+        "Returns audit events recorded for one archived document only when the trusted caller "
+        "tenant and region match the document. This endpoint is for support and operator "
+        "investigation, not customer-facing document access."
     ),
     responses={
         200: {"description": "Access-audit events for the document."},
@@ -499,7 +500,8 @@ async def list_access_events(
     summary="Get document retention posture",
     description=(
         "Returns the archived document retention, purge, and legal-hold posture for support and "
-        "operations. The response is support-safe and does not expose object-storage paths."
+        "operations within the document's tenant and region. The response is support-safe and "
+        "does not expose object-storage paths."
     ),
     responses={
         200: {"description": "Retention and legal-hold posture for the document."},
@@ -528,7 +530,8 @@ async def get_retention(
     summary="Evaluate document purge eligibility",
     description=(
         "Evaluates whether retention has elapsed and no active legal hold blocks purge. This "
-        "action records audit evidence but does not delete document binary content."
+        "tenant- and region-scoped action records audit evidence but does not delete document "
+        "binary content."
     ),
     responses={
         200: {"description": "Purge eligibility evaluation result."},
@@ -561,8 +564,9 @@ async def evaluate_purge(
     summary="Execute document purge",
     description=(
         "Executes a governed purge only when retention has elapsed and no legal hold is active. "
-        "The action removes the stored binary through the archive storage abstraction and leaves "
-        "support-safe metadata and audit evidence."
+        "The caller's trusted tenant and region must match the document before purge evaluation "
+        "or deletion. The action removes the stored binary through the archive storage abstraction "
+        "and leaves support-safe metadata and audit evidence."
     ),
     responses={
         200: {"description": "Purge execution result."},
@@ -597,7 +601,8 @@ async def purge_document(
     summary="Set a document legal hold",
     description=(
         "Sets a legal hold on an archived document with a reason and authority reference. Active "
-        "legal holds block purge regardless of retention eligibility."
+        "legal holds block purge regardless of retention eligibility. The trusted caller tenant "
+        "and region must match the document before hold lookup or admission."
     ),
     responses={
         201: {"description": "Legal hold was set."},
@@ -631,7 +636,8 @@ async def set_legal_hold(
     summary="Release a document legal hold",
     description=(
         "Releases an active legal hold and refreshes the document purge-blocking posture. The "
-        "release is idempotent for already released holds and is recorded in access audit."
+        "release is idempotent for already released holds and is recorded in access audit. The "
+        "trusted caller tenant and region are authorized before hold lookup or mutation."
     ),
     responses={
         200: {"description": "Legal hold release result."},
@@ -666,7 +672,8 @@ async def release_legal_hold(
     description=(
         "Records that another archived document supersedes this document. The historical document "
         "remains retrievable, the target document becomes current, and the lifecycle mutation is "
-        "audited."
+        "audited. Both documents must match the trusted caller tenant and region before lookup, "
+        "replay, or mutation."
     ),
     responses={
         201: {"description": "Supersession relationship was recorded."},
@@ -706,7 +713,8 @@ async def supersede_document(
     description=(
         "Records that another archived document corrects this document. The historical document "
         "is preserved, the correction document becomes current, and the lifecycle mutation is "
-        "audited."
+        "audited. Both documents must match the trusted caller tenant and region before lookup, "
+        "replay, or mutation."
     ),
     responses={
         201: {"description": "Correction relationship was recorded."},
@@ -746,7 +754,8 @@ async def correct_document(
     description=(
         "Records that another archived document reissues this document. The historical document "
         "is preserved, the reissued document becomes current, and the lifecycle mutation is "
-        "audited."
+        "audited. Both documents must match the trusted caller tenant and region before lookup, "
+        "replay, or mutation."
     ),
     responses={
         201: {"description": "Reissue relationship was recorded."},

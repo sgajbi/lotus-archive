@@ -231,14 +231,12 @@ class ArchiveDocumentService:
         limit: int | None = None,
         offset: int = 0,
     ) -> tuple[list[AccessAuditEvent], int]:
-        self.authorization_policy.authorize(
+        self._get_tenant_authorized_document_metadata(
+            document_id=document_id,
             permission=ArchivePermission.READ_ACCESS_EVENTS,
             caller_context=caller_context,
-            audit_repository=self.audit_repository,
             trace_id=trace_id,
-            document_id=document_id,
         )
-        self._get_existing_metadata(document_id)
         self._record_allowed(
             event_type=AccessEventType.ACCESS_EVENTS_READ,
             caller_context=caller_context,
@@ -257,14 +255,13 @@ class ArchiveDocumentService:
         caller_context: CallerContext,
         trace_id: str,
     ) -> ArchiveDocumentMetadata:
-        self.authorization_policy.authorize(
+        metadata = self._get_tenant_authorized_document_metadata(
+            document_id=document_id,
             permission=ArchivePermission.READ_RETENTION,
             caller_context=caller_context,
-            audit_repository=self.audit_repository,
             trace_id=trace_id,
-            document_id=document_id,
         )
-        metadata = self._refresh_legal_hold_summary(self._get_existing_metadata(document_id))
+        metadata = self._refresh_legal_hold_summary(metadata)
         self._record_allowed(
             event_type=AccessEventType.RETENTION_READ,
             caller_context=caller_context,
@@ -282,14 +279,13 @@ class ArchiveDocumentService:
         trace_id: str,
         evaluation_date: date | None = None,
     ) -> tuple[ArchiveDocumentMetadata, bool, str]:
-        self.authorization_policy.authorize(
+        metadata = self._get_tenant_authorized_document_metadata(
+            document_id=document_id,
             permission=ArchivePermission.EVALUATE_PURGE,
             caller_context=caller_context,
-            audit_repository=self.audit_repository,
             trace_id=trace_id,
-            document_id=document_id,
         )
-        metadata = self._refresh_legal_hold_summary(self._get_existing_metadata(document_id))
+        metadata = self._refresh_legal_hold_summary(metadata)
         metadata, purge_eligible, reason_code = self._evaluate_purge(metadata, evaluation_date)
         self._record_allowed(
             event_type=AccessEventType.PURGE_EVALUATION,
@@ -308,14 +304,13 @@ class ArchiveDocumentService:
         trace_id: str,
         evaluation_date: date | None = None,
     ) -> tuple[ArchiveDocumentMetadata, str]:
-        self.authorization_policy.authorize(
+        metadata = self._get_tenant_authorized_document_metadata(
+            document_id=document_id,
             permission=ArchivePermission.EXECUTE_PURGE,
             caller_context=caller_context,
-            audit_repository=self.audit_repository,
             trace_id=trace_id,
-            document_id=document_id,
         )
-        metadata = self._refresh_legal_hold_summary(self._get_existing_metadata(document_id))
+        metadata = self._refresh_legal_hold_summary(metadata)
         if metadata.purge_status is PurgeStatus.PURGED:
             self._record_allowed(
                 event_type=AccessEventType.PURGE_EXECUTION,
@@ -338,17 +333,9 @@ class ArchiveDocumentService:
                 raise LegalHoldActiveError("legal hold blocks purge")
             raise PurgeNotEligibleError("document is not purge eligible")
 
-        # The intent is recorded before the object is deleted, because deletion
-        # is irreversible and the record is not. If this claim fails, nothing has
-        # been destroyed. If the delete or the save below fails, the record
-        # already says destruction was started, which is what lets a retry
-        # finish and stops a reader believing the document is still retained.
-        #
-        # Claimed conditionally rather than read-then-saved: the previous form
-        # decided on a snapshot and wrote it back wholesale, so a legal hold
-        # admitted in between was erased along with the purge state it had
-        # already committed. The condition and the write are now one step, and
-        # a hold that won the race makes this return None.
+        # Claim durable destruction intent before deleting irreversible bytes. The conditional
+        # repository transition serializes against hold admission; refusal has no storage effect,
+        # while an interrupted accepted purge remains truthfully resumable.
         started_at = datetime.now(timezone.utc)
         claimed = self.repository.begin_purge(document_id=document_id, started_at=started_at)
         if claimed is None:
@@ -362,12 +349,6 @@ class ArchiveDocumentService:
             raise LegalHoldActiveError("legal hold blocks purge")
         metadata = claimed
         self.storage.delete(key=metadata.storage_key)
-        # Recorded against the stored row rather than by saving back the
-        # snapshot read before the delete. That snapshot carried every
-        # mutable column, so writing it wholesale reverted whatever another
-        # writer had committed meanwhile -- the same defect as above, on the
-        # path where the bytes are already gone and the record is all that
-        # is left to be wrong.
         completed = self.repository.complete_purge(
             document_id=document_id,
             purged_at=datetime.now(timezone.utc),
@@ -391,14 +372,12 @@ class ArchiveDocumentService:
         caller_context: CallerContext,
         trace_id: str,
     ) -> LegalHoldRecord:
-        self.authorization_policy.authorize(
+        self._get_tenant_authorized_document_metadata(
+            document_id=document_id,
             permission=ArchivePermission.MANAGE_LEGAL_HOLD,
             caller_context=caller_context,
-            audit_repository=self.audit_repository,
             trace_id=trace_id,
-            document_id=document_id,
         )
-        self._get_existing_metadata(document_id)
         for existing in self.repository.list_legal_holds(document_id):
             if (
                 existing.hold_status is LegalHoldStatus.ACTIVE
@@ -417,11 +396,7 @@ class ArchiveDocumentService:
                     operation_reason_code="legal_hold_already_active",
                 )
                 return existing
-        # Claim the document for preservation before any hold record exists.
-        # Refusal precedes every effect: on refusal no hold is written, and the
-        # denial is audited. A hold cannot preserve an object whose deletion has
-        # already been ordered, and recording one would leave the document
-        # asserting a preservation that is not true.
+        # Refuse before writing when destruction already owns the document.
         legal_hold = LegalHoldRecord(
             legal_hold_id=f"hold_{uuid4().hex}",
             document_id=document_id,
@@ -429,12 +404,7 @@ class ArchiveDocumentService:
             authority_reference=command.authority_reference,
             requested_by=caller_context.actor_id,
         )
-        # Admission, the hold row and the summary commit together. As three
-        # steps there was a window after admission and before the row
-        # existed in which a competing purge recounted active holds, found
-        # none, wrote `clear` and deleted the object -- after which this
-        # hold landed and returned success. The observed end state was
-        # PURGED metadata, one ACTIVE hold and absent bytes.
+        # Admission, hold row, and derived summary commit under one durable transaction.
         admitted = self.repository.admit_and_record_legal_hold(
             document_id=document_id,
             legal_hold=legal_hold,
@@ -469,19 +439,14 @@ class ArchiveDocumentService:
         caller_context: CallerContext,
         trace_id: str,
     ) -> LegalHoldRecord:
-        self.authorization_policy.authorize(
+        self._get_tenant_authorized_document_metadata(
+            document_id=document_id,
             permission=ArchivePermission.MANAGE_LEGAL_HOLD,
             caller_context=caller_context,
-            audit_repository=self.audit_repository,
             trace_id=trace_id,
-            document_id=document_id,
         )
-        self._get_existing_metadata(document_id)
-        # Release and recount commit together, under the same document
-        # serialization boundary as admission. As two steps - write the hold
-        # row, then refresh from a separate read - the refresh raced a
-        # concurrent admission and overwrote its summary with a stale CLEAR/0,
-        # which is exactly the column `begin_purge` trusts (issue #166).
+        # Release and derived recount share the admission serialization boundary; a separate
+        # refresh could overwrite a concurrent admission with stale CLEAR/0 (issue #166).
         released = self.repository.release_and_record_legal_hold(
             document_id=document_id,
             legal_hold_id=legal_hold_id,
@@ -514,7 +479,7 @@ class ArchiveDocumentService:
             caller_context=caller_context,
             trace_id=trace_id,
         )
-        current = self._resolve_current_document(metadata)
+        current = self._resolve_current_document(metadata, caller_context, trace_id)
         self._record_allowed(
             event_type=AccessEventType.CURRENT_DOCUMENT_READ,
             caller_context=caller_context,
@@ -603,15 +568,13 @@ class ArchiveDocumentService:
         limit: int | None = None,
         offset: int = 0,
     ) -> tuple[ArchiveDocumentMetadata, ArchiveDocumentMetadata, list[dict[str, object]]]:
-        self.authorization_policy.authorize(
+        metadata = self._get_tenant_authorized_document_metadata(
+            document_id=document_id,
             permission=ArchivePermission.READ_METADATA,
             caller_context=caller_context,
-            audit_repository=self.audit_repository,
             trace_id=trace_id,
-            document_id=document_id,
         )
-        metadata = self._get_existing_metadata(document_id)
-        current = self._resolve_current_document(metadata)
+        current = self._resolve_current_document(metadata, caller_context, trace_id)
         relationships = self.repository.list_lifecycle_relationships(document_id)
         events = build_archive_document_source_events(
             metadata=metadata,
@@ -710,6 +673,30 @@ class ArchiveDocumentService:
         )
         return metadata
 
+    def _get_tenant_authorized_document_metadata(
+        self,
+        *,
+        document_id: str,
+        permission: ArchivePermission,
+        caller_context: CallerContext,
+        trace_id: str,
+    ) -> ArchiveDocumentMetadata:
+        self.authorization_policy.authorize(
+            permission=permission,
+            caller_context=caller_context,
+            audit_repository=self.audit_repository,
+            trace_id=trace_id,
+            document_id=document_id,
+        )
+        metadata = self._get_existing_metadata(document_id)
+        self.authorization_policy.authorize_document_tenant_scope(
+            metadata=metadata,
+            caller_context=caller_context,
+            audit_repository=self.audit_repository,
+            trace_id=trace_id,
+        )
+        return metadata
+
     def _record_preflight_audit(
         self,
         *,
@@ -759,6 +746,19 @@ class ArchiveDocumentService:
         )
         source = self._get_existing_metadata(source_document_id)
         target = self._get_existing_metadata(command.target_document_id)
+        self.authorization_policy.authorize_document_tenant_scope(
+            metadata=source,
+            caller_context=caller_context,
+            audit_repository=self.audit_repository,
+            trace_id=trace_id,
+        )
+        self.authorization_policy.authorize_document_tenant_scope(
+            metadata=target,
+            caller_context=caller_context,
+            audit_repository=self.audit_repository,
+            trace_id=trace_id,
+        )
+        resolved_target = self._resolve_current_document(target, caller_context, trace_id)
         already_applied = self._find_applied_transition(
             source=source,
             target=target,
@@ -772,11 +772,7 @@ class ArchiveDocumentService:
                 document_id=source.document_id,
                 operation_reason_code="lifecycle_transition_already_recorded",
             )
-            return already_applied, self._resolve_current_document(target)
-        # Fast refusal on the unlocked reads, for a precise error without taking
-        # locks. It authorizes nothing: the repository re-validates the SAME
-        # preconditions on the rows it has locked, because a snapshot decision
-        # says nothing about the row that is actually written (issue #166).
+            return already_applied, resolved_target
         validate_lifecycle_preconditions(
             source=source,
             target=target,
@@ -793,12 +789,6 @@ class ArchiveDocumentService:
             requested_by=caller_context.actor_id,
         )
 
-        # One atomic unit in the repository: both documents locked in
-        # deterministic order, stored preconditions re-validated, and ONLY the
-        # columns this transition decides written - never these snapshots. A
-        # crash between the writes would leave a half-linked chain that the
-        # validation guards make unrepairable through the API, so the database
-        # owns the atomicity.
         saved_relationship, _, target_after = self.repository.apply_lifecycle_transition(
             source_document_id=source.document_id,
             target_document_id=target.document_id,
@@ -819,7 +809,9 @@ class ArchiveDocumentService:
                 else "lifecycle_transition_recorded"
             ),
         )
-        return saved_relationship, self._resolve_current_document(target_after)
+        return saved_relationship, self._resolve_current_document(
+            target_after, caller_context, trace_id
+        )
 
     def _find_applied_transition(
         self,
@@ -828,13 +820,7 @@ class ArchiveDocumentService:
         target: ArchiveDocumentMetadata,
         transition_type: LifecycleTransitionType,
     ) -> LifecycleRelationshipRecord | None:
-        """The recorded relationship when exactly this transition already holds, else None.
-
-        A retry is recognized only when the whole chain agrees: the source points at this
-        target, the target carries this transition's origin field back at the source, and
-        the relationship record exists. Anything less is a genuine conflict and falls
-        through to the validation guards.
-        """
+        """Return a replay only when pointers and the durable relationship all agree."""
         if not transition_pointers_agree(
             source=source, target=target, transition_type=transition_type
         ):
@@ -851,6 +837,8 @@ class ArchiveDocumentService:
     def _resolve_current_document(
         self,
         metadata: ArchiveDocumentMetadata,
+        caller_context: CallerContext,
+        trace_id: str,
     ) -> ArchiveDocumentMetadata:
         visited_document_ids = {metadata.document_id}
         current = metadata
@@ -859,6 +847,12 @@ class ArchiveDocumentService:
                 raise SupersessionConflictError("document lifecycle relationship cycle detected")
             visited_document_ids.add(current.superseded_by_document_id)
             current = self._get_existing_metadata(current.superseded_by_document_id)
+            self.authorization_policy.authorize_document_tenant_scope(
+                metadata=current,
+                caller_context=caller_context,
+                audit_repository=self.audit_repository,
+                trace_id=trace_id,
+            )
         return current
 
     def _evaluate_purge(

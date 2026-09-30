@@ -13,8 +13,8 @@ caller sets about itself:
 | `x-caller-service` | which Lotus service is calling | always |
 | `x-actor-type` | what kind of actor is behind the call | always |
 | `x-actor-id` | which actor | always |
-| `x-tenant-id` | the caller's tenant | on scoped document reads |
-| `x-region` | the caller's region | on scoped document reads |
+| `x-tenant-id` | the caller's tenant | on document-bound reads and mutations |
+| `x-region` | the caller's region | on document-bound reads and mutations |
 
 There is no token, no signature and no verification. Anything that can reach the port can send
 `x-caller-service: lotus-report` and thereby hold every permission the service grants — including
@@ -38,7 +38,7 @@ loaded:
 
 | permission | permitted callers |
 |---|---|
-| `create_document` | `lotus-report` |
+| `create_document` | `lotus-render` |
 | `read_metadata`, `download_binary` | `lotus-report`, `lotus-gateway` |
 | `read_retention`, `evaluate_purge`, `execute_purge` | `lotus-report` |
 | `manage_legal_hold`, `manage_lifecycle` | `lotus-report` |
@@ -55,21 +55,26 @@ part of the audit trail, not just an error to the caller.
 
 ## Tenant and region scope
 
-Beyond the caller allow-list, every scoped document read compares the caller's declared tenant and
-region against the document's. `POST /documents` requires a non-empty document tenant, so new
+Beyond the caller allow-list, every document-bound read and mutation compares the caller's trusted
+tenant and region against the document's persisted scope. `POST /documents` requires a non-empty
+document tenant, so new
 archive records cannot enter the unreadable missing-tenant state:
 
 | condition | outcome |
 |---|---|
-| caller has no tenant or region | denied, `caller_scope_mismatch` |
+| caller has no tenant or region | HTTP `401 caller_scope_missing`; denied audit reason `caller_scope_missing` |
 | the document has no tenant or region | unavailable, `document_scope_unavailable` |
 | tenant differs, or region differs (case-insensitively) | denied, `caller_scope_mismatch` |
 | the document has been purged | unavailable, `document_purged` |
 | otherwise | allowed |
 
-This is applied on the shared path behind metadata, download and the other scoped reads, so it
-cannot be bypassed by choosing a different endpoint. The batch preflight uses the same decision
-function, which is why its answers agree with the routes that enforce them.
+This is applied before access-event, source-event, or retention return, purge evaluation or deletion,
+and legal-hold lookup or mutation. Current/source-event resolution and lifecycle responses authorize
+every traversed document, including persisted legacy chains. Supersede, correct, and reissue do so
+before relationship lookup or mutation, preventing replay success or cross-scope target selection.
+Metadata/download availability remains a separate rule: a purged document has
+support-safe retention and audit history but no readable archived content. Batch preflight uses the
+full access-and-availability decision, which is why its answers agree with metadata/download reads.
 
 The `document_scope_unavailable` branch remains fail-closed for historical or externally migrated
 records whose scope is incomplete.

@@ -40,6 +40,7 @@ sections, and does not promote client-ready commentary.
 | Product-facing retrieval | `lotus-gateway` | Supported through gateway metadata and controlled download routes |
 | Workbench retrieval surface | `lotus-workbench` | Supported only through the Workbench BFF and existing gateway-backed retrieval boundary; direct Workbench-to-archive calls remain unsupported |
 | Batch caller access posture | `lotus-archive` | Published through a bounded, ordered preflight contract; Archive evaluates tenant/region scope without returning payloads or storage truth |
+| Document-bound authorization | `lotus-archive` | Caller permission is necessary but not sufficient: audit, retention, purge, hold, and lifecycle operations authorize persisted tenant/region scope before target lookup, replay, or mutation; current/source-event resolution authorizes every traversed document, including legacy chains |
 
 ## Module Families
 
