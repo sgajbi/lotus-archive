@@ -190,7 +190,11 @@ Neither grants bank authority. Source qualification remains controlled/unverifie
 and `NOT_ATTESTED`; no fake Performance calculation is added. The existing create,
 replay, source-event, download and explicit correction/current paths retain the
 identity. [Eligibility custody acceptance](https://github.com/sgajbi/lotus-archive/blob/main/docs/composite-eligibility-custody-acceptance.md)
-documents the exact source/qualification examples and pending actual joined proof.
+documents exact source/qualification examples and actual R7 custody of eight
+workbooks, including full-byte retrieval, immutable replay/conflicts and tenant
+refusal. Retained technical rerender uses `/correct` with unchanged source identity;
+it does not prove genuine monthly source amendment. Pooled and institutional
+acceptance remain open.
 
 Linked v3 uses the same family/routes with a strict CARINO source request and
 complete ordered window pins, replacing the v1/v2 selection shape. Return
