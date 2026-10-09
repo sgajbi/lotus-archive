@@ -4,11 +4,14 @@ How to tell whether `lotus-archive` is healthy, what its posture surfaces do and
 where the procedures live. The step-by-step checks are authored in the repository and linked below
 rather than repeated here.
 
+## Current scope
+
 Current scope covers existing archive runtime controls and bounded v1/v2
 Composite custody. Linked v3 also has qualified joined HTTP custody, actual
 restart and isolated PostgreSQL/object restore proof. Start with The surfaces for health,
 Procedures for composition, and Composite v2 custody upgrade for migration
-and recovery boundaries.
+and recovery boundaries. Monthly amendment v6 has forward migration/component
+custody support; actual joined v6 delivery and restore remain pending.
 
 ## The surfaces
 
@@ -123,6 +126,19 @@ The ordered operational procedures are in the repository:
 1. [Configuration](Configuration) — the settings behind every posture value above
 2. [Security and Controls](Security-and-Controls) — what the audit trail records
 3. [Document Lifecycle](Document-Lifecycle) — why a purge was refused
+
+## Composite monthly amendment custody upgrade
+
+Apply pending migration019 after018. It extends only the existing CHECK with
+matched v6 qualification/selector/lineage axes; retained v1-v5 rows and objects
+are unchanged. Keep compatible readers/schema, disable admissions and forward-fix;
+never replay old guards over retained v6. The required PostgreSQL test covers
+nineteen retained v1-v5 records plus twelve v6 component records and fresh readers.
+[Monthly amendment custody](https://github.com/sgajbi/lotus-archive/blob/main/docs/composite-amendment-custody-acceptance.md)
+records exact schema/source provenance and executable validation. Fresh-process
+reads are persistence proof; actual joined source packet delivery/restore,
+institutional authority and operated recovery remain separate. Report is JSON-only
+until receiver support and all component workbook bytes are synthetic.
 
 ## Composite pooled custody upgrade
 

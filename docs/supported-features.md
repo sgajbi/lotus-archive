@@ -67,6 +67,13 @@ PostgreSQL and S3 adapters plus their mandatory configuration.
 Workbench-facing archive retrieval is supported only through the `lotus-workbench` BFF and
 `lotus-gateway`. Workbench must not call `lotus-archive` directly.
 
+Monthly amendment `composite_review.v6` has strict selector/opaque identity admission
+through the same Composite XLSX path. Exact bounded lineage receipt pins and parent
+publication digest remain immutable with `CONTROLLED_MONTHLY_SOURCE_AMENDMENT_REPLAY`
+/ `NOT_ATTESTED`. Component transport is synthetic; actual v6 producer delivery,
+native source packet export and joined restore remain pending. Report remains
+JSON-only until receiver support. See [monthly amendment custody](composite-amendment-custody-acceptance.md).
+
 Pooled `composite_review.v5` has strict selector/opaque identity admission through
 the existing Composite XLSX custody path. It retains source, predecessor and
 fallback policy pins with `EXPLICIT_RETAINED_CALCULATED_REPLAY` / `NOT_ATTESTED`.
