@@ -196,7 +196,10 @@ masquerade as approval or canonical publication/history.
 The existing scope, measured-byte, immutable replay, lifecycle and tenant controls
 preserve the identity. See [eligibility custody acceptance](composite-eligibility-custody-acceptance.md)
 for the exact frozen wire, source/qualification examples, additive migration 017,
-component proof and remaining actual joined acceptance. V1/v2/v3 contracts and
+component and required PostgreSQL proof, actual R7 eight-document custody,
+HTTP restart, isolated restore and scoped retirement. Technical rerender uses the
+existing `/correct` relationship with unchanged source identity; it does not prove
+genuine monthly source amendment. V1/v2/v3 contracts and
 retained bytes remain compatible.
 
 ### Upgrade and recovery

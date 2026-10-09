@@ -134,8 +134,11 @@ owned by the API model; PostgreSQL retains the bounded scope/axis guard.
 Published versus evaluated-only describes source evidence availability, not bank
 approval. The [eligibility custody acceptance](https://github.com/sgajbi/lotus-archive/blob/main/docs/composite-eligibility-custody-acceptance.md)
 provides exact source/qualification examples, populated upgrade commands and the
-remaining coordinated HTTP acceptance boundary. Component proof alone is not
-actual joined acceptance or enterprise recovery certification.
+actual R7 eight-document custody evidence. Native HTTP restart, UUID-isolated
+PostgreSQL/object restore and scoped retirement passed with retained dumps/TOCs
+and object bytes. The campaign used explicit local-development degraded readiness;
+it does not certify enterprise recovery. Genuine monthly source amendment, pooled
+and institutional acceptance remain open.
 
 ## Composite v2 custody upgrade
 
