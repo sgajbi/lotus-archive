@@ -36,9 +36,7 @@ def client(tmp_path: Path) -> Iterator[ClientService]:
         app.dependency_overrides.clear()
 
 
-def composite_custody_journey(
-    client: ClientService, tmp_path: Path
-) -> None:
+def composite_custody_journey(client: ClientService, tmp_path: Path) -> None:
     api, service = client
     original = workbook_bytes()
     offered = payload(original)
