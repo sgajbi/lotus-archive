@@ -176,8 +176,12 @@ These digests prove custody identity, not bank/source/publication approval.
 Unavailable evidence remains source-owned; Archive never manufactures a zero,
 successful linked result or approval to fill missing source content.
 
-See [linked custody acceptance](composite-linked-custody-acceptance.md) for the
-component examples and the separately tracked actual HTTP acceptance boundary.
+See [linked custody acceptance](composite-linked-custody-acceptance.md) for
+component examples, actual qualified HTTP original/technical/financial custody,
+restart, isolated PostgreSQL/object restore and retained evidence. Fresh Report
+snapshots bind complete payloads, lifecycle IDs and digests. The frozen financial
+baseline does not imply unchanged opaque digests across a fresh lifecycle.
+Explicit correction relationships resolve O→T→C while retaining historical bytes.
 
 ### Upgrade and recovery
 
