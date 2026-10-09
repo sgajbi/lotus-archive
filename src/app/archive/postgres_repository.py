@@ -41,6 +41,7 @@ _DOCUMENT_JSON_COLUMNS = frozenset(
         "advisor_proposal_memo",
         "advisor_commentary",
         "idea_evidence_pack",
+        "composite_report_identity",
     }
 )
 _LEGAL_HOLD_COLUMNS = tuple(LegalHoldRecord.model_fields)
@@ -177,8 +178,9 @@ def _values(model: Any, columns: tuple[str, ...]) -> tuple[object, ...]:
 
 def _document_values(metadata: ArchiveDocumentMetadata) -> tuple[object, ...]:
     data = metadata.model_dump()
+    json_data = metadata.model_dump(mode="json", include=set(_DOCUMENT_JSON_COLUMNS))
     return tuple(
-        Jsonb(data[column])
+        Jsonb(json_data[column])
         if column in _DOCUMENT_JSON_COLUMNS and data[column] is not None
         else data[column]
         for column in _DOCUMENT_COLUMNS

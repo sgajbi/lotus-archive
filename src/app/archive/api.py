@@ -389,6 +389,8 @@ async def list_document_source_events(
         document_id=metadata.document_id,
         current_document_id=current.document_id,
         portfolio_id=metadata.portfolio_id,
+        composite_id=metadata.composite_id,
+        composite_report_identity=metadata.composite_report_identity,
         report_type=metadata.report_type,
         event_count=len(page),
         returned_count=len(page),

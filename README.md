@@ -6,6 +6,10 @@ was produced, from what evidence, who has looked at it, and whether it may be de
 
 It is not a general file store, a manual upload service, a delivery channel, or a renderer.
 
+The composite-review custody contract uses genuine composite scope and qualified XLSX
+artifacts through the same lifecycle. See [composite custody](docs/composite-custody-contract.md)
+for exact identity, compatibility, requests, retrieval and the pending joined-producer boundary.
+
 > **Durable runtime implemented.** A production profile composes PostgreSQL document metadata and
 > access audit with S3-compatible object storage. Local development remains intentionally
 > in-memory/filesystem. Production certification still requires operated migrations, managed

@@ -8,7 +8,7 @@ There are **22**: sixteen on documents, six operational. The behaviour behind th
 
 | operation | purpose | permitted callers |
 |---|---|---|
-| `POST /documents` | archive a generated document | `lotus-report` |
+| `POST /documents` | archive a generated document | `lotus-render` |
 | `GET /documents/{id}` | support-safe metadata | `lotus-report`, `lotus-gateway` |
 | `GET /documents/{id}/download` | checksum-verified binary | `lotus-report`, `lotus-gateway` |
 | `GET /documents/{id}/access-events` | who accessed this document | `lotus-report` |
@@ -176,3 +176,15 @@ identifiers do not leak into log aggregation.
 1. [Document Lifecycle](Document-Lifecycle) — what these operations mean in business terms
 2. [Security and Controls](Security-and-Controls) — caller identity, scope and audit
 3. [Architecture](Architecture) — how a request becomes a stored document
+## Composite XLSX custody
+
+`composite_review` uses `portfolio_scope=composite`, null `portfolio_id`, and an
+exclusive source-owned `composite_id`. Its immutable `composite_report_identity`
+retains the exact Report selection and revision digests with calculated-replay
+qualification and `NOT_ATTESTED` publication. `POST /documents` admits only the
+`composite-review/v1` XLSX contract and verifies actual bounded OOXML bytes and
+declared SHA-256 before storage. Existing metadata, checksum-verified download,
+source-event, correction, retention and legal-hold routes preserve the identity.
+This Archive capability does not prove actual upstream producer acceptance or
+official financial authority. The [source contract and executable tutorial](https://github.com/sgajbi/lotus-archive/blob/main/docs/composite-custody-contract.md)
+cover the exact fields, migration and retry/retrieval flow.

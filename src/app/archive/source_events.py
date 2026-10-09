@@ -106,9 +106,19 @@ def _base_event(
         "source_system": SOURCE_SYSTEM,
         "source_event_family": SOURCE_EVENT_FAMILY,
         "portfolio_id": metadata.portfolio_id,
+        "composite_id": metadata.composite_id,
+        "composite_report_identity": (
+            metadata.composite_report_identity.model_dump(mode="json")
+            if metadata.composite_report_identity is not None
+            else None
+        ),
         "report_type": metadata.report_type.value,
         "report_job_id": metadata.report_job_id,
         "snapshot_id": metadata.snapshot_id,
+        "report_revision_id": metadata.report_revision_id,
+        "document_reference": metadata.document_reference,
+        "mime_type": metadata.mime_type,
+        "output_format": metadata.output_format,
         "render_job_id": metadata.render_job_id,
         "render_attempt_id": metadata.render_attempt_id,
         "report_data_contract_version": metadata.report_data_contract_version,
