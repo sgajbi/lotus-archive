@@ -7,7 +7,7 @@ from typing import Literal, Self
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from app.archive.checksum import SUPPORTED_CHECKSUM_ALGORITHM
-from app.archive.composite_identity import CompositeReportIdentity
+from app.archive.composite_products import CompositeCustodyIdentity
 
 
 class PurgeStatus(StrEnum):
@@ -254,7 +254,7 @@ class ArchiveDocumentInput(BaseModel):
     portfolio_scope: str = Field(min_length=1)
     portfolio_id: str | None = Field(default=None, min_length=1)
     composite_id: str | None = Field(default=None, min_length=1, max_length=128)
-    composite_report_identity: CompositeReportIdentity | None = None
+    composite_report_identity: CompositeCustodyIdentity | None = None
     client_reference: str | None = Field(default=None, min_length=1)
     as_of_date: date
     reporting_period_start: date
@@ -335,8 +335,8 @@ class ArchiveDocumentInput(BaseModel):
                 self.mime_type,
             ) != (
                 "composite-review",
-                "v1",
-                "composite_review.v1",
+                identity.contract_version.rsplit(".", 1)[1],
+                identity.contract_version,
                 "xlsx",
                 "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
             ):

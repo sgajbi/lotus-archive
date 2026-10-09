@@ -14,7 +14,7 @@ from app.archive.access_preflight import (
     ArchiveAccessState,
 )
 from app.archive.audit import AccessAuditEvent
-from app.archive.composite_identity import CompositeReportIdentity
+from app.archive.composite_products import CompositeCustodyIdentity
 from app.archive.models import (
     AdvisorCommentaryArchiveSummary,
     ArchiveDocumentInput,
@@ -153,7 +153,7 @@ class ArchiveDocumentResponse(BaseModel):
     composite_id: str | None = Field(
         default=None, description="Source-owned composite scope identifier."
     )
-    composite_report_identity: CompositeReportIdentity | None = Field(
+    composite_report_identity: CompositeCustodyIdentity | None = Field(
         default=None,
         description="Immutable qualified composite selection and Report revision digests.",
     )
@@ -495,7 +495,7 @@ class ArchiveDocumentSourceEvent(BaseModel):
     composite_id: str | None = Field(
         default=None, description="Source-owned composite scope identifier."
     )
-    composite_report_identity: CompositeReportIdentity | None = Field(
+    composite_report_identity: CompositeCustodyIdentity | None = Field(
         default=None,
         description="Retained composite identity; confers no financial publication authority.",
     )
@@ -557,7 +557,7 @@ class ArchiveDocumentSourceEventsResponse(BaseModel):
     composite_id: str | None = Field(
         default=None, description="Source-owned composite scope identifier."
     )
-    composite_report_identity: CompositeReportIdentity | None = Field(
+    composite_report_identity: CompositeCustodyIdentity | None = Field(
         default=None,
         description="Retained composite identity; confers no financial publication authority.",
     )

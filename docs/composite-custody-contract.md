@@ -45,7 +45,8 @@ financial recomputation, latest-source lookup or publication qualification.
 
 ## Format, scope and event contracts
 
-The admitted tuple is `composite-review` / `v1` / `composite_review.v1` / `xlsx`
+The admitted tuples are `composite-review` / `v1` / `composite_review.v1` / `xlsx`
+and `composite-review` / `v2` / `composite_review.v2` / `xlsx`
 with `application/vnd.openxmlformats-officedocument.spreadsheetml.sheet`.
 Archive verifies a real OOXML ZIP workbook, content types, workbook/worksheet
 XML and relationships before storage. At most 4,096 ZIP parts and 128 MiB
@@ -110,6 +111,73 @@ corrected source facts require a new snapshot/revision and existing
 deletes the original nor releases its retention/legal hold.
 
 ## Retry and validation runbook
+
+### V2 source products
+
+V2 retains the same qualification, publication state, primary selection and three
+Report digests, and additionally requires one to eight ordered `source_products`.
+Each entry has exactly `pin` and `source_response_digest`. The digest is a
+`sha256:`-prefixed lowercase digest equal to `pin.selection.response_digest`.
+Unknown versions and unknown fields refuse rather than being discarded.
+
+The pin is discriminated by `kind`: `CALENDAR_RETURN` requires a strict integer
+`year` (1–9999), `product_key`, and `selection`; `TRAILING_RETURN` requires a
+strict integer `months` (1–120), `product_key`, and `selection`. Keys match
+`^[a-z][a-z0-9_]{0,63}$` and are unique within the retained list. Calendar pins
+cover exactly January through December of their named year. Trailing pins cover
+their named month count and end at the primary period end. Every window is a
+complete calendar month. Product selections match the primary tenant, composite,
+currency, return view, methodology and engine, and retain its exact chronological
+window subvector, including method binding and receipt pins. Archive verifies
+identity only; it neither calculates returns nor derives Report's digests.
+
+Caller product order is immutable custody identity. A new request may supply any
+valid order; reordering products under an existing `archive_request_id` returns
+409, as does a changed source digest or pin. An exact retry preserves the original
+document ID and source identity, including after correction and process restart.
+The response reflects current lifecycle links; it need not equal the response
+captured before correction. V1 requests and retained records remain v1.
+
+The executable client example in `tests/fixtures/composite_v2.py` loads the frozen
+Report original and financial-correction identities; its bytes are deliberately
+synthetic component transport. `tests/integration/test_composite_v2_custody.py`
+shows existing create, retry, download, source-event and correction calls. Actual
+qualified Report→Render→Archive v2 HTTP acceptance remains a separate release
+requirement under issue #182.
+
+### Upgrade and recovery
+
+Apply append-only migration `015_add_composite_v2_custody.sql` once after 014,
+before enabling v2 admissions. It replaces the exclusive scope constraint with
+matching v1/v2 identity, template and data-contract axes and bounded v2 product
+arrays. It changes no row, object, idempotency key or column. Do not replay
+historical migration 014 over retained v2 rows: its original constraint is
+intentionally v1-only. The established migration runner must apply only pending
+migrations in order.
+
+For rollback, disable new v2 admissions and retain the compatible schema and
+reader. Do not deploy a v1-only reader over v2 custody, restore the 014 constraint,
+drop retained identity, or delete objects to make rollback pass. Forward-fix the
+reader/admission defect while retaining the database backup and objects together.
+
+From the Archive root, with an isolated test database URL and
+`LOTUS_ARCHIVE_REQUIRE_DATABASE_PROOF=1`, run on Windows:
+
+```powershell
+.venv/Scripts/python.exe -m pytest tests/integration/test_postgres_composite_v2_upgrade.py
+```
+
+On Linux/macOS:
+
+```bash
+.venv/bin/python -m pytest tests/integration/test_postgres_composite_v2_upgrade.py
+```
+
+This destructive test uses its explicitly supplied test database. It seeds a v1
+record under 014, compares its full SQL row before/after 015, retries v1, retains
+both frozen v2 identities, proves database refusals, then verifies all records,
+bytes, retries and corrected-current resolution in a separate process. It cleans
+test rows before another test replays historical migrations.
 
 On an unobserved ingest result, reuse the exact request and artifact identity.
 Resolve using the existing archive-request metadata lookup; do not mint another

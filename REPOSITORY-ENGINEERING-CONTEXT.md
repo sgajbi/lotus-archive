@@ -316,8 +316,16 @@ Composite report custody uses `archive/composite_identity.py` for the exact Repo
 selection vector and lifecycle digests, and `archive/artifact_format.py` for bounded
 decoded content and XLSX OOXML admission. `composite_review` requires exclusive
 composite scope, null portfolio ID, matching tenant/horizon and retained qualified
-`NOT_ATTESTED` identity. Migration 014 preserves historical portfolio rows. The
-API/filesystem component proof and required PostgreSQL restart proof are separate
+`NOT_ATTESTED` identity. Migration 014 preserves historical portfolio rows.
+`archive/composite_products.py` adds strict v2 calendar/trailing source-product
+pins using the existing selection/window models. Migration 015 admits matched
+v1/v2 axes without rewriting rows; apply pending migrations only, because
+historical 014 remains deliberately v1-only. Keep a v2-compatible reader and
+constraint during rollback; disable admissions and forward-fix defects rather
+than dropping retained v2 identity. Caller product order is retained and changes
+under an existing idempotency key conflict. The populated upgrade and separate
+process proof lives in `tests/integration/test_postgres_composite_v2_upgrade.py`.
+The API/filesystem component proof and required PostgreSQL restart proof are separate
 from actual source-qualified Report→Render→Archive acceptance. The subsequent
 bounded original/financial-correction/technical-rerender HTTP custody proof is
 recorded in `docs/composite-custody-delivery-ledger.md`, with controlled frozen

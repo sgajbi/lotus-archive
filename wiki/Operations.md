@@ -117,3 +117,11 @@ The ordered operational procedures are in the repository:
 1. [Configuration](Configuration) — the settings behind every posture value above
 2. [Security and Controls](Security-and-Controls) — what the audit trail records
 3. [Document Lifecycle](Document-Lifecycle) — why a purge was refused
+
+## Composite v2 custody upgrade
+
+Apply pending migration 015 after 014 before enabling v2 admissions. Never replay
+014 over retained v2 records. For rollback, stop new v2 admissions and keep the
+compatible reader/schema; preserve all objects and source identities and
+forward-fix the defect. The [custody contract](https://github.com/sgajbi/lotus-archive/blob/main/docs/composite-custody-contract.md)
+documents exact identity, retry semantics, populated upgrade proof and commands.
