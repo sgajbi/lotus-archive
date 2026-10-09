@@ -57,6 +57,9 @@ audited. Downloads verify retained SHA-256 and return the XLSX MIME and extensio
 Source events expose composite scope, selection pins, opaque Report revision,
 document reference, MIME/format and checksum-backed artifact refs; they contain
 no workbook bytes, financial dataset, storage key or client reference.
+Portfolio-only downstream consumers must explicitly recognize composite scope or
+refuse this family; they must never derive a portfolio identifier from composite
+identity. Existing portfolio events keep their non-null portfolio identifier.
 
 Migration `014_add_composite_report_scope.sql` adds nullable `composite_id` and
 JSONB identity, relaxes `portfolio_id` nullability only with an exclusive scope
@@ -68,8 +71,9 @@ their columns or restore portfolio non-nullability over retained history.
 
 ## Requests, downloads and retained revisions
 
-The executable external example is
-`tests/integration/test_composite_custody_api.py`, using the full source-shaped
+The executable external product journey is
+`tests/e2e/test_composite_custody_journey.py`, calling the shared scenario in
+`tests/integration/test_composite_custody_api.py` with the full source-shaped
 metadata in `tests/fixtures/composite_custody.py` and a valid synthetic OOXML
 workbook. It submits the actual registered API and independently checks real
 filesystem bytes, MIME, extension, checksum, event qualification, correction,
@@ -117,6 +121,7 @@ Run from the Archive repository root on Windows:
 
 ```powershell
 .venv/Scripts/python.exe -m pytest tests/unit/test_composite_identity.py tests/unit/test_archive_artifact_format.py tests/integration/test_composite_custody_api.py
+.venv/Scripts/python.exe -m pytest tests/e2e/test_composite_custody_journey.py
 .venv/Scripts/python.exe -m pytest tests/integration/test_postgres_composite_custody.py
 ```
 

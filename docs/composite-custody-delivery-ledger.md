@@ -82,3 +82,14 @@ two retained window pins, three Report lifecycle digests, and revision
 This candidate consumes controlled Performance evidence; it is supplier
 coordination, not committed producer parity, official approval or full readiness.
 Render's actual output and Archive joined candidate acceptance remain pending.
+
+Final gate review found the added unit guard proof put E2E breadth below its
+1.5% floor (7/467). The complete registered create→download→correct→hold product
+journey was classified in its owning E2E suite, retaining the same shared
+scenario for the real PostgreSQL integration test. No count-only test or gate
+threshold change was added. Final suite counts/coverage supersede the pre-freeze
+counts above after this classification correction.
+The final pyramid passes at unit 353, integration 106, E2E 8 product tests;
+focused E2E/real-PG/API verification passed 25 tests. Typecheck and lint passed.
+Pre-merge source-authored wiki parity check passed with the intentional two-page
+unpublished-source delta; post-merge publication and committed parity are pending.
