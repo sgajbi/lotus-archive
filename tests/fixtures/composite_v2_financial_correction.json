@@ -1,0 +1,1718 @@
+{
+  "as_of_date": "2025-12-31",
+  "classification": "confidential",
+  "composite_id": "SYNTHETIC_LONG72_28_MEMBERS_USD",
+  "composite_report_identity": {
+    "contract_version": "composite_review.v2",
+    "factual_content_digest": "5d0846bd55205d451b987c6efa2ec61b2ac018a1997700b6f8a2534cc42941eb",
+    "publication_state": "NOT_ATTESTED",
+    "qualification": "EXPLICIT_RETAINED_CALCULATED_REPLAY",
+    "selection": {
+      "calculation_fingerprint": "sha256:35aacb98afbb26c6c52a4a50cd90f786f5dcd9646d1519d4d7106d4fcc9eedb9",
+      "calculation_id": "588a0cfe-0bc3-45b0-a952-bcb2c1a71c1b",
+      "composite_id": "SYNTHETIC_LONG72_28_MEMBERS_USD",
+      "engine_version": "lotus-performance-calculation-engine.v16",
+      "methodology": "persisted_member_return_asset_weighted_twr_v1",
+      "period_end": "2025-12-31",
+      "period_start": "2020-01-01",
+      "reporting_currency": "USD",
+      "response_digest": "sha256:454ea065577bc8bc7e6212d47439785e6bb5bf7ff06ce9e4e775d8ad7c63f603",
+      "return_view": "GROSS",
+      "tenant_id": "tenant-a",
+      "windows": [
+        {
+          "attestation_content_hash": "sha256:e147296ae589a6ed149a2e5c9caaac4bbaa933e79a13f211744acc5223091ff0",
+          "definition_content_hash": "sha256:e8a0ebfff34598a168eba3c9582dfbcf2ecf11988b920fff8c3ea31db0d71721",
+          "materialization_id": "d5e4f079-e4b9-42e2-ac88-f9da0e9e1f8e",
+          "membership_content_hash": "sha256:8b238221c34e97874cffb76d05e509d918a6e47ecb173a831eb275bd88866853",
+          "method_binding": {
+            "digest": "sha256:141be7a2f115254c6e7eeb7add7f81ad6c2b5896aae0c0aed7d1b83b5bfcd6b5",
+            "product_name": "SyntheticReturnMethodProfile",
+            "product_version": "v1",
+            "revision": "synthetic.method.r1"
+          },
+          "period_end": "2020-01-31",
+          "period_start": "2020-01-01",
+          "restatement_sequence": 73,
+          "retained_receipt_fingerprint": "sha256:016cd27a9eee329191ed3e8995036069dbfa6b98e46ac99c6aa329f4495cbbff",
+          "source_cut_id": "long72-cut-01-corrected"
+        },
+        {
+          "attestation_content_hash": "sha256:2d8c7c99ee3b3fa6ff22d393724c7ca641abec64d552103b5ba17e25524136cc",
+          "definition_content_hash": "sha256:5ec0832776293902bb012195b652589bb3f0b00a053b2fa902d703a52824dfc2",
+          "materialization_id": "3806d73e-013a-4eb3-b57f-64af79f672c9",
+          "membership_content_hash": "sha256:71061fb9a4c9a60a1f724947bbaa3f165428607f329c64c809a5020440ec97d6",
+          "method_binding": {
+            "digest": "sha256:141be7a2f115254c6e7eeb7add7f81ad6c2b5896aae0c0aed7d1b83b5bfcd6b5",
+            "product_name": "SyntheticReturnMethodProfile",
+            "product_version": "v1",
+            "revision": "synthetic.method.r1"
+          },
+          "period_end": "2020-02-29",
+          "period_start": "2020-02-01",
+          "restatement_sequence": 2,
+          "retained_receipt_fingerprint": "sha256:d140fa4707158c104dbf4a56ca47f3fb53ad8cca911579c54e5f7a9c0a2137bb",
+          "source_cut_id": "long72-cut-02"
+        },
+        {
+          "attestation_content_hash": "sha256:b90a3f5ee7f73dc101801aefd17c0affe1ac3bdbc6be5d61530864c56eb09409",
+          "definition_content_hash": "sha256:cb2dff6fb36a47d768ad622ee52be290f4ab51bfe50863b20440e103c7eebd32",
+          "materialization_id": "94804eb4-0a1a-4b2e-9f7b-9761925b8b89",
+          "membership_content_hash": "sha256:e3a6609aace19801560a90003e609b2fe46869b838ce717e0dab5016b780dcb2",
+          "method_binding": {
+            "digest": "sha256:141be7a2f115254c6e7eeb7add7f81ad6c2b5896aae0c0aed7d1b83b5bfcd6b5",
+            "product_name": "SyntheticReturnMethodProfile",
+            "product_version": "v1",
+            "revision": "synthetic.method.r1"
+          },
+          "period_end": "2020-03-31",
+          "period_start": "2020-03-01",
+          "restatement_sequence": 3,
+          "retained_receipt_fingerprint": "sha256:804c7a59bc7f278e302994d318be1ddd699880901f9750d94fd199656ba9a5ce",
+          "source_cut_id": "long72-cut-03"
+        },
+        {
+          "attestation_content_hash": "sha256:de68809888908bbbeee51537b558ab4f72439a5a390cbefc4a3bf2b96ecfc766",
+          "definition_content_hash": "sha256:28d7ec42e55e5a19fe8e3e546f74b3e3d99f21de631a64a77906b63e998dd6a8",
+          "materialization_id": "580e89bb-a4b8-4849-8f68-dccc5075c2ba",
+          "membership_content_hash": "sha256:29115d2e09dbec3b130cd99d6f4ad5902e28a67665eb099a520fee3d3eb9eb80",
+          "method_binding": {
+            "digest": "sha256:141be7a2f115254c6e7eeb7add7f81ad6c2b5896aae0c0aed7d1b83b5bfcd6b5",
+            "product_name": "SyntheticReturnMethodProfile",
+            "product_version": "v1",
+            "revision": "synthetic.method.r1"
+          },
+          "period_end": "2020-04-30",
+          "period_start": "2020-04-01",
+          "restatement_sequence": 4,
+          "retained_receipt_fingerprint": "sha256:83a87fdb161fef7bdfac9a80a882439cca9fc71360b03606d7e34db4c082cbf9",
+          "source_cut_id": "long72-cut-04"
+        },
+        {
+          "attestation_content_hash": "sha256:3968a20af540d521da2f842741f1b2387bca3ab616b55a74bfdfde19f7faf359",
+          "definition_content_hash": "sha256:d95591799bafacf7eece4fb6de5b050e3ffac665c84d9f840566e84f5ebf8d6c",
+          "materialization_id": "b847fa75-4bf1-4c41-b1f6-f7e08751f3b2",
+          "membership_content_hash": "sha256:599309917ac873478cdff8f108ac92051d9fec421bc989621e472505c260efd1",
+          "method_binding": {
+            "digest": "sha256:141be7a2f115254c6e7eeb7add7f81ad6c2b5896aae0c0aed7d1b83b5bfcd6b5",
+            "product_name": "SyntheticReturnMethodProfile",
+            "product_version": "v1",
+            "revision": "synthetic.method.r1"
+          },
+          "period_end": "2020-05-31",
+          "period_start": "2020-05-01",
+          "restatement_sequence": 5,
+          "retained_receipt_fingerprint": "sha256:2fc773ce19f81610dc0d1a734206dcc886512c1278271e1e9566a9917a8b7cb0",
+          "source_cut_id": "long72-cut-05"
+        },
+        {
+          "attestation_content_hash": "sha256:02b514f22de5c674155fa0858c21de5a35fe40ad31bb6ee7c931b5ad8d028751",
+          "definition_content_hash": "sha256:246002af88e5a478badfdb728213f7e6f5b9ed29ef346545eb9dd25e9a8cdc1a",
+          "materialization_id": "e54f3352-23c9-4323-959a-8940fcc6a597",
+          "membership_content_hash": "sha256:e1401e58323046f362d0d7599fdabcbd5801a6d0c564808bf73a80b864bbb53a",
+          "method_binding": {
+            "digest": "sha256:141be7a2f115254c6e7eeb7add7f81ad6c2b5896aae0c0aed7d1b83b5bfcd6b5",
+            "product_name": "SyntheticReturnMethodProfile",
+            "product_version": "v1",
+            "revision": "synthetic.method.r1"
+          },
+          "period_end": "2020-06-30",
+          "period_start": "2020-06-01",
+          "restatement_sequence": 6,
+          "retained_receipt_fingerprint": "sha256:ba9cffbec6e1184aefdd6d49564b59f05eb9fb6b4e20d47c21f25bb52fe9dba7",
+          "source_cut_id": "long72-cut-06"
+        },
+        {
+          "attestation_content_hash": "sha256:c747f27b3883c95258e423694c6fb468b5cd01e251066312d1dfb0a5416e61e1",
+          "definition_content_hash": "sha256:298065c5f0f0ac15b345b6f5ea1ff47d8e45faeeb963ba10f54bd1150ef338db",
+          "materialization_id": "5c2376b5-d134-49fe-b20b-5b2fc61245b8",
+          "membership_content_hash": "sha256:e0b264a74e1617da0e58b11a095e60b00c8938581b2915f8f962628f0a130913",
+          "method_binding": {
+            "digest": "sha256:141be7a2f115254c6e7eeb7add7f81ad6c2b5896aae0c0aed7d1b83b5bfcd6b5",
+            "product_name": "SyntheticReturnMethodProfile",
+            "product_version": "v1",
+            "revision": "synthetic.method.r1"
+          },
+          "period_end": "2020-07-31",
+          "period_start": "2020-07-01",
+          "restatement_sequence": 7,
+          "retained_receipt_fingerprint": "sha256:8d97edb46d4965b2c850868d7a909e092577efb0955f1b2e5ec14ad4bc1b0169",
+          "source_cut_id": "long72-cut-07"
+        },
+        {
+          "attestation_content_hash": "sha256:650d08c697cd9e44a3811edf0d076677ea9a6f85aa6e643b1151e0f55527f32d",
+          "definition_content_hash": "sha256:1e7c800cff475e55ab8726a7e9968a03451e38d2c42cd9bd925ac2c956b50d9f",
+          "materialization_id": "cdb52da4-72af-47e3-9da6-ba3f1e338409",
+          "membership_content_hash": "sha256:63cf060e78c91be5f6137703f30e29129ab568a767bf762b07ed0c25ed40fd05",
+          "method_binding": {
+            "digest": "sha256:141be7a2f115254c6e7eeb7add7f81ad6c2b5896aae0c0aed7d1b83b5bfcd6b5",
+            "product_name": "SyntheticReturnMethodProfile",
+            "product_version": "v1",
+            "revision": "synthetic.method.r1"
+          },
+          "period_end": "2020-08-31",
+          "period_start": "2020-08-01",
+          "restatement_sequence": 8,
+          "retained_receipt_fingerprint": "sha256:dc8940dd1e7564b3da1daafd2a0b6990aea8c2c9f0b5ab02d8897693445b6479",
+          "source_cut_id": "long72-cut-08"
+        },
+        {
+          "attestation_content_hash": "sha256:2504e174397bf8d8f4b058dbae7c15b7e23a870ee39c8bbf00f7be20b828e1a1",
+          "definition_content_hash": "sha256:b134d6a5258065ba92ee10b2595b3240b74de7fc7b00e451c3fd04047acad5be",
+          "materialization_id": "11d5fd88-e17e-4974-ba3d-3a85f84c92e3",
+          "membership_content_hash": "sha256:b2b134917441c27cde6f08db8ea13b2f1730f99afae1fb2c790a7b28fcef4541",
+          "method_binding": {
+            "digest": "sha256:141be7a2f115254c6e7eeb7add7f81ad6c2b5896aae0c0aed7d1b83b5bfcd6b5",
+            "product_name": "SyntheticReturnMethodProfile",
+            "product_version": "v1",
+            "revision": "synthetic.method.r1"
+          },
+          "period_end": "2020-09-30",
+          "period_start": "2020-09-01",
+          "restatement_sequence": 9,
+          "retained_receipt_fingerprint": "sha256:4d6b4648c81555896f3325c0bc9a48ea1a232c825a5443d5d4739bcf29328ac0",
+          "source_cut_id": "long72-cut-09"
+        },
+        {
+          "attestation_content_hash": "sha256:8f79312f376b45c4ce903178cd93daa817d8ef3b79d02130539cbc1702aa708b",
+          "definition_content_hash": "sha256:4e9ed327d86ca38c28f701601b1fc110b77c5322df53bcdb2a72e597c3c65b77",
+          "materialization_id": "fca335ac-dd16-44c1-8ca5-f64c6894ca45",
+          "membership_content_hash": "sha256:a452e24fc04b4eff4a2f4bb594c165f4e5e2f63ba5e5bb33ffdd0670321f8b73",
+          "method_binding": {
+            "digest": "sha256:141be7a2f115254c6e7eeb7add7f81ad6c2b5896aae0c0aed7d1b83b5bfcd6b5",
+            "product_name": "SyntheticReturnMethodProfile",
+            "product_version": "v1",
+            "revision": "synthetic.method.r1"
+          },
+          "period_end": "2020-10-31",
+          "period_start": "2020-10-01",
+          "restatement_sequence": 10,
+          "retained_receipt_fingerprint": "sha256:d83b1642d6269575fa5e8160214622ada5908457e771700dafdb2639c5ccb5a1",
+          "source_cut_id": "long72-cut-10"
+        },
+        {
+          "attestation_content_hash": "sha256:3edd7daa809abb7cf4995c53a3a0758b2ae83c3ab6e15e4636fef8a0f609a6bf",
+          "definition_content_hash": "sha256:86b59d6fe9d1c96c4319b3514280da00a5a2112f91bd5d98c62d6f9c35e5997d",
+          "materialization_id": "e9914f9f-9916-48e1-b421-7e49f5d28677",
+          "membership_content_hash": "sha256:6c6c506f88d433ca92ae31288043e0570f0a708dd189b4c49b4855bccf3a9431",
+          "method_binding": {
+            "digest": "sha256:141be7a2f115254c6e7eeb7add7f81ad6c2b5896aae0c0aed7d1b83b5bfcd6b5",
+            "product_name": "SyntheticReturnMethodProfile",
+            "product_version": "v1",
+            "revision": "synthetic.method.r1"
+          },
+          "period_end": "2020-11-30",
+          "period_start": "2020-11-01",
+          "restatement_sequence": 11,
+          "retained_receipt_fingerprint": "sha256:3c0b931eebfc313ff0fd0201e64523939a1f3b753ada5429a9fab0b96af963ab",
+          "source_cut_id": "long72-cut-11"
+        },
+        {
+          "attestation_content_hash": "sha256:6cea78f98aa4e863d2ab778822cdbc5fffe8c47c2c860124010715b38cf6cd0a",
+          "definition_content_hash": "sha256:f2af06baba6baf24b3f1dd61e91b1ffe6721684f38f36cac7518dc63db32150e",
+          "materialization_id": "8c6a1345-7e38-486d-acfa-4306bd9bb168",
+          "membership_content_hash": "sha256:bb19fedce61a9ada8dc8b73e73f98050170cb6d6f04019f3cca1a2bfab16f497",
+          "method_binding": {
+            "digest": "sha256:141be7a2f115254c6e7eeb7add7f81ad6c2b5896aae0c0aed7d1b83b5bfcd6b5",
+            "product_name": "SyntheticReturnMethodProfile",
+            "product_version": "v1",
+            "revision": "synthetic.method.r1"
+          },
+          "period_end": "2020-12-31",
+          "period_start": "2020-12-01",
+          "restatement_sequence": 12,
+          "retained_receipt_fingerprint": "sha256:29322fd03ae56ebd88d618df90a5b3273e2df8ec691bc7fb2afdddd936b2267f",
+          "source_cut_id": "long72-cut-12"
+        },
+        {
+          "attestation_content_hash": "sha256:509ad30536c65e3fc7752012acb2811d63d9869144388766c26b10e9af73c77e",
+          "definition_content_hash": "sha256:dd38750a6d61112e329f651c64b8cdd10d8cfc040fd22dca02e610fd57b491fa",
+          "materialization_id": "48aa4c7c-dc3c-40ec-bec2-5802670fa006",
+          "membership_content_hash": "sha256:e565d3a6c81907a6c273023e0cc6da2573aa4dc6d21ffed8e16d16091521aefc",
+          "method_binding": {
+            "digest": "sha256:141be7a2f115254c6e7eeb7add7f81ad6c2b5896aae0c0aed7d1b83b5bfcd6b5",
+            "product_name": "SyntheticReturnMethodProfile",
+            "product_version": "v1",
+            "revision": "synthetic.method.r1"
+          },
+          "period_end": "2021-01-31",
+          "period_start": "2021-01-01",
+          "restatement_sequence": 13,
+          "retained_receipt_fingerprint": "sha256:9374a57663212ae63fe1fbc4333f811226fc4319e62fffcbb9d2e7dfc8e788f9",
+          "source_cut_id": "long72-cut-13"
+        },
+        {
+          "attestation_content_hash": "sha256:cf43c44b003b7abf1433a55a6f518b6e0cc33bdb614dbe61e15af18c2d3497f1",
+          "definition_content_hash": "sha256:111d5b4d4b85fec8785657ace0cb5b8c8ba8ee0c3fa904cb442509ff335b101f",
+          "materialization_id": "cde4b4bd-82ef-44f0-8291-91a0c98038c1",
+          "membership_content_hash": "sha256:ddf79c9c53867cef1947d321e1e71a3ddfb6e89c08fefa389abba2750ed9fc8c",
+          "method_binding": {
+            "digest": "sha256:141be7a2f115254c6e7eeb7add7f81ad6c2b5896aae0c0aed7d1b83b5bfcd6b5",
+            "product_name": "SyntheticReturnMethodProfile",
+            "product_version": "v1",
+            "revision": "synthetic.method.r1"
+          },
+          "period_end": "2021-02-28",
+          "period_start": "2021-02-01",
+          "restatement_sequence": 14,
+          "retained_receipt_fingerprint": "sha256:3a3748eb5ac49a83b6ae4bd3f9fc2590a122ebd4ccbd0fd0bbb1d93121619363",
+          "source_cut_id": "long72-cut-14"
+        },
+        {
+          "attestation_content_hash": "sha256:6500a8a7558f5d8faa172577101ade4271e275c3d5cb1b25fb4c6211a0116406",
+          "definition_content_hash": "sha256:dd2ef00e29a7dd7d354bd14ee6b7f9ef309be375da781e2f03f15241671bc174",
+          "materialization_id": "7686fa2f-7a68-4d6e-941b-7f3674649104",
+          "membership_content_hash": "sha256:848cf841c0f92d11bd280ac72303ba76b6d15f34b66e12ba0ee9f535e5b3884b",
+          "method_binding": {
+            "digest": "sha256:141be7a2f115254c6e7eeb7add7f81ad6c2b5896aae0c0aed7d1b83b5bfcd6b5",
+            "product_name": "SyntheticReturnMethodProfile",
+            "product_version": "v1",
+            "revision": "synthetic.method.r1"
+          },
+          "period_end": "2021-03-31",
+          "period_start": "2021-03-01",
+          "restatement_sequence": 15,
+          "retained_receipt_fingerprint": "sha256:c7bf94dbcac307627c268bd5a8b014088abaac03044aae89c813cdc5cd1bdf70",
+          "source_cut_id": "long72-cut-15"
+        },
+        {
+          "attestation_content_hash": "sha256:378f8f116a07669d13890c65072085b1d7d954cd70da4631461035eda5cc3f6f",
+          "definition_content_hash": "sha256:bc2a6fa15105ce1df05732599142e33a65abf28f6d29fdf3fee0b92771b23d63",
+          "materialization_id": "6a2f94d2-7a8b-4255-a7bb-22c0b45c8a68",
+          "membership_content_hash": "sha256:cc0dd6cd9057a8d98e160c75a0da82812865ce7f51c3aa19b1afaf598509d325",
+          "method_binding": {
+            "digest": "sha256:141be7a2f115254c6e7eeb7add7f81ad6c2b5896aae0c0aed7d1b83b5bfcd6b5",
+            "product_name": "SyntheticReturnMethodProfile",
+            "product_version": "v1",
+            "revision": "synthetic.method.r1"
+          },
+          "period_end": "2021-04-30",
+          "period_start": "2021-04-01",
+          "restatement_sequence": 16,
+          "retained_receipt_fingerprint": "sha256:4a66777e33783fdd542b24283d7b58c6c6111d2db6749e80e5089613c153292e",
+          "source_cut_id": "long72-cut-16"
+        },
+        {
+          "attestation_content_hash": "sha256:02cdf27fc403a7ed70e978150b7a465ea6e2daa4f9ce934d3d2536b729a7b048",
+          "definition_content_hash": "sha256:30cc95da95d6008f2a80316232bb264d8ebb7da5a77fb0c7bbb486e92cc2d669",
+          "materialization_id": "697e11ae-cff5-40d5-86cc-26fe7e4dc9f3",
+          "membership_content_hash": "sha256:8728143549013e5c822eefc63dbcf65d0882e56713b3748ded5eaad8009acb36",
+          "method_binding": {
+            "digest": "sha256:141be7a2f115254c6e7eeb7add7f81ad6c2b5896aae0c0aed7d1b83b5bfcd6b5",
+            "product_name": "SyntheticReturnMethodProfile",
+            "product_version": "v1",
+            "revision": "synthetic.method.r1"
+          },
+          "period_end": "2021-05-31",
+          "period_start": "2021-05-01",
+          "restatement_sequence": 17,
+          "retained_receipt_fingerprint": "sha256:bee6201ef6d2a867a00cc27cdb79880c555af186f6712cb505e564468bf11fc1",
+          "source_cut_id": "long72-cut-17"
+        },
+        {
+          "attestation_content_hash": "sha256:869387fcc24880276e9faef8c4ead2f3d8f659d0d682f3b4e072b9073d6344b1",
+          "definition_content_hash": "sha256:a2887631b547b66f57a773d4bffbb9df3189848a5ea6103cda6c8d80c3ece4d2",
+          "materialization_id": "a5912918-cdbf-4901-9b17-ecbe1c56c565",
+          "membership_content_hash": "sha256:dc7128d3eedb7e0be3cae721100b867041294015e7abab8876eacec75391d40e",
+          "method_binding": {
+            "digest": "sha256:141be7a2f115254c6e7eeb7add7f81ad6c2b5896aae0c0aed7d1b83b5bfcd6b5",
+            "product_name": "SyntheticReturnMethodProfile",
+            "product_version": "v1",
+            "revision": "synthetic.method.r1"
+          },
+          "period_end": "2021-06-30",
+          "period_start": "2021-06-01",
+          "restatement_sequence": 18,
+          "retained_receipt_fingerprint": "sha256:1baf8d6d6918ce6ece1c3f4f6e0ed55681b9795ee09004053cbd5950c4885a63",
+          "source_cut_id": "long72-cut-18"
+        },
+        {
+          "attestation_content_hash": "sha256:c856917e4566c961dd6d5c2b2ceb19459e31b402185658dd5ed1035622538a08",
+          "definition_content_hash": "sha256:9fa7d7a01ac308f1aac342219a8f291eb052dd28794b7c98e31a72a08205406f",
+          "materialization_id": "5e1f86ca-22b8-4f24-b76e-0c81b0d16c91",
+          "membership_content_hash": "sha256:219d98c48e98bbc3a80088b2af721e4d922b3b0757eb93c64060d47609b5a8b3",
+          "method_binding": {
+            "digest": "sha256:141be7a2f115254c6e7eeb7add7f81ad6c2b5896aae0c0aed7d1b83b5bfcd6b5",
+            "product_name": "SyntheticReturnMethodProfile",
+            "product_version": "v1",
+            "revision": "synthetic.method.r1"
+          },
+          "period_end": "2021-07-31",
+          "period_start": "2021-07-01",
+          "restatement_sequence": 19,
+          "retained_receipt_fingerprint": "sha256:3ee3c1be7dd0a7e5389c377cdd5a02d346fd1dba2e0fe592f157e69dd2f4993e",
+          "source_cut_id": "long72-cut-19"
+        },
+        {
+          "attestation_content_hash": "sha256:9925286edb422819f3d23bed83baf8e7be7f01c057c67a437d58cf580e9528c6",
+          "definition_content_hash": "sha256:fe88bd6d25722ae428b3fee219f59599709ae3ea411229957a78be73f9ea5354",
+          "materialization_id": "5911b5ca-0fd2-43c2-a92e-fc938c3a3ff8",
+          "membership_content_hash": "sha256:d1bd372ec5a925124410c77e5fad6b5c35f6c254cd2183c887813626cbc56e9d",
+          "method_binding": {
+            "digest": "sha256:141be7a2f115254c6e7eeb7add7f81ad6c2b5896aae0c0aed7d1b83b5bfcd6b5",
+            "product_name": "SyntheticReturnMethodProfile",
+            "product_version": "v1",
+            "revision": "synthetic.method.r1"
+          },
+          "period_end": "2021-08-31",
+          "period_start": "2021-08-01",
+          "restatement_sequence": 20,
+          "retained_receipt_fingerprint": "sha256:ee0f0b31f508409c38279ebb602d921cff28d3c72362fdab4601ad149038a3a4",
+          "source_cut_id": "long72-cut-20"
+        },
+        {
+          "attestation_content_hash": "sha256:134bd1da92efe670fa657310410db0764c3ccc2b17c2cf4f2e863faf2ffbd26b",
+          "definition_content_hash": "sha256:f9738c490a4e5594d832fcb47573f5f9ea697a0ce6850d7719761e785f42326f",
+          "materialization_id": "14629bf0-59d7-4676-8b6e-7f84e6413e1a",
+          "membership_content_hash": "sha256:b9ccbdb65740e2f529812488bd78acc2f75b08a418f416f9f1d1f0440a84ec00",
+          "method_binding": {
+            "digest": "sha256:141be7a2f115254c6e7eeb7add7f81ad6c2b5896aae0c0aed7d1b83b5bfcd6b5",
+            "product_name": "SyntheticReturnMethodProfile",
+            "product_version": "v1",
+            "revision": "synthetic.method.r1"
+          },
+          "period_end": "2021-09-30",
+          "period_start": "2021-09-01",
+          "restatement_sequence": 21,
+          "retained_receipt_fingerprint": "sha256:58c616b57652a82cef9347c4ac0183eb33e98945f1971620627e3a78da3861ab",
+          "source_cut_id": "long72-cut-21"
+        },
+        {
+          "attestation_content_hash": "sha256:eb826b62e4574188e9adf4e8c104af3319cc82253cdce324efc81ce1f12fccad",
+          "definition_content_hash": "sha256:c4465042413fbe2d619731df781369e848b523a07e47203f47b978041298c53b",
+          "materialization_id": "43acc58a-879c-469d-ad05-7aa5f76f51df",
+          "membership_content_hash": "sha256:7b221e4975decc8cdcb8d925cd51dfe182d8bf9e7323ffebadf058bb3c6316ec",
+          "method_binding": {
+            "digest": "sha256:141be7a2f115254c6e7eeb7add7f81ad6c2b5896aae0c0aed7d1b83b5bfcd6b5",
+            "product_name": "SyntheticReturnMethodProfile",
+            "product_version": "v1",
+            "revision": "synthetic.method.r1"
+          },
+          "period_end": "2021-10-31",
+          "period_start": "2021-10-01",
+          "restatement_sequence": 22,
+          "retained_receipt_fingerprint": "sha256:3c29236f07c38a0a8a1b10dc0132dedb34a8dcad330f8b1b84a19404a350da7b",
+          "source_cut_id": "long72-cut-22"
+        },
+        {
+          "attestation_content_hash": "sha256:66303485c3b945cbae2c0c06e36f87eb95ff91477207e30cd61d75aedc1f4b5c",
+          "definition_content_hash": "sha256:0e2a47ed4670e5402cc09238fd4334a570daf4ef70c70a618876dbc4cc66071b",
+          "materialization_id": "9e3f77ce-9e0b-4bcb-a1b1-f3dc31e478f0",
+          "membership_content_hash": "sha256:fb5bf1827a34f87fc4d90e421973aa9c3af6df9552dd2134d44fbc9927752e46",
+          "method_binding": {
+            "digest": "sha256:141be7a2f115254c6e7eeb7add7f81ad6c2b5896aae0c0aed7d1b83b5bfcd6b5",
+            "product_name": "SyntheticReturnMethodProfile",
+            "product_version": "v1",
+            "revision": "synthetic.method.r1"
+          },
+          "period_end": "2021-11-30",
+          "period_start": "2021-11-01",
+          "restatement_sequence": 23,
+          "retained_receipt_fingerprint": "sha256:62a1823162a44cd2df5c5e22b73a64e395a9924e3fad7335af72e5d84ef2f953",
+          "source_cut_id": "long72-cut-23"
+        },
+        {
+          "attestation_content_hash": "sha256:0bfe4968adb8aeec938452394a8f0598efa5eeaff9070bfc634a9ea0a75bdb71",
+          "definition_content_hash": "sha256:86ee127e53ac77f2ebb423a5433ceaedf9d0d3a32d46b9099a7d5eb9f5eed065",
+          "materialization_id": "2a13bcec-bbb5-468d-b9e6-a53853339b99",
+          "membership_content_hash": "sha256:b772fed6a3062751c5438f57955c29b6a76a788430f1e2beaee13102156b01d7",
+          "method_binding": {
+            "digest": "sha256:141be7a2f115254c6e7eeb7add7f81ad6c2b5896aae0c0aed7d1b83b5bfcd6b5",
+            "product_name": "SyntheticReturnMethodProfile",
+            "product_version": "v1",
+            "revision": "synthetic.method.r1"
+          },
+          "period_end": "2021-12-31",
+          "period_start": "2021-12-01",
+          "restatement_sequence": 24,
+          "retained_receipt_fingerprint": "sha256:b9452dc54b650c341b6df28b746b75ed42e30c579660e0fc0e298c449cb6a58f",
+          "source_cut_id": "long72-cut-24"
+        },
+        {
+          "attestation_content_hash": "sha256:ed550cdc73bff751739ed9f41fcd510ae86e0c0d54b58565ced71761228691e3",
+          "definition_content_hash": "sha256:bd39ea99351db258d2c297c00e13daebe8f44c2dff47fc224b5752e363ad9f23",
+          "materialization_id": "d88479ec-11a0-43c1-949a-12d263d6c1f2",
+          "membership_content_hash": "sha256:b234a74bc395d0561165b5309c0bde65dd219f892465a59a69432b4813cc94be",
+          "method_binding": {
+            "digest": "sha256:141be7a2f115254c6e7eeb7add7f81ad6c2b5896aae0c0aed7d1b83b5bfcd6b5",
+            "product_name": "SyntheticReturnMethodProfile",
+            "product_version": "v1",
+            "revision": "synthetic.method.r1"
+          },
+          "period_end": "2022-01-31",
+          "period_start": "2022-01-01",
+          "restatement_sequence": 25,
+          "retained_receipt_fingerprint": "sha256:8013fa367c7c63d2eaea98f2ffe061426bc64f672fe88c9bac2735fe65077320",
+          "source_cut_id": "long72-cut-25"
+        },
+        {
+          "attestation_content_hash": "sha256:56e72d0c9b8b20fd16456733b2df8139e00a4321d10d31b3bf0180fe411bbb52",
+          "definition_content_hash": "sha256:90ae2f8b41d4649e7a66614154da21d375eb58bd43453276031a6c7608baf5a5",
+          "materialization_id": "53158d5f-c1c2-4a2e-9c85-b36d1ca2a42e",
+          "membership_content_hash": "sha256:74abe462e2fda4e41973717f422d63844f3fa792238e96e316cc6b141c25c43c",
+          "method_binding": {
+            "digest": "sha256:141be7a2f115254c6e7eeb7add7f81ad6c2b5896aae0c0aed7d1b83b5bfcd6b5",
+            "product_name": "SyntheticReturnMethodProfile",
+            "product_version": "v1",
+            "revision": "synthetic.method.r1"
+          },
+          "period_end": "2022-02-28",
+          "period_start": "2022-02-01",
+          "restatement_sequence": 26,
+          "retained_receipt_fingerprint": "sha256:9cb9b597533f78e2cca2e88881759a30761b97f79a787ad69d5bb7b872469aca",
+          "source_cut_id": "long72-cut-26"
+        },
+        {
+          "attestation_content_hash": "sha256:13bc09e26d602eb4c417da375e4d47591ac8b2ddf33da9ba9741044c68ab3eff",
+          "definition_content_hash": "sha256:6260806c69cdbd596296b2e1b21f30f1f4dd3c14fedac32cbffca432fb849f1b",
+          "materialization_id": "bf6805d2-dedb-43f7-ac79-fa432e401cb7",
+          "membership_content_hash": "sha256:f6628583dad4358958770952475ddcae1d21802606f280355bee93bb167920e4",
+          "method_binding": {
+            "digest": "sha256:141be7a2f115254c6e7eeb7add7f81ad6c2b5896aae0c0aed7d1b83b5bfcd6b5",
+            "product_name": "SyntheticReturnMethodProfile",
+            "product_version": "v1",
+            "revision": "synthetic.method.r1"
+          },
+          "period_end": "2022-03-31",
+          "period_start": "2022-03-01",
+          "restatement_sequence": 27,
+          "retained_receipt_fingerprint": "sha256:d9fec151bce29e1aadc9aa46d0fd83149a247ea41d2ac90ffe137610c3002ead",
+          "source_cut_id": "long72-cut-27"
+        },
+        {
+          "attestation_content_hash": "sha256:4f170e880c6de85c538346e855e4e3b400568f4f4b2e8ebb634cb1847c7ce6aa",
+          "definition_content_hash": "sha256:8ea81af92168760e03c3adaef8e85bdac70f7c6435285a4c67df4d0a56db4114",
+          "materialization_id": "be4ebd48-2a0c-4c6d-9a12-455edb357add",
+          "membership_content_hash": "sha256:0f1b0558434bc8bc4d5bc9e5671d6169e5bbb74d444d492584d79f5f06b811d1",
+          "method_binding": {
+            "digest": "sha256:141be7a2f115254c6e7eeb7add7f81ad6c2b5896aae0c0aed7d1b83b5bfcd6b5",
+            "product_name": "SyntheticReturnMethodProfile",
+            "product_version": "v1",
+            "revision": "synthetic.method.r1"
+          },
+          "period_end": "2022-04-30",
+          "period_start": "2022-04-01",
+          "restatement_sequence": 28,
+          "retained_receipt_fingerprint": "sha256:d0910e06f958b052ffaca61641ca3164436f4bb7728f5591db4afa4b120eb6e9",
+          "source_cut_id": "long72-cut-28"
+        },
+        {
+          "attestation_content_hash": "sha256:816ef9e6ae1329fb76c1ae346c03124081c7006c0b98240c57519beb39bb9693",
+          "definition_content_hash": "sha256:bb17912ac2a1e7a2e19753a40948dc4eb24f01007873190c2855a2b1d48ec5fe",
+          "materialization_id": "fd6f4003-6d51-4a4f-83bd-8d9a61ea0017",
+          "membership_content_hash": "sha256:b244e6f4177f257a3426f64a2453645259788f603079fd2c94cce7c4870b2e2e",
+          "method_binding": {
+            "digest": "sha256:141be7a2f115254c6e7eeb7add7f81ad6c2b5896aae0c0aed7d1b83b5bfcd6b5",
+            "product_name": "SyntheticReturnMethodProfile",
+            "product_version": "v1",
+            "revision": "synthetic.method.r1"
+          },
+          "period_end": "2022-05-31",
+          "period_start": "2022-05-01",
+          "restatement_sequence": 29,
+          "retained_receipt_fingerprint": "sha256:84847648385144eae5bbfe9321b2ce29104448321a0946d0aac289d761aa42e0",
+          "source_cut_id": "long72-cut-29"
+        },
+        {
+          "attestation_content_hash": "sha256:93f4208657c995719c891d3db00cdcf533ba1bb77e0e66a2c908970ede05628c",
+          "definition_content_hash": "sha256:d20e35d8eecef54afd9ce06524e1578dc8dc2d360d61a070f44f6af5ed8e71fd",
+          "materialization_id": "e2c8ff56-2253-4bd0-b01c-f69782340237",
+          "membership_content_hash": "sha256:49df639c437279be5ca7ddf14b21a2e1915f51b56963b019165a4f30c5bc491d",
+          "method_binding": {
+            "digest": "sha256:141be7a2f115254c6e7eeb7add7f81ad6c2b5896aae0c0aed7d1b83b5bfcd6b5",
+            "product_name": "SyntheticReturnMethodProfile",
+            "product_version": "v1",
+            "revision": "synthetic.method.r1"
+          },
+          "period_end": "2022-06-30",
+          "period_start": "2022-06-01",
+          "restatement_sequence": 30,
+          "retained_receipt_fingerprint": "sha256:5f9e29cc9919f29fcec8af86d6ab3e04b6be7fc608be9c19342d0536841ac87e",
+          "source_cut_id": "long72-cut-30"
+        },
+        {
+          "attestation_content_hash": "sha256:02016e916906754ab26fd3b7c61ecfb87b7f97bfec20f96112e8f078b8604583",
+          "definition_content_hash": "sha256:5fd9143159667de9c4444abf030718fcc931914fac83ea9a9b710abadd436a5f",
+          "materialization_id": "03717858-cb6f-4cf7-a080-d46d42a6beb3",
+          "membership_content_hash": "sha256:f63acbcee1b9d712d28c0c12d8dbe1cc7be0879fa9f3b3fa3e50126784b24640",
+          "method_binding": {
+            "digest": "sha256:141be7a2f115254c6e7eeb7add7f81ad6c2b5896aae0c0aed7d1b83b5bfcd6b5",
+            "product_name": "SyntheticReturnMethodProfile",
+            "product_version": "v1",
+            "revision": "synthetic.method.r1"
+          },
+          "period_end": "2022-07-31",
+          "period_start": "2022-07-01",
+          "restatement_sequence": 31,
+          "retained_receipt_fingerprint": "sha256:28c1a91f92268b198ae3d2f74fb0b8a0230174329d1ba76e6f02d1352693cc6f",
+          "source_cut_id": "long72-cut-31"
+        },
+        {
+          "attestation_content_hash": "sha256:d8e7f69739b668691cfcda5987c7f3ace94edd2bb271fbe2535bfd0c91230061",
+          "definition_content_hash": "sha256:9232c714bbd3fc76d8f43039d66cb76a9fecefee081dda46245edd61407c3403",
+          "materialization_id": "84ccd3e3-3d64-4ce5-bb85-b85e896f38d0",
+          "membership_content_hash": "sha256:fe795717477a5f520a83a807509de18bbc6862e34167dd9d71fe9129d2bc4b00",
+          "method_binding": {
+            "digest": "sha256:141be7a2f115254c6e7eeb7add7f81ad6c2b5896aae0c0aed7d1b83b5bfcd6b5",
+            "product_name": "SyntheticReturnMethodProfile",
+            "product_version": "v1",
+            "revision": "synthetic.method.r1"
+          },
+          "period_end": "2022-08-31",
+          "period_start": "2022-08-01",
+          "restatement_sequence": 32,
+          "retained_receipt_fingerprint": "sha256:25d5b858fc73242d28371fc86b3537a571ac30be17b3007cb65fd1681f08abc2",
+          "source_cut_id": "long72-cut-32"
+        },
+        {
+          "attestation_content_hash": "sha256:1a0e2c4d08d569a6edcdf11a52ad24a5f64bca08a56e85530e0c5c6145b63525",
+          "definition_content_hash": "sha256:f95bffb4d5d489368dc4de1160793e23dceffcc5493f85d046c3b4e470193627",
+          "materialization_id": "afe4794b-ae7f-4575-b571-d1564a0b4a07",
+          "membership_content_hash": "sha256:9c29104b5ef790a0354fb1d5ee89e71b9b3f1e9215060cd8d0a1557c08ecc67c",
+          "method_binding": {
+            "digest": "sha256:141be7a2f115254c6e7eeb7add7f81ad6c2b5896aae0c0aed7d1b83b5bfcd6b5",
+            "product_name": "SyntheticReturnMethodProfile",
+            "product_version": "v1",
+            "revision": "synthetic.method.r1"
+          },
+          "period_end": "2022-09-30",
+          "period_start": "2022-09-01",
+          "restatement_sequence": 33,
+          "retained_receipt_fingerprint": "sha256:5f43b2125f1d726695eab640a531e8d44aa9f9aeaa50db87fe5470a7af549501",
+          "source_cut_id": "long72-cut-33"
+        },
+        {
+          "attestation_content_hash": "sha256:76957a1588d5a1f39034d872d953536b2cdf1e6854a2b83855a1bed1c52ad9b9",
+          "definition_content_hash": "sha256:e2f2da55101781744bee2be0b7703cc7fd7a8ff5420f182174fa0386233ee94c",
+          "materialization_id": "909100b9-c465-4c47-b6bb-12c2dd8207d1",
+          "membership_content_hash": "sha256:e3031faebd5370b9d80047c0701389bfe979aa69562621d18459056b624dc377",
+          "method_binding": {
+            "digest": "sha256:141be7a2f115254c6e7eeb7add7f81ad6c2b5896aae0c0aed7d1b83b5bfcd6b5",
+            "product_name": "SyntheticReturnMethodProfile",
+            "product_version": "v1",
+            "revision": "synthetic.method.r1"
+          },
+          "period_end": "2022-10-31",
+          "period_start": "2022-10-01",
+          "restatement_sequence": 34,
+          "retained_receipt_fingerprint": "sha256:0713cb7c88704c56279066bc6fd1a190520a3fb3f62d69fbf8d29a6c56d07a08",
+          "source_cut_id": "long72-cut-34"
+        },
+        {
+          "attestation_content_hash": "sha256:1f1b4e8b358dbd90e8eee43e4691a266496a6d5ce6ccc3fdddba193a602d8fde",
+          "definition_content_hash": "sha256:a7350328c7374e1dfe71cddf16696a5e42d8813b04b50314c6aa91e534154d9d",
+          "materialization_id": "b0845f6a-d5da-4cb1-a997-3733fe08838b",
+          "membership_content_hash": "sha256:e3681db613c3d6b3f435f9b7c36bc957dafff5e75414e724ec6ae9a14a6d1fc1",
+          "method_binding": {
+            "digest": "sha256:141be7a2f115254c6e7eeb7add7f81ad6c2b5896aae0c0aed7d1b83b5bfcd6b5",
+            "product_name": "SyntheticReturnMethodProfile",
+            "product_version": "v1",
+            "revision": "synthetic.method.r1"
+          },
+          "period_end": "2022-11-30",
+          "period_start": "2022-11-01",
+          "restatement_sequence": 35,
+          "retained_receipt_fingerprint": "sha256:e09f6144aa37bb59313ff6bafff212672a713e51c20f14068818349fc478fda4",
+          "source_cut_id": "long72-cut-35"
+        },
+        {
+          "attestation_content_hash": "sha256:a3254398f213acf2ca6eca84fd5f61bfeb00a1b1102dde76985a94efe3037ab3",
+          "definition_content_hash": "sha256:07574d88eb02a797b989638beffde691e17ce9c0b09cd856b41c3d3721113d7e",
+          "materialization_id": "d4b0f3f4-d6dd-4b7d-b7ad-5f2df40147ca",
+          "membership_content_hash": "sha256:6c3be844b43b366444e87195d3ea9f9e468a4025fd099e99efe76ee3b851d65b",
+          "method_binding": {
+            "digest": "sha256:141be7a2f115254c6e7eeb7add7f81ad6c2b5896aae0c0aed7d1b83b5bfcd6b5",
+            "product_name": "SyntheticReturnMethodProfile",
+            "product_version": "v1",
+            "revision": "synthetic.method.r1"
+          },
+          "period_end": "2022-12-31",
+          "period_start": "2022-12-01",
+          "restatement_sequence": 36,
+          "retained_receipt_fingerprint": "sha256:0b1fde601145ec7579914e13997b11877ba61959e4d17d9dad0312239381c6ef",
+          "source_cut_id": "long72-cut-36"
+        },
+        {
+          "attestation_content_hash": "sha256:fd032124361f4c0fcced4ad7400754efd92dccb25a4b3dd77040627936264186",
+          "definition_content_hash": "sha256:5c6e2ea1b25325b00eb37a29cc0284bfbc54f6feb372b189ceeb612dcdb55d1e",
+          "materialization_id": "b88d2aed-5f5b-4e34-ba9b-49a64b46e128",
+          "membership_content_hash": "sha256:12ac572967ee08de0c12806fd9de6571a9f594bbf3f25de4ad54c3848bdbcb17",
+          "method_binding": {
+            "digest": "sha256:141be7a2f115254c6e7eeb7add7f81ad6c2b5896aae0c0aed7d1b83b5bfcd6b5",
+            "product_name": "SyntheticReturnMethodProfile",
+            "product_version": "v1",
+            "revision": "synthetic.method.r1"
+          },
+          "period_end": "2023-01-31",
+          "period_start": "2023-01-01",
+          "restatement_sequence": 37,
+          "retained_receipt_fingerprint": "sha256:142ad81c075e8e86af777cefa756d830c02cb0fa75e8a17561079a06767ca21e",
+          "source_cut_id": "long72-cut-37"
+        },
+        {
+          "attestation_content_hash": "sha256:41524a7e7a81c95fe0cb810ec6118081e62129c6e6bf3a7b0ae80c5f887da34d",
+          "definition_content_hash": "sha256:19080b6e8fd1486996da4414521bc640503c9fb3186ecff3c695c500d9f1b8fc",
+          "materialization_id": "965447d6-731b-4b0b-8337-745a4399e3c2",
+          "membership_content_hash": "sha256:9a54aff60f9b1315faf03b38b139ad310c45d9c4035cb8718a71b149fc2a8ba0",
+          "method_binding": {
+            "digest": "sha256:141be7a2f115254c6e7eeb7add7f81ad6c2b5896aae0c0aed7d1b83b5bfcd6b5",
+            "product_name": "SyntheticReturnMethodProfile",
+            "product_version": "v1",
+            "revision": "synthetic.method.r1"
+          },
+          "period_end": "2023-02-28",
+          "period_start": "2023-02-01",
+          "restatement_sequence": 38,
+          "retained_receipt_fingerprint": "sha256:94476d580792c8c0cbc305aeaca4824ee89b7c0eec6f6f70dec390779222c963",
+          "source_cut_id": "long72-cut-38"
+        },
+        {
+          "attestation_content_hash": "sha256:730a4460ee1b276ffefb1142b23ea94e90dc20f8565efc4f881632c25359cf83",
+          "definition_content_hash": "sha256:be49e4d79d6dba058f3281ebf7152cd499a0d206a2bf71100564b5dbb95cab24",
+          "materialization_id": "481ba544-07a7-474b-8d56-9c723d49e651",
+          "membership_content_hash": "sha256:78a09e069b2543ccf8144c9c53ed0f29a3945c5fb46232bd7a9032aa87190336",
+          "method_binding": {
+            "digest": "sha256:141be7a2f115254c6e7eeb7add7f81ad6c2b5896aae0c0aed7d1b83b5bfcd6b5",
+            "product_name": "SyntheticReturnMethodProfile",
+            "product_version": "v1",
+            "revision": "synthetic.method.r1"
+          },
+          "period_end": "2023-03-31",
+          "period_start": "2023-03-01",
+          "restatement_sequence": 39,
+          "retained_receipt_fingerprint": "sha256:81df5f7b7c8c473f3e5ba5f16943810f15fefe88dba374bc5e27d25dc774ad38",
+          "source_cut_id": "long72-cut-39"
+        },
+        {
+          "attestation_content_hash": "sha256:607cc7a01e9b57caa89a49667d06f9bdfc8c2f132645929b5984e093e3a9a8e6",
+          "definition_content_hash": "sha256:b809767e3c033b59a7aea0800453004a4b6c7a8c3ace1987ef79cf48e77ae69d",
+          "materialization_id": "c1533f93-36ac-4bd2-9a12-831eded61d3c",
+          "membership_content_hash": "sha256:6787cf5dd2b8861bb145680f842dbf8757d1f464082f29b5e5262296d82e9f76",
+          "method_binding": {
+            "digest": "sha256:141be7a2f115254c6e7eeb7add7f81ad6c2b5896aae0c0aed7d1b83b5bfcd6b5",
+            "product_name": "SyntheticReturnMethodProfile",
+            "product_version": "v1",
+            "revision": "synthetic.method.r1"
+          },
+          "period_end": "2023-04-30",
+          "period_start": "2023-04-01",
+          "restatement_sequence": 40,
+          "retained_receipt_fingerprint": "sha256:2a423f6f57e888bfaad92f0b703215576e99e4827a8be5491a87787f5d9cdfe5",
+          "source_cut_id": "long72-cut-40"
+        },
+        {
+          "attestation_content_hash": "sha256:d6bd25d5beb63bdb9ee5e5e195b649ae8329e1f2552868e05f9af4b72cba3428",
+          "definition_content_hash": "sha256:26596a441254903fb2ebf031a31b1fa189e914366b2768af6eb9259e37bf1b2a",
+          "materialization_id": "f8f719a6-d554-40e0-b22c-3e4dcbee0863",
+          "membership_content_hash": "sha256:31f42ba45c3304f0f1bf93b56ac05b02fa7a401c375de7b4a049549d2b4c68a0",
+          "method_binding": {
+            "digest": "sha256:141be7a2f115254c6e7eeb7add7f81ad6c2b5896aae0c0aed7d1b83b5bfcd6b5",
+            "product_name": "SyntheticReturnMethodProfile",
+            "product_version": "v1",
+            "revision": "synthetic.method.r1"
+          },
+          "period_end": "2023-05-31",
+          "period_start": "2023-05-01",
+          "restatement_sequence": 41,
+          "retained_receipt_fingerprint": "sha256:2aa819b5c5263c8eebd743994c6506cae6346965a3895ba2f5418b0e71f347a9",
+          "source_cut_id": "long72-cut-41"
+        },
+        {
+          "attestation_content_hash": "sha256:b64775534e20f2cbdb374ed0e3bd8fefd5ab8b87e8f8c1daed505179dabab1bf",
+          "definition_content_hash": "sha256:b9f89d576dc311fcd63912d4bb6424b9c8fa09ccb9436437bae8fe5f9b59489e",
+          "materialization_id": "9be6dc46-d925-4225-a61f-d762f9e18de6",
+          "membership_content_hash": "sha256:8a83f8c49101dfdac63bb5d1ca19eeca633bebd8bb309485d844fba0119787ce",
+          "method_binding": {
+            "digest": "sha256:141be7a2f115254c6e7eeb7add7f81ad6c2b5896aae0c0aed7d1b83b5bfcd6b5",
+            "product_name": "SyntheticReturnMethodProfile",
+            "product_version": "v1",
+            "revision": "synthetic.method.r1"
+          },
+          "period_end": "2023-06-30",
+          "period_start": "2023-06-01",
+          "restatement_sequence": 42,
+          "retained_receipt_fingerprint": "sha256:6adb12b8945b9b5d5a62f503e2f037c0dfa2e5e713120ed5f8eba787f06c789c",
+          "source_cut_id": "long72-cut-42"
+        },
+        {
+          "attestation_content_hash": "sha256:f6ae841387dd76c44cafd1da959cc106989182ae92bdb3671c0b4e7e3789f4e0",
+          "definition_content_hash": "sha256:393c847477759caa18fcccc7efda26edf5c250a7eaae7b2ac53a9d4485f29fd5",
+          "materialization_id": "c7991bbd-f2c6-45d3-8c78-f61dbdd1602c",
+          "membership_content_hash": "sha256:b33317f9c7dd414c2a24bd0d41b5bfe47484d79e8dfd59e91fb4b07f46355189",
+          "method_binding": {
+            "digest": "sha256:141be7a2f115254c6e7eeb7add7f81ad6c2b5896aae0c0aed7d1b83b5bfcd6b5",
+            "product_name": "SyntheticReturnMethodProfile",
+            "product_version": "v1",
+            "revision": "synthetic.method.r1"
+          },
+          "period_end": "2023-07-31",
+          "period_start": "2023-07-01",
+          "restatement_sequence": 43,
+          "retained_receipt_fingerprint": "sha256:89bf389b2142de8f33b354f5f963af2d41730a0d8490cdd1f0a38e3cc2113cc8",
+          "source_cut_id": "long72-cut-43"
+        },
+        {
+          "attestation_content_hash": "sha256:dee92945dffa43d0c602822846999ee9c4b70d01acc5097c4747928ef237dcc6",
+          "definition_content_hash": "sha256:3fc90217fba6461fd6767af0d809b236008fd01f2d9b87c6bf1588379684b291",
+          "materialization_id": "4ae64025-dad2-41af-9901-d1fe116963d9",
+          "membership_content_hash": "sha256:3bd654a86377c6d125f20493bd0385f8dc511562c48c4b22365a90a54ba0f7e9",
+          "method_binding": {
+            "digest": "sha256:141be7a2f115254c6e7eeb7add7f81ad6c2b5896aae0c0aed7d1b83b5bfcd6b5",
+            "product_name": "SyntheticReturnMethodProfile",
+            "product_version": "v1",
+            "revision": "synthetic.method.r1"
+          },
+          "period_end": "2023-08-31",
+          "period_start": "2023-08-01",
+          "restatement_sequence": 44,
+          "retained_receipt_fingerprint": "sha256:d45c7706deb47395bb1b97c7aac7f96aca3b7c4981368255628efa7e9d0f53ed",
+          "source_cut_id": "long72-cut-44"
+        },
+        {
+          "attestation_content_hash": "sha256:ce4fdfff08c26f5c65938b390b3b32b92c1c26ca61556a3ef1e1f40e96513e6e",
+          "definition_content_hash": "sha256:88b29258940ff3a1c2160e97e1ca5b2219da8afb8a34f9a7e4c47b5b1277add8",
+          "materialization_id": "d13119c9-fc0d-4718-bd70-b29e3d3a9b69",
+          "membership_content_hash": "sha256:42d19d8f296fd227b14e8de803dfb1a8ebde9dca8b5f95036e14e4ab3037f70c",
+          "method_binding": {
+            "digest": "sha256:141be7a2f115254c6e7eeb7add7f81ad6c2b5896aae0c0aed7d1b83b5bfcd6b5",
+            "product_name": "SyntheticReturnMethodProfile",
+            "product_version": "v1",
+            "revision": "synthetic.method.r1"
+          },
+          "period_end": "2023-09-30",
+          "period_start": "2023-09-01",
+          "restatement_sequence": 45,
+          "retained_receipt_fingerprint": "sha256:eb32968beba4a9c4603d5bc7b623035d01a2953f18346b4bbc007636d0a0dc0f",
+          "source_cut_id": "long72-cut-45"
+        },
+        {
+          "attestation_content_hash": "sha256:fed4982531020faee62ae23467fb2656e1b3ec0e0aa0164cdd180a73eb037d47",
+          "definition_content_hash": "sha256:e39ded530f0bc6f8993e49aa3bfb4da1c9f0ffa4a13a57fa8ae3db9bb61d9bc3",
+          "materialization_id": "2ae5a977-2585-4fd1-ac48-1b61daf102a2",
+          "membership_content_hash": "sha256:5d8ddcdd23e3d313e4097db8c90ff6784f636f6ff9720d66b793045d59f39a48",
+          "method_binding": {
+            "digest": "sha256:141be7a2f115254c6e7eeb7add7f81ad6c2b5896aae0c0aed7d1b83b5bfcd6b5",
+            "product_name": "SyntheticReturnMethodProfile",
+            "product_version": "v1",
+            "revision": "synthetic.method.r1"
+          },
+          "period_end": "2023-10-31",
+          "period_start": "2023-10-01",
+          "restatement_sequence": 46,
+          "retained_receipt_fingerprint": "sha256:f5a670b46facaa73de48999ec72fb3b48cec708a8d43439ca08782d2fd3711b9",
+          "source_cut_id": "long72-cut-46"
+        },
+        {
+          "attestation_content_hash": "sha256:d3e02bc8cfe273892ba8b5bd2f8c185dcec5ac0ad880c305b461c2bbf2ffec12",
+          "definition_content_hash": "sha256:b47880e789de60612e2fdc0de0970c2ff1e0d00505b5ad5ed49d239e9e62de1d",
+          "materialization_id": "1d316866-1e6f-4f35-8442-e64ad7ce7701",
+          "membership_content_hash": "sha256:ca08ea2e997b2a67538c8fee005f4d92ff021ba7341b396bcbc5f67676c3e08f",
+          "method_binding": {
+            "digest": "sha256:141be7a2f115254c6e7eeb7add7f81ad6c2b5896aae0c0aed7d1b83b5bfcd6b5",
+            "product_name": "SyntheticReturnMethodProfile",
+            "product_version": "v1",
+            "revision": "synthetic.method.r1"
+          },
+          "period_end": "2023-11-30",
+          "period_start": "2023-11-01",
+          "restatement_sequence": 47,
+          "retained_receipt_fingerprint": "sha256:8487e36f6d1591afc987d4b7ffd6f019db964f699268c6f9d5abb49c1bd69cae",
+          "source_cut_id": "long72-cut-47"
+        },
+        {
+          "attestation_content_hash": "sha256:e778df6659bdfd1ba78ff2fd53e1d3e700fb9d73cf099d49cc76711ffe69c01f",
+          "definition_content_hash": "sha256:35cefe384a55f3f0bce3289349f4a632ba438ba319fea5ac42e59862363007a0",
+          "materialization_id": "d9f81e06-e45e-49ab-a12d-71a271892582",
+          "membership_content_hash": "sha256:bf5718ffb56b29ee76dd1a08a4ee491117dcd4ecd2aaf08ac2960089ac7c1c6b",
+          "method_binding": {
+            "digest": "sha256:141be7a2f115254c6e7eeb7add7f81ad6c2b5896aae0c0aed7d1b83b5bfcd6b5",
+            "product_name": "SyntheticReturnMethodProfile",
+            "product_version": "v1",
+            "revision": "synthetic.method.r1"
+          },
+          "period_end": "2023-12-31",
+          "period_start": "2023-12-01",
+          "restatement_sequence": 48,
+          "retained_receipt_fingerprint": "sha256:f3193b021e35aeaee266a9b11351285bff6fc950379c8f9cbae69a42d1b20369",
+          "source_cut_id": "long72-cut-48"
+        },
+        {
+          "attestation_content_hash": "sha256:9067fa3a062654da124cdf2a427faf7c7b63c7975b4933c0343172b6264192dc",
+          "definition_content_hash": "sha256:ecf392d43b8718f7d9bda158610e307bc169039c627b890b78947c8105dfee93",
+          "materialization_id": "ef1bdf5d-24d5-4b36-a9df-a0ec4802891f",
+          "membership_content_hash": "sha256:878e3ed74d610a2c4141f5cd96cbe46a164f9aa0862962c09ee18fe40e4d19ba",
+          "method_binding": {
+            "digest": "sha256:141be7a2f115254c6e7eeb7add7f81ad6c2b5896aae0c0aed7d1b83b5bfcd6b5",
+            "product_name": "SyntheticReturnMethodProfile",
+            "product_version": "v1",
+            "revision": "synthetic.method.r1"
+          },
+          "period_end": "2024-01-31",
+          "period_start": "2024-01-01",
+          "restatement_sequence": 49,
+          "retained_receipt_fingerprint": "sha256:d55663821695b49a981efd77a044fb2152e824be8a31e6799c39b053cd9969dc",
+          "source_cut_id": "long72-cut-49"
+        },
+        {
+          "attestation_content_hash": "sha256:8053ef4b1ab348c7b3e6f0d0a626e3d939743a3e0caf43afaa0f6801642f5c0f",
+          "definition_content_hash": "sha256:0ee92936aaa0d314d2513ec708a010172e6cb148e638b3961dbcf262d785017f",
+          "materialization_id": "03509d20-deb4-4f58-9401-cb0dda2cdd6a",
+          "membership_content_hash": "sha256:0a527249288e5568a86627def0881ef8f95085b5f5b307ac82d5cc8ba4eb3993",
+          "method_binding": {
+            "digest": "sha256:141be7a2f115254c6e7eeb7add7f81ad6c2b5896aae0c0aed7d1b83b5bfcd6b5",
+            "product_name": "SyntheticReturnMethodProfile",
+            "product_version": "v1",
+            "revision": "synthetic.method.r1"
+          },
+          "period_end": "2024-02-29",
+          "period_start": "2024-02-01",
+          "restatement_sequence": 50,
+          "retained_receipt_fingerprint": "sha256:4c708bc95d6b8447c74c3a77a2b3f1dbb358cca78d882cd9b9ceed3db3d7aa69",
+          "source_cut_id": "long72-cut-50"
+        },
+        {
+          "attestation_content_hash": "sha256:41b09d6bece0efc4ed7f89136c93432d00dfeab366fc1b1cbaf7780456ded956",
+          "definition_content_hash": "sha256:93ba62e81304cccb98d5fe96174e686d463333329fe4cc799f63753721c94697",
+          "materialization_id": "1df4f4a0-a3dd-4c88-bd75-d53d0d787bfb",
+          "membership_content_hash": "sha256:db496f3983ded6d2be14d6abef10a9bc037c473ea6a876d168f965964feae7a6",
+          "method_binding": {
+            "digest": "sha256:141be7a2f115254c6e7eeb7add7f81ad6c2b5896aae0c0aed7d1b83b5bfcd6b5",
+            "product_name": "SyntheticReturnMethodProfile",
+            "product_version": "v1",
+            "revision": "synthetic.method.r1"
+          },
+          "period_end": "2024-03-31",
+          "period_start": "2024-03-01",
+          "restatement_sequence": 51,
+          "retained_receipt_fingerprint": "sha256:b4ada109eabf20249970f757d57a94c26dedcef7824262d1d883c53c07156bd7",
+          "source_cut_id": "long72-cut-51"
+        },
+        {
+          "attestation_content_hash": "sha256:1bdb6a34fa295d1b1f7a0eb4c562c68321ba1c37c5779c33effe9a56ac3efc96",
+          "definition_content_hash": "sha256:7a51ddc0bfe122de8fd2b5971ad83d313c35875b68a251f9f2cc2d68fd2a2d3f",
+          "materialization_id": "9bdaa80d-d841-491e-8371-f70e4026480c",
+          "membership_content_hash": "sha256:b9b1d4f88de243bb5ee4b1edac287f608122bb4132cea319b5154aa8c381ca39",
+          "method_binding": {
+            "digest": "sha256:141be7a2f115254c6e7eeb7add7f81ad6c2b5896aae0c0aed7d1b83b5bfcd6b5",
+            "product_name": "SyntheticReturnMethodProfile",
+            "product_version": "v1",
+            "revision": "synthetic.method.r1"
+          },
+          "period_end": "2024-04-30",
+          "period_start": "2024-04-01",
+          "restatement_sequence": 52,
+          "retained_receipt_fingerprint": "sha256:00b3463c16ba285b65cf166dc817e033e1b6f287f69bd66f646f9b4aa40fda9d",
+          "source_cut_id": "long72-cut-52"
+        },
+        {
+          "attestation_content_hash": "sha256:e6164367175edf129c947ea76cd7203b7cc67ca8af1c1242f7257840ecaa8ca5",
+          "definition_content_hash": "sha256:0d76f4b10d9416a7e62dc4504defe8665ee22b5527bd71cff2482567f087ce1d",
+          "materialization_id": "fe6b7eef-84e7-4543-ab4f-e741b28a9cca",
+          "membership_content_hash": "sha256:ec3adf4df1daaeaace0e7f37c95e82b154a4211ed4d5ba2359783c6ac5d4d474",
+          "method_binding": {
+            "digest": "sha256:141be7a2f115254c6e7eeb7add7f81ad6c2b5896aae0c0aed7d1b83b5bfcd6b5",
+            "product_name": "SyntheticReturnMethodProfile",
+            "product_version": "v1",
+            "revision": "synthetic.method.r1"
+          },
+          "period_end": "2024-05-31",
+          "period_start": "2024-05-01",
+          "restatement_sequence": 53,
+          "retained_receipt_fingerprint": "sha256:216e22831677a6469acc1fccddcd63d2da5954d9189de3551ed6d18e333c669c",
+          "source_cut_id": "long72-cut-53"
+        },
+        {
+          "attestation_content_hash": "sha256:b8318284102197684c82004745cecc6dce5a38b0b06d99d7826265b7e1bfb393",
+          "definition_content_hash": "sha256:b3d0eba019d9ff4292f51fbdd123268a9c2baa8d95d073a2755d53a0db4715b3",
+          "materialization_id": "34e95bbf-62d5-4e60-b9c9-2cd46450fe46",
+          "membership_content_hash": "sha256:b21e2678cbf2745926e90408e3128149cc80aac93e544d514d262df964c493ad",
+          "method_binding": {
+            "digest": "sha256:141be7a2f115254c6e7eeb7add7f81ad6c2b5896aae0c0aed7d1b83b5bfcd6b5",
+            "product_name": "SyntheticReturnMethodProfile",
+            "product_version": "v1",
+            "revision": "synthetic.method.r1"
+          },
+          "period_end": "2024-06-30",
+          "period_start": "2024-06-01",
+          "restatement_sequence": 54,
+          "retained_receipt_fingerprint": "sha256:3269fdf25fb5b9f945e6ed95dd7c0ba3172f375a2d5952c093af039ebfbbc5bb",
+          "source_cut_id": "long72-cut-54"
+        },
+        {
+          "attestation_content_hash": "sha256:15e0f32052a0513161e71cf5f6dce7698b6daeb4906acd100ecd457723bda772",
+          "definition_content_hash": "sha256:81bbd68033146b61db73a34d8507f3882833112f1319e97e9fd61c2821284b42",
+          "materialization_id": "ae9274dd-6d99-4d3f-a12a-f4b7a5b76238",
+          "membership_content_hash": "sha256:f952e6fc30e187885a910598e8744f3981232efb7e346a274e16b0cd1b023e63",
+          "method_binding": {
+            "digest": "sha256:141be7a2f115254c6e7eeb7add7f81ad6c2b5896aae0c0aed7d1b83b5bfcd6b5",
+            "product_name": "SyntheticReturnMethodProfile",
+            "product_version": "v1",
+            "revision": "synthetic.method.r1"
+          },
+          "period_end": "2024-07-31",
+          "period_start": "2024-07-01",
+          "restatement_sequence": 55,
+          "retained_receipt_fingerprint": "sha256:65002e645da6283b0d561abeabdf48f96c1fbdf0decb79a0dccea7280d6b08e4",
+          "source_cut_id": "long72-cut-55"
+        },
+        {
+          "attestation_content_hash": "sha256:0493133efa84e5884e3f3fa6eb41999372ca09b8164aba9c986f8e59d6ef99da",
+          "definition_content_hash": "sha256:94ed7cd0b34cdabb9a110e85879422a6518243543609f6874f22467946ed9395",
+          "materialization_id": "64757f9e-a75b-4449-b678-9fbba2906e6c",
+          "membership_content_hash": "sha256:fdec632281f6298eb4044fd9c3fb112dbca24803e912aa6140bda59f3f640d1a",
+          "method_binding": {
+            "digest": "sha256:141be7a2f115254c6e7eeb7add7f81ad6c2b5896aae0c0aed7d1b83b5bfcd6b5",
+            "product_name": "SyntheticReturnMethodProfile",
+            "product_version": "v1",
+            "revision": "synthetic.method.r1"
+          },
+          "period_end": "2024-08-31",
+          "period_start": "2024-08-01",
+          "restatement_sequence": 56,
+          "retained_receipt_fingerprint": "sha256:450cb3ef21ae1d3098712882dc38519a8728f296a3299b869c43b7baae3f816e",
+          "source_cut_id": "long72-cut-56"
+        },
+        {
+          "attestation_content_hash": "sha256:45fbdcd02cc409194057087eac29401b1c021b5b5a614edb38779ddafd4159e7",
+          "definition_content_hash": "sha256:fd52b768ec220bf9156e96524bebaa8f1d738b3f5cd94893a896b1749204239b",
+          "materialization_id": "ce5f75bf-e378-4ce6-ade4-1c6e6e7dd990",
+          "membership_content_hash": "sha256:6648c09c58bd63345304b345d140b59dfb9cc86b4b76fc8390ea57d8fa817925",
+          "method_binding": {
+            "digest": "sha256:141be7a2f115254c6e7eeb7add7f81ad6c2b5896aae0c0aed7d1b83b5bfcd6b5",
+            "product_name": "SyntheticReturnMethodProfile",
+            "product_version": "v1",
+            "revision": "synthetic.method.r1"
+          },
+          "period_end": "2024-09-30",
+          "period_start": "2024-09-01",
+          "restatement_sequence": 57,
+          "retained_receipt_fingerprint": "sha256:26bfb8b713df26b3570125d8eb5c57fd0d4347cd86b076e016e9b69fae6cda2f",
+          "source_cut_id": "long72-cut-57"
+        },
+        {
+          "attestation_content_hash": "sha256:f6f3c6c2db00058004ee04f1052908f8bb680b918f0a7fd04ca74ce755b914a5",
+          "definition_content_hash": "sha256:afdc5e598333f0be3795c8a2d06d313e699c33e3a604e8fde7fd8bd88e9e8161",
+          "materialization_id": "71e78ca0-1c25-4c1a-8891-fd5b5abf6c21",
+          "membership_content_hash": "sha256:f6d5774bfcc2f0250292093c2c2965ebdcaab480d117f3107373962cff991e9d",
+          "method_binding": {
+            "digest": "sha256:141be7a2f115254c6e7eeb7add7f81ad6c2b5896aae0c0aed7d1b83b5bfcd6b5",
+            "product_name": "SyntheticReturnMethodProfile",
+            "product_version": "v1",
+            "revision": "synthetic.method.r1"
+          },
+          "period_end": "2024-10-31",
+          "period_start": "2024-10-01",
+          "restatement_sequence": 58,
+          "retained_receipt_fingerprint": "sha256:92dccb97809b58123d3ce95f0fb680ee13028e9c06e1ca0f653c3a2162b620a0",
+          "source_cut_id": "long72-cut-58"
+        },
+        {
+          "attestation_content_hash": "sha256:584470e22ec9df73220948eb17f0789d3ed672dc07980f6cd543e7675f024ada",
+          "definition_content_hash": "sha256:e6958d8fa2193ecfd28b355490011f811f5ba84ad49bfc11dd60bf303fca131c",
+          "materialization_id": "114e3de2-7658-4cf0-8f69-b31aace9dac1",
+          "membership_content_hash": "sha256:3a5ca7f33d78b97a46fa00ef07a76f6abfc4d74c2fe70014a3f5644d506366a3",
+          "method_binding": {
+            "digest": "sha256:141be7a2f115254c6e7eeb7add7f81ad6c2b5896aae0c0aed7d1b83b5bfcd6b5",
+            "product_name": "SyntheticReturnMethodProfile",
+            "product_version": "v1",
+            "revision": "synthetic.method.r1"
+          },
+          "period_end": "2024-11-30",
+          "period_start": "2024-11-01",
+          "restatement_sequence": 59,
+          "retained_receipt_fingerprint": "sha256:081e1f5b69d3a296bfe1c32c2d5579a012d91c8561164d6974b93ff2e89c034c",
+          "source_cut_id": "long72-cut-59"
+        },
+        {
+          "attestation_content_hash": "sha256:1b67be00ff979f4090a717ee786084b98a9dcd53c86d6cb0cb35bd66052ba465",
+          "definition_content_hash": "sha256:2406b19f7a2c1af7f47e45b0bbb70204311ab7a38f928193e7f33e28de26e783",
+          "materialization_id": "3e8c5511-c287-44c4-b695-67d5c865f7f4",
+          "membership_content_hash": "sha256:8fa65ebed1c49dd935631820826ee649aae8b9e5cadce626bbf8137005f8f926",
+          "method_binding": {
+            "digest": "sha256:141be7a2f115254c6e7eeb7add7f81ad6c2b5896aae0c0aed7d1b83b5bfcd6b5",
+            "product_name": "SyntheticReturnMethodProfile",
+            "product_version": "v1",
+            "revision": "synthetic.method.r1"
+          },
+          "period_end": "2024-12-31",
+          "period_start": "2024-12-01",
+          "restatement_sequence": 60,
+          "retained_receipt_fingerprint": "sha256:e4991ea926b9789b0efe2e0756631af33e99150e55524e58acde8f95963b8a57",
+          "source_cut_id": "long72-cut-60"
+        },
+        {
+          "attestation_content_hash": "sha256:9fd7c93565ae3e21e3e8ab8236a2a107675f8eb7ea5e644935e6dffcbd8f2fe9",
+          "definition_content_hash": "sha256:e1b727f38321e0d47f905c76adb738b5a3c61951cc93596744b204dd71159171",
+          "materialization_id": "5aaa9b74-67cf-4a1d-a89c-03a9bc7331e7",
+          "membership_content_hash": "sha256:f10370e3d902a5c92d09404e02bdf6cb45edc236eaceb9e407264424b19a2334",
+          "method_binding": {
+            "digest": "sha256:141be7a2f115254c6e7eeb7add7f81ad6c2b5896aae0c0aed7d1b83b5bfcd6b5",
+            "product_name": "SyntheticReturnMethodProfile",
+            "product_version": "v1",
+            "revision": "synthetic.method.r1"
+          },
+          "period_end": "2025-01-31",
+          "period_start": "2025-01-01",
+          "restatement_sequence": 61,
+          "retained_receipt_fingerprint": "sha256:d2078798cbce58106b8483a3574c1074c589cda3f595d531d66e0e065890411c",
+          "source_cut_id": "long72-cut-61"
+        },
+        {
+          "attestation_content_hash": "sha256:4d236345fbcae8497e014754d6e193e9f7a7efb476fe72743681b310d4550199",
+          "definition_content_hash": "sha256:4ea81b988d712144f69ab56b0ce51ac6a158bdd0300e60cd18e561be87442924",
+          "materialization_id": "34bd3a76-154a-4e28-807b-dba0fedfb140",
+          "membership_content_hash": "sha256:51abf6abc0e15ecc59d248f9c46ac351a8e6ac848b17b964219f3246f30f24d6",
+          "method_binding": {
+            "digest": "sha256:141be7a2f115254c6e7eeb7add7f81ad6c2b5896aae0c0aed7d1b83b5bfcd6b5",
+            "product_name": "SyntheticReturnMethodProfile",
+            "product_version": "v1",
+            "revision": "synthetic.method.r1"
+          },
+          "period_end": "2025-02-28",
+          "period_start": "2025-02-01",
+          "restatement_sequence": 62,
+          "retained_receipt_fingerprint": "sha256:4c465060b58497aff258fb48fb29eaaaffea2823b2d7ee9797353dc2e8cad43c",
+          "source_cut_id": "long72-cut-62"
+        },
+        {
+          "attestation_content_hash": "sha256:89f511f4e7c2c98bbddfa2a62f549040e65156e4e00e238a30ba66eba328e512",
+          "definition_content_hash": "sha256:adf601c700c4cd711770412fa141715449b3b8aa233fbd53939be13b9dd9ba50",
+          "materialization_id": "66eed336-d72c-424b-abfa-dfd7eb9233b7",
+          "membership_content_hash": "sha256:2c6ab0182062d7feada80ebf995dd8d5edf95307eb5e57546d0403e3d1ae7e8e",
+          "method_binding": {
+            "digest": "sha256:141be7a2f115254c6e7eeb7add7f81ad6c2b5896aae0c0aed7d1b83b5bfcd6b5",
+            "product_name": "SyntheticReturnMethodProfile",
+            "product_version": "v1",
+            "revision": "synthetic.method.r1"
+          },
+          "period_end": "2025-03-31",
+          "period_start": "2025-03-01",
+          "restatement_sequence": 63,
+          "retained_receipt_fingerprint": "sha256:e671c681d0b08935229a375797db94e4fffa301d59405b46cde905bbb6d967cf",
+          "source_cut_id": "long72-cut-63"
+        },
+        {
+          "attestation_content_hash": "sha256:6c3febdc753bebf2d64f0ac016516d91bb9ff4106e4fda504c0f9af4c172f664",
+          "definition_content_hash": "sha256:375dd2a09d030b199b29707e0fbb0eb3106cb2b99e7db1e06840d275fc012221",
+          "materialization_id": "7b1f74af-1994-4604-a5a7-698a7de77285",
+          "membership_content_hash": "sha256:225e7e642e1b4ac222974f5dec7e62b2231aae7714287d4e2464c0d1647e402a",
+          "method_binding": {
+            "digest": "sha256:141be7a2f115254c6e7eeb7add7f81ad6c2b5896aae0c0aed7d1b83b5bfcd6b5",
+            "product_name": "SyntheticReturnMethodProfile",
+            "product_version": "v1",
+            "revision": "synthetic.method.r1"
+          },
+          "period_end": "2025-04-30",
+          "period_start": "2025-04-01",
+          "restatement_sequence": 64,
+          "retained_receipt_fingerprint": "sha256:1431d189c8a59ffd7658e555b0d7ef86775764524b9a9f269b0398a42ad71022",
+          "source_cut_id": "long72-cut-64"
+        },
+        {
+          "attestation_content_hash": "sha256:e8d7c4e7b2b750f75a13c0e995362b8ab50899c1bfc6933f98f00af7e590963f",
+          "definition_content_hash": "sha256:f8e4f579ba8747ab77fc54a03d8174d3d623b8c0cbf4d909fa5854c4237a2fd8",
+          "materialization_id": "09bf17d1-2aae-418c-a0c7-b35e0ddf9547",
+          "membership_content_hash": "sha256:b7fd5a6b4d8f08281965098b6329f099163587bffc0ddd5928592ef1d99f41ae",
+          "method_binding": {
+            "digest": "sha256:141be7a2f115254c6e7eeb7add7f81ad6c2b5896aae0c0aed7d1b83b5bfcd6b5",
+            "product_name": "SyntheticReturnMethodProfile",
+            "product_version": "v1",
+            "revision": "synthetic.method.r1"
+          },
+          "period_end": "2025-05-31",
+          "period_start": "2025-05-01",
+          "restatement_sequence": 65,
+          "retained_receipt_fingerprint": "sha256:bbd35c8414cf43945e3edc6f937927edc7a57a69b4718153f07ff0e8c6873d86",
+          "source_cut_id": "long72-cut-65"
+        },
+        {
+          "attestation_content_hash": "sha256:e595d478f1482007fe56d0d490553386a4e62c4185fd584adea55b46f40e887d",
+          "definition_content_hash": "sha256:c0c70d29dc20e5267ebdafe0f69aa9ce91e26d4f07608306466a53caf424fdb4",
+          "materialization_id": "88c65b15-c94d-424f-a86f-8c4437a2225c",
+          "membership_content_hash": "sha256:76c3bac8a31b5ae6b99296db1dd60918d6d38605aaf7990048c66bc7a9c32fee",
+          "method_binding": {
+            "digest": "sha256:141be7a2f115254c6e7eeb7add7f81ad6c2b5896aae0c0aed7d1b83b5bfcd6b5",
+            "product_name": "SyntheticReturnMethodProfile",
+            "product_version": "v1",
+            "revision": "synthetic.method.r1"
+          },
+          "period_end": "2025-06-30",
+          "period_start": "2025-06-01",
+          "restatement_sequence": 66,
+          "retained_receipt_fingerprint": "sha256:0034e3cae0e8b4d3f00e55aa19fce23add94e80fd399494b34569e6516c9824e",
+          "source_cut_id": "long72-cut-66"
+        },
+        {
+          "attestation_content_hash": "sha256:29aa4979112b48de9ab86145f2d14c3b95122a2cb42beac1142ed5ebd189f2bd",
+          "definition_content_hash": "sha256:8e2f8b9823ffb09d959f65709dd54a64639529c690031fbd5594847ad2679b34",
+          "materialization_id": "6edd2ff2-6090-4ba5-9cd1-33a93056b195",
+          "membership_content_hash": "sha256:51ff2fb7443d2219a0fbaf5b5b4af52d6a579e757d7e20d7e463649b7d83f10a",
+          "method_binding": {
+            "digest": "sha256:141be7a2f115254c6e7eeb7add7f81ad6c2b5896aae0c0aed7d1b83b5bfcd6b5",
+            "product_name": "SyntheticReturnMethodProfile",
+            "product_version": "v1",
+            "revision": "synthetic.method.r1"
+          },
+          "period_end": "2025-07-31",
+          "period_start": "2025-07-01",
+          "restatement_sequence": 67,
+          "retained_receipt_fingerprint": "sha256:268738508f234ca7d824acc41b6356c041b88a55dab39ab25997bca9e904ac5f",
+          "source_cut_id": "long72-cut-67"
+        },
+        {
+          "attestation_content_hash": "sha256:c28fc1d5b398a870807ac0b317b10fe0dc4843eb5a83f54e783196dad42485d4",
+          "definition_content_hash": "sha256:14a27138a82685966563db542173a8d0f496b9c02634d209befddfad9712aead",
+          "materialization_id": "3e64bd3f-4b1c-4cc3-a833-62b94ba13ede",
+          "membership_content_hash": "sha256:b4a47aa57bf71126baf361f7841d2600581c72c9cfd738a302140ef66b893d43",
+          "method_binding": {
+            "digest": "sha256:141be7a2f115254c6e7eeb7add7f81ad6c2b5896aae0c0aed7d1b83b5bfcd6b5",
+            "product_name": "SyntheticReturnMethodProfile",
+            "product_version": "v1",
+            "revision": "synthetic.method.r1"
+          },
+          "period_end": "2025-08-31",
+          "period_start": "2025-08-01",
+          "restatement_sequence": 68,
+          "retained_receipt_fingerprint": "sha256:362e4e00053225227deb0026b66fddab7d532f8706300cb9f4abcebd4b03ee03",
+          "source_cut_id": "long72-cut-68"
+        },
+        {
+          "attestation_content_hash": "sha256:eac51bd76a97b7bdbbee8212668ea64186eed24f0f95c8387bf7f3164b2e98ca",
+          "definition_content_hash": "sha256:7d10f43497b72d7c44cb48ed76bf805b859212a2146c319cd48e784e99d82904",
+          "materialization_id": "f9f80328-b9ac-4f26-ae35-b61d5d8abe32",
+          "membership_content_hash": "sha256:b8546e3f2cd02bd1d2c53338a3c140bcd120b2f16d9a38d00d5e182ec2695977",
+          "method_binding": {
+            "digest": "sha256:141be7a2f115254c6e7eeb7add7f81ad6c2b5896aae0c0aed7d1b83b5bfcd6b5",
+            "product_name": "SyntheticReturnMethodProfile",
+            "product_version": "v1",
+            "revision": "synthetic.method.r1"
+          },
+          "period_end": "2025-09-30",
+          "period_start": "2025-09-01",
+          "restatement_sequence": 69,
+          "retained_receipt_fingerprint": "sha256:e1875ceaf350bf833d06993d39df75cf56d78ce75d4e9ee37a8d53f23d70d68f",
+          "source_cut_id": "long72-cut-69"
+        },
+        {
+          "attestation_content_hash": "sha256:5811c459362385c12a0aef06c0c6c52c40f08baaaf51dc54aeffa8f5f0774fbe",
+          "definition_content_hash": "sha256:3893d7479b2f5c0b1bc6b6d4bfdc9ac670bfdd826ddea1f53091a7538c1b36ec",
+          "materialization_id": "f3eac2b0-9ba8-4595-8a76-0545062c58dc",
+          "membership_content_hash": "sha256:a5d9ae9a14db341d23c4c8a90a4e785a9833ff265dd5823c6f1003ee4728fb15",
+          "method_binding": {
+            "digest": "sha256:141be7a2f115254c6e7eeb7add7f81ad6c2b5896aae0c0aed7d1b83b5bfcd6b5",
+            "product_name": "SyntheticReturnMethodProfile",
+            "product_version": "v1",
+            "revision": "synthetic.method.r1"
+          },
+          "period_end": "2025-10-31",
+          "period_start": "2025-10-01",
+          "restatement_sequence": 70,
+          "retained_receipt_fingerprint": "sha256:ae9e5c95efb17b0a17a42147a19cee9aee8b308f1c328b70e6f45713878c6031",
+          "source_cut_id": "long72-cut-70"
+        },
+        {
+          "attestation_content_hash": "sha256:12527b3eb74b404a53ee4a3120564b52ce72d611d188a965d0d905e2efceec7d",
+          "definition_content_hash": "sha256:32e3fd71e1207d49196cfb3ec1ee095a0221b92626b1563f6cf33d739f37e5b2",
+          "materialization_id": "541c5f40-9860-4256-9c30-a307a14c0f86",
+          "membership_content_hash": "sha256:0fff50506dbdf5333893e1c70d1877c729e20538637d8708fc2ecdd332a29da2",
+          "method_binding": {
+            "digest": "sha256:141be7a2f115254c6e7eeb7add7f81ad6c2b5896aae0c0aed7d1b83b5bfcd6b5",
+            "product_name": "SyntheticReturnMethodProfile",
+            "product_version": "v1",
+            "revision": "synthetic.method.r1"
+          },
+          "period_end": "2025-11-30",
+          "period_start": "2025-11-01",
+          "restatement_sequence": 71,
+          "retained_receipt_fingerprint": "sha256:1fdd4c1a433b54ee0b6b1da9d5352037305eeaab4fc53ceb9a620d0f533b6749",
+          "source_cut_id": "long72-cut-71"
+        },
+        {
+          "attestation_content_hash": "sha256:5de8110238d23bb934fe448e9c66da221105eae7accd13eb05bede314cf61443",
+          "definition_content_hash": "sha256:4b443abf701fed25a87b8a549f2b5d744c45981dfe998a5c853d1b43c3e9c737",
+          "materialization_id": "6fccb1f9-e8ae-4072-9c0f-665a27150e2e",
+          "membership_content_hash": "sha256:fdfc490901804e9a0d7043e9ee34a3b1d9cf0f7b96eb7134e56bc0da74ef7db3",
+          "method_binding": {
+            "digest": "sha256:141be7a2f115254c6e7eeb7add7f81ad6c2b5896aae0c0aed7d1b83b5bfcd6b5",
+            "product_name": "SyntheticReturnMethodProfile",
+            "product_version": "v1",
+            "revision": "synthetic.method.r1"
+          },
+          "period_end": "2025-12-31",
+          "period_start": "2025-12-01",
+          "restatement_sequence": 72,
+          "retained_receipt_fingerprint": "sha256:0cfc002ae25fd537de603d77840bc30801d31c073968044081b7bdbc16aa8a78",
+          "source_cut_id": "long72-cut-72"
+        }
+      ]
+    },
+    "series_digest": "dfb5e583b2bd26fb9288828a4e7965978f9a26341070277f81a723e8c67194e6",
+    "source_products": [
+      {
+        "pin": {
+          "kind": "CALENDAR_RETURN",
+          "product_key": "calendar_2020",
+          "selection": {
+            "calculation_fingerprint": "sha256:8424eac1c6b2d1a80eb4b465e028b694dc83f564afbec0800c10d923f613ca5b",
+            "calculation_id": "f71776ea-de75-47ac-9db4-75b22e4cf509",
+            "composite_id": "SYNTHETIC_LONG72_28_MEMBERS_USD",
+            "engine_version": "lotus-performance-calculation-engine.v16",
+            "methodology": "persisted_member_return_asset_weighted_twr_v1",
+            "period_end": "2020-12-31",
+            "period_start": "2020-01-01",
+            "reporting_currency": "USD",
+            "response_digest": "sha256:0d0aaaa2795531a2d54baca510b9407b1ec68d9ea1021edb6a20bb133cd93f24",
+            "return_view": "GROSS",
+            "tenant_id": "tenant-a",
+            "windows": [
+              {
+                "attestation_content_hash": "sha256:e147296ae589a6ed149a2e5c9caaac4bbaa933e79a13f211744acc5223091ff0",
+                "definition_content_hash": "sha256:e8a0ebfff34598a168eba3c9582dfbcf2ecf11988b920fff8c3ea31db0d71721",
+                "materialization_id": "d5e4f079-e4b9-42e2-ac88-f9da0e9e1f8e",
+                "membership_content_hash": "sha256:8b238221c34e97874cffb76d05e509d918a6e47ecb173a831eb275bd88866853",
+                "method_binding": {
+                  "digest": "sha256:141be7a2f115254c6e7eeb7add7f81ad6c2b5896aae0c0aed7d1b83b5bfcd6b5",
+                  "product_name": "SyntheticReturnMethodProfile",
+                  "product_version": "v1",
+                  "revision": "synthetic.method.r1"
+                },
+                "period_end": "2020-01-31",
+                "period_start": "2020-01-01",
+                "restatement_sequence": 73,
+                "retained_receipt_fingerprint": "sha256:016cd27a9eee329191ed3e8995036069dbfa6b98e46ac99c6aa329f4495cbbff",
+                "source_cut_id": "long72-cut-01-corrected"
+              },
+              {
+                "attestation_content_hash": "sha256:2d8c7c99ee3b3fa6ff22d393724c7ca641abec64d552103b5ba17e25524136cc",
+                "definition_content_hash": "sha256:5ec0832776293902bb012195b652589bb3f0b00a053b2fa902d703a52824dfc2",
+                "materialization_id": "3806d73e-013a-4eb3-b57f-64af79f672c9",
+                "membership_content_hash": "sha256:71061fb9a4c9a60a1f724947bbaa3f165428607f329c64c809a5020440ec97d6",
+                "method_binding": {
+                  "digest": "sha256:141be7a2f115254c6e7eeb7add7f81ad6c2b5896aae0c0aed7d1b83b5bfcd6b5",
+                  "product_name": "SyntheticReturnMethodProfile",
+                  "product_version": "v1",
+                  "revision": "synthetic.method.r1"
+                },
+                "period_end": "2020-02-29",
+                "period_start": "2020-02-01",
+                "restatement_sequence": 2,
+                "retained_receipt_fingerprint": "sha256:d140fa4707158c104dbf4a56ca47f3fb53ad8cca911579c54e5f7a9c0a2137bb",
+                "source_cut_id": "long72-cut-02"
+              },
+              {
+                "attestation_content_hash": "sha256:b90a3f5ee7f73dc101801aefd17c0affe1ac3bdbc6be5d61530864c56eb09409",
+                "definition_content_hash": "sha256:cb2dff6fb36a47d768ad622ee52be290f4ab51bfe50863b20440e103c7eebd32",
+                "materialization_id": "94804eb4-0a1a-4b2e-9f7b-9761925b8b89",
+                "membership_content_hash": "sha256:e3a6609aace19801560a90003e609b2fe46869b838ce717e0dab5016b780dcb2",
+                "method_binding": {
+                  "digest": "sha256:141be7a2f115254c6e7eeb7add7f81ad6c2b5896aae0c0aed7d1b83b5bfcd6b5",
+                  "product_name": "SyntheticReturnMethodProfile",
+                  "product_version": "v1",
+                  "revision": "synthetic.method.r1"
+                },
+                "period_end": "2020-03-31",
+                "period_start": "2020-03-01",
+                "restatement_sequence": 3,
+                "retained_receipt_fingerprint": "sha256:804c7a59bc7f278e302994d318be1ddd699880901f9750d94fd199656ba9a5ce",
+                "source_cut_id": "long72-cut-03"
+              },
+              {
+                "attestation_content_hash": "sha256:de68809888908bbbeee51537b558ab4f72439a5a390cbefc4a3bf2b96ecfc766",
+                "definition_content_hash": "sha256:28d7ec42e55e5a19fe8e3e546f74b3e3d99f21de631a64a77906b63e998dd6a8",
+                "materialization_id": "580e89bb-a4b8-4849-8f68-dccc5075c2ba",
+                "membership_content_hash": "sha256:29115d2e09dbec3b130cd99d6f4ad5902e28a67665eb099a520fee3d3eb9eb80",
+                "method_binding": {
+                  "digest": "sha256:141be7a2f115254c6e7eeb7add7f81ad6c2b5896aae0c0aed7d1b83b5bfcd6b5",
+                  "product_name": "SyntheticReturnMethodProfile",
+                  "product_version": "v1",
+                  "revision": "synthetic.method.r1"
+                },
+                "period_end": "2020-04-30",
+                "period_start": "2020-04-01",
+                "restatement_sequence": 4,
+                "retained_receipt_fingerprint": "sha256:83a87fdb161fef7bdfac9a80a882439cca9fc71360b03606d7e34db4c082cbf9",
+                "source_cut_id": "long72-cut-04"
+              },
+              {
+                "attestation_content_hash": "sha256:3968a20af540d521da2f842741f1b2387bca3ab616b55a74bfdfde19f7faf359",
+                "definition_content_hash": "sha256:d95591799bafacf7eece4fb6de5b050e3ffac665c84d9f840566e84f5ebf8d6c",
+                "materialization_id": "b847fa75-4bf1-4c41-b1f6-f7e08751f3b2",
+                "membership_content_hash": "sha256:599309917ac873478cdff8f108ac92051d9fec421bc989621e472505c260efd1",
+                "method_binding": {
+                  "digest": "sha256:141be7a2f115254c6e7eeb7add7f81ad6c2b5896aae0c0aed7d1b83b5bfcd6b5",
+                  "product_name": "SyntheticReturnMethodProfile",
+                  "product_version": "v1",
+                  "revision": "synthetic.method.r1"
+                },
+                "period_end": "2020-05-31",
+                "period_start": "2020-05-01",
+                "restatement_sequence": 5,
+                "retained_receipt_fingerprint": "sha256:2fc773ce19f81610dc0d1a734206dcc886512c1278271e1e9566a9917a8b7cb0",
+                "source_cut_id": "long72-cut-05"
+              },
+              {
+                "attestation_content_hash": "sha256:02b514f22de5c674155fa0858c21de5a35fe40ad31bb6ee7c931b5ad8d028751",
+                "definition_content_hash": "sha256:246002af88e5a478badfdb728213f7e6f5b9ed29ef346545eb9dd25e9a8cdc1a",
+                "materialization_id": "e54f3352-23c9-4323-959a-8940fcc6a597",
+                "membership_content_hash": "sha256:e1401e58323046f362d0d7599fdabcbd5801a6d0c564808bf73a80b864bbb53a",
+                "method_binding": {
+                  "digest": "sha256:141be7a2f115254c6e7eeb7add7f81ad6c2b5896aae0c0aed7d1b83b5bfcd6b5",
+                  "product_name": "SyntheticReturnMethodProfile",
+                  "product_version": "v1",
+                  "revision": "synthetic.method.r1"
+                },
+                "period_end": "2020-06-30",
+                "period_start": "2020-06-01",
+                "restatement_sequence": 6,
+                "retained_receipt_fingerprint": "sha256:ba9cffbec6e1184aefdd6d49564b59f05eb9fb6b4e20d47c21f25bb52fe9dba7",
+                "source_cut_id": "long72-cut-06"
+              },
+              {
+                "attestation_content_hash": "sha256:c747f27b3883c95258e423694c6fb468b5cd01e251066312d1dfb0a5416e61e1",
+                "definition_content_hash": "sha256:298065c5f0f0ac15b345b6f5ea1ff47d8e45faeeb963ba10f54bd1150ef338db",
+                "materialization_id": "5c2376b5-d134-49fe-b20b-5b2fc61245b8",
+                "membership_content_hash": "sha256:e0b264a74e1617da0e58b11a095e60b00c8938581b2915f8f962628f0a130913",
+                "method_binding": {
+                  "digest": "sha256:141be7a2f115254c6e7eeb7add7f81ad6c2b5896aae0c0aed7d1b83b5bfcd6b5",
+                  "product_name": "SyntheticReturnMethodProfile",
+                  "product_version": "v1",
+                  "revision": "synthetic.method.r1"
+                },
+                "period_end": "2020-07-31",
+                "period_start": "2020-07-01",
+                "restatement_sequence": 7,
+                "retained_receipt_fingerprint": "sha256:8d97edb46d4965b2c850868d7a909e092577efb0955f1b2e5ec14ad4bc1b0169",
+                "source_cut_id": "long72-cut-07"
+              },
+              {
+                "attestation_content_hash": "sha256:650d08c697cd9e44a3811edf0d076677ea9a6f85aa6e643b1151e0f55527f32d",
+                "definition_content_hash": "sha256:1e7c800cff475e55ab8726a7e9968a03451e38d2c42cd9bd925ac2c956b50d9f",
+                "materialization_id": "cdb52da4-72af-47e3-9da6-ba3f1e338409",
+                "membership_content_hash": "sha256:63cf060e78c91be5f6137703f30e29129ab568a767bf762b07ed0c25ed40fd05",
+                "method_binding": {
+                  "digest": "sha256:141be7a2f115254c6e7eeb7add7f81ad6c2b5896aae0c0aed7d1b83b5bfcd6b5",
+                  "product_name": "SyntheticReturnMethodProfile",
+                  "product_version": "v1",
+                  "revision": "synthetic.method.r1"
+                },
+                "period_end": "2020-08-31",
+                "period_start": "2020-08-01",
+                "restatement_sequence": 8,
+                "retained_receipt_fingerprint": "sha256:dc8940dd1e7564b3da1daafd2a0b6990aea8c2c9f0b5ab02d8897693445b6479",
+                "source_cut_id": "long72-cut-08"
+              },
+              {
+                "attestation_content_hash": "sha256:2504e174397bf8d8f4b058dbae7c15b7e23a870ee39c8bbf00f7be20b828e1a1",
+                "definition_content_hash": "sha256:b134d6a5258065ba92ee10b2595b3240b74de7fc7b00e451c3fd04047acad5be",
+                "materialization_id": "11d5fd88-e17e-4974-ba3d-3a85f84c92e3",
+                "membership_content_hash": "sha256:b2b134917441c27cde6f08db8ea13b2f1730f99afae1fb2c790a7b28fcef4541",
+                "method_binding": {
+                  "digest": "sha256:141be7a2f115254c6e7eeb7add7f81ad6c2b5896aae0c0aed7d1b83b5bfcd6b5",
+                  "product_name": "SyntheticReturnMethodProfile",
+                  "product_version": "v1",
+                  "revision": "synthetic.method.r1"
+                },
+                "period_end": "2020-09-30",
+                "period_start": "2020-09-01",
+                "restatement_sequence": 9,
+                "retained_receipt_fingerprint": "sha256:4d6b4648c81555896f3325c0bc9a48ea1a232c825a5443d5d4739bcf29328ac0",
+                "source_cut_id": "long72-cut-09"
+              },
+              {
+                "attestation_content_hash": "sha256:8f79312f376b45c4ce903178cd93daa817d8ef3b79d02130539cbc1702aa708b",
+                "definition_content_hash": "sha256:4e9ed327d86ca38c28f701601b1fc110b77c5322df53bcdb2a72e597c3c65b77",
+                "materialization_id": "fca335ac-dd16-44c1-8ca5-f64c6894ca45",
+                "membership_content_hash": "sha256:a452e24fc04b4eff4a2f4bb594c165f4e5e2f63ba5e5bb33ffdd0670321f8b73",
+                "method_binding": {
+                  "digest": "sha256:141be7a2f115254c6e7eeb7add7f81ad6c2b5896aae0c0aed7d1b83b5bfcd6b5",
+                  "product_name": "SyntheticReturnMethodProfile",
+                  "product_version": "v1",
+                  "revision": "synthetic.method.r1"
+                },
+                "period_end": "2020-10-31",
+                "period_start": "2020-10-01",
+                "restatement_sequence": 10,
+                "retained_receipt_fingerprint": "sha256:d83b1642d6269575fa5e8160214622ada5908457e771700dafdb2639c5ccb5a1",
+                "source_cut_id": "long72-cut-10"
+              },
+              {
+                "attestation_content_hash": "sha256:3edd7daa809abb7cf4995c53a3a0758b2ae83c3ab6e15e4636fef8a0f609a6bf",
+                "definition_content_hash": "sha256:86b59d6fe9d1c96c4319b3514280da00a5a2112f91bd5d98c62d6f9c35e5997d",
+                "materialization_id": "e9914f9f-9916-48e1-b421-7e49f5d28677",
+                "membership_content_hash": "sha256:6c6c506f88d433ca92ae31288043e0570f0a708dd189b4c49b4855bccf3a9431",
+                "method_binding": {
+                  "digest": "sha256:141be7a2f115254c6e7eeb7add7f81ad6c2b5896aae0c0aed7d1b83b5bfcd6b5",
+                  "product_name": "SyntheticReturnMethodProfile",
+                  "product_version": "v1",
+                  "revision": "synthetic.method.r1"
+                },
+                "period_end": "2020-11-30",
+                "period_start": "2020-11-01",
+                "restatement_sequence": 11,
+                "retained_receipt_fingerprint": "sha256:3c0b931eebfc313ff0fd0201e64523939a1f3b753ada5429a9fab0b96af963ab",
+                "source_cut_id": "long72-cut-11"
+              },
+              {
+                "attestation_content_hash": "sha256:6cea78f98aa4e863d2ab778822cdbc5fffe8c47c2c860124010715b38cf6cd0a",
+                "definition_content_hash": "sha256:f2af06baba6baf24b3f1dd61e91b1ffe6721684f38f36cac7518dc63db32150e",
+                "materialization_id": "8c6a1345-7e38-486d-acfa-4306bd9bb168",
+                "membership_content_hash": "sha256:bb19fedce61a9ada8dc8b73e73f98050170cb6d6f04019f3cca1a2bfab16f497",
+                "method_binding": {
+                  "digest": "sha256:141be7a2f115254c6e7eeb7add7f81ad6c2b5896aae0c0aed7d1b83b5bfcd6b5",
+                  "product_name": "SyntheticReturnMethodProfile",
+                  "product_version": "v1",
+                  "revision": "synthetic.method.r1"
+                },
+                "period_end": "2020-12-31",
+                "period_start": "2020-12-01",
+                "restatement_sequence": 12,
+                "retained_receipt_fingerprint": "sha256:29322fd03ae56ebd88d618df90a5b3273e2df8ec691bc7fb2afdddd936b2267f",
+                "source_cut_id": "long72-cut-12"
+              }
+            ]
+          },
+          "year": 2020
+        },
+        "source_response_digest": "sha256:0d0aaaa2795531a2d54baca510b9407b1ec68d9ea1021edb6a20bb133cd93f24"
+      },
+      {
+        "pin": {
+          "kind": "TRAILING_RETURN",
+          "months": 12,
+          "product_key": "trailing_12m",
+          "selection": {
+            "calculation_fingerprint": "sha256:d0c18d673d0552fbad8c031dce31145673a25df1200c8fa5e1d9ed574957d24e",
+            "calculation_id": "4b6d6dbb-6a5f-419a-a283-688e9b29fb85",
+            "composite_id": "SYNTHETIC_LONG72_28_MEMBERS_USD",
+            "engine_version": "lotus-performance-calculation-engine.v16",
+            "methodology": "persisted_member_return_asset_weighted_twr_v1",
+            "period_end": "2025-12-31",
+            "period_start": "2025-01-01",
+            "reporting_currency": "USD",
+            "response_digest": "sha256:039d6068f734b42483027074648ea0a096a97bab1b6e3d109440590dd402eddd",
+            "return_view": "GROSS",
+            "tenant_id": "tenant-a",
+            "windows": [
+              {
+                "attestation_content_hash": "sha256:9fd7c93565ae3e21e3e8ab8236a2a107675f8eb7ea5e644935e6dffcbd8f2fe9",
+                "definition_content_hash": "sha256:e1b727f38321e0d47f905c76adb738b5a3c61951cc93596744b204dd71159171",
+                "materialization_id": "5aaa9b74-67cf-4a1d-a89c-03a9bc7331e7",
+                "membership_content_hash": "sha256:f10370e3d902a5c92d09404e02bdf6cb45edc236eaceb9e407264424b19a2334",
+                "method_binding": {
+                  "digest": "sha256:141be7a2f115254c6e7eeb7add7f81ad6c2b5896aae0c0aed7d1b83b5bfcd6b5",
+                  "product_name": "SyntheticReturnMethodProfile",
+                  "product_version": "v1",
+                  "revision": "synthetic.method.r1"
+                },
+                "period_end": "2025-01-31",
+                "period_start": "2025-01-01",
+                "restatement_sequence": 61,
+                "retained_receipt_fingerprint": "sha256:d2078798cbce58106b8483a3574c1074c589cda3f595d531d66e0e065890411c",
+                "source_cut_id": "long72-cut-61"
+              },
+              {
+                "attestation_content_hash": "sha256:4d236345fbcae8497e014754d6e193e9f7a7efb476fe72743681b310d4550199",
+                "definition_content_hash": "sha256:4ea81b988d712144f69ab56b0ce51ac6a158bdd0300e60cd18e561be87442924",
+                "materialization_id": "34bd3a76-154a-4e28-807b-dba0fedfb140",
+                "membership_content_hash": "sha256:51abf6abc0e15ecc59d248f9c46ac351a8e6ac848b17b964219f3246f30f24d6",
+                "method_binding": {
+                  "digest": "sha256:141be7a2f115254c6e7eeb7add7f81ad6c2b5896aae0c0aed7d1b83b5bfcd6b5",
+                  "product_name": "SyntheticReturnMethodProfile",
+                  "product_version": "v1",
+                  "revision": "synthetic.method.r1"
+                },
+                "period_end": "2025-02-28",
+                "period_start": "2025-02-01",
+                "restatement_sequence": 62,
+                "retained_receipt_fingerprint": "sha256:4c465060b58497aff258fb48fb29eaaaffea2823b2d7ee9797353dc2e8cad43c",
+                "source_cut_id": "long72-cut-62"
+              },
+              {
+                "attestation_content_hash": "sha256:89f511f4e7c2c98bbddfa2a62f549040e65156e4e00e238a30ba66eba328e512",
+                "definition_content_hash": "sha256:adf601c700c4cd711770412fa141715449b3b8aa233fbd53939be13b9dd9ba50",
+                "materialization_id": "66eed336-d72c-424b-abfa-dfd7eb9233b7",
+                "membership_content_hash": "sha256:2c6ab0182062d7feada80ebf995dd8d5edf95307eb5e57546d0403e3d1ae7e8e",
+                "method_binding": {
+                  "digest": "sha256:141be7a2f115254c6e7eeb7add7f81ad6c2b5896aae0c0aed7d1b83b5bfcd6b5",
+                  "product_name": "SyntheticReturnMethodProfile",
+                  "product_version": "v1",
+                  "revision": "synthetic.method.r1"
+                },
+                "period_end": "2025-03-31",
+                "period_start": "2025-03-01",
+                "restatement_sequence": 63,
+                "retained_receipt_fingerprint": "sha256:e671c681d0b08935229a375797db94e4fffa301d59405b46cde905bbb6d967cf",
+                "source_cut_id": "long72-cut-63"
+              },
+              {
+                "attestation_content_hash": "sha256:6c3febdc753bebf2d64f0ac016516d91bb9ff4106e4fda504c0f9af4c172f664",
+                "definition_content_hash": "sha256:375dd2a09d030b199b29707e0fbb0eb3106cb2b99e7db1e06840d275fc012221",
+                "materialization_id": "7b1f74af-1994-4604-a5a7-698a7de77285",
+                "membership_content_hash": "sha256:225e7e642e1b4ac222974f5dec7e62b2231aae7714287d4e2464c0d1647e402a",
+                "method_binding": {
+                  "digest": "sha256:141be7a2f115254c6e7eeb7add7f81ad6c2b5896aae0c0aed7d1b83b5bfcd6b5",
+                  "product_name": "SyntheticReturnMethodProfile",
+                  "product_version": "v1",
+                  "revision": "synthetic.method.r1"
+                },
+                "period_end": "2025-04-30",
+                "period_start": "2025-04-01",
+                "restatement_sequence": 64,
+                "retained_receipt_fingerprint": "sha256:1431d189c8a59ffd7658e555b0d7ef86775764524b9a9f269b0398a42ad71022",
+                "source_cut_id": "long72-cut-64"
+              },
+              {
+                "attestation_content_hash": "sha256:e8d7c4e7b2b750f75a13c0e995362b8ab50899c1bfc6933f98f00af7e590963f",
+                "definition_content_hash": "sha256:f8e4f579ba8747ab77fc54a03d8174d3d623b8c0cbf4d909fa5854c4237a2fd8",
+                "materialization_id": "09bf17d1-2aae-418c-a0c7-b35e0ddf9547",
+                "membership_content_hash": "sha256:b7fd5a6b4d8f08281965098b6329f099163587bffc0ddd5928592ef1d99f41ae",
+                "method_binding": {
+                  "digest": "sha256:141be7a2f115254c6e7eeb7add7f81ad6c2b5896aae0c0aed7d1b83b5bfcd6b5",
+                  "product_name": "SyntheticReturnMethodProfile",
+                  "product_version": "v1",
+                  "revision": "synthetic.method.r1"
+                },
+                "period_end": "2025-05-31",
+                "period_start": "2025-05-01",
+                "restatement_sequence": 65,
+                "retained_receipt_fingerprint": "sha256:bbd35c8414cf43945e3edc6f937927edc7a57a69b4718153f07ff0e8c6873d86",
+                "source_cut_id": "long72-cut-65"
+              },
+              {
+                "attestation_content_hash": "sha256:e595d478f1482007fe56d0d490553386a4e62c4185fd584adea55b46f40e887d",
+                "definition_content_hash": "sha256:c0c70d29dc20e5267ebdafe0f69aa9ce91e26d4f07608306466a53caf424fdb4",
+                "materialization_id": "88c65b15-c94d-424f-a86f-8c4437a2225c",
+                "membership_content_hash": "sha256:76c3bac8a31b5ae6b99296db1dd60918d6d38605aaf7990048c66bc7a9c32fee",
+                "method_binding": {
+                  "digest": "sha256:141be7a2f115254c6e7eeb7add7f81ad6c2b5896aae0c0aed7d1b83b5bfcd6b5",
+                  "product_name": "SyntheticReturnMethodProfile",
+                  "product_version": "v1",
+                  "revision": "synthetic.method.r1"
+                },
+                "period_end": "2025-06-30",
+                "period_start": "2025-06-01",
+                "restatement_sequence": 66,
+                "retained_receipt_fingerprint": "sha256:0034e3cae0e8b4d3f00e55aa19fce23add94e80fd399494b34569e6516c9824e",
+                "source_cut_id": "long72-cut-66"
+              },
+              {
+                "attestation_content_hash": "sha256:29aa4979112b48de9ab86145f2d14c3b95122a2cb42beac1142ed5ebd189f2bd",
+                "definition_content_hash": "sha256:8e2f8b9823ffb09d959f65709dd54a64639529c690031fbd5594847ad2679b34",
+                "materialization_id": "6edd2ff2-6090-4ba5-9cd1-33a93056b195",
+                "membership_content_hash": "sha256:51ff2fb7443d2219a0fbaf5b5b4af52d6a579e757d7e20d7e463649b7d83f10a",
+                "method_binding": {
+                  "digest": "sha256:141be7a2f115254c6e7eeb7add7f81ad6c2b5896aae0c0aed7d1b83b5bfcd6b5",
+                  "product_name": "SyntheticReturnMethodProfile",
+                  "product_version": "v1",
+                  "revision": "synthetic.method.r1"
+                },
+                "period_end": "2025-07-31",
+                "period_start": "2025-07-01",
+                "restatement_sequence": 67,
+                "retained_receipt_fingerprint": "sha256:268738508f234ca7d824acc41b6356c041b88a55dab39ab25997bca9e904ac5f",
+                "source_cut_id": "long72-cut-67"
+              },
+              {
+                "attestation_content_hash": "sha256:c28fc1d5b398a870807ac0b317b10fe0dc4843eb5a83f54e783196dad42485d4",
+                "definition_content_hash": "sha256:14a27138a82685966563db542173a8d0f496b9c02634d209befddfad9712aead",
+                "materialization_id": "3e64bd3f-4b1c-4cc3-a833-62b94ba13ede",
+                "membership_content_hash": "sha256:b4a47aa57bf71126baf361f7841d2600581c72c9cfd738a302140ef66b893d43",
+                "method_binding": {
+                  "digest": "sha256:141be7a2f115254c6e7eeb7add7f81ad6c2b5896aae0c0aed7d1b83b5bfcd6b5",
+                  "product_name": "SyntheticReturnMethodProfile",
+                  "product_version": "v1",
+                  "revision": "synthetic.method.r1"
+                },
+                "period_end": "2025-08-31",
+                "period_start": "2025-08-01",
+                "restatement_sequence": 68,
+                "retained_receipt_fingerprint": "sha256:362e4e00053225227deb0026b66fddab7d532f8706300cb9f4abcebd4b03ee03",
+                "source_cut_id": "long72-cut-68"
+              },
+              {
+                "attestation_content_hash": "sha256:eac51bd76a97b7bdbbee8212668ea64186eed24f0f95c8387bf7f3164b2e98ca",
+                "definition_content_hash": "sha256:7d10f43497b72d7c44cb48ed76bf805b859212a2146c319cd48e784e99d82904",
+                "materialization_id": "f9f80328-b9ac-4f26-ae35-b61d5d8abe32",
+                "membership_content_hash": "sha256:b8546e3f2cd02bd1d2c53338a3c140bcd120b2f16d9a38d00d5e182ec2695977",
+                "method_binding": {
+                  "digest": "sha256:141be7a2f115254c6e7eeb7add7f81ad6c2b5896aae0c0aed7d1b83b5bfcd6b5",
+                  "product_name": "SyntheticReturnMethodProfile",
+                  "product_version": "v1",
+                  "revision": "synthetic.method.r1"
+                },
+                "period_end": "2025-09-30",
+                "period_start": "2025-09-01",
+                "restatement_sequence": 69,
+                "retained_receipt_fingerprint": "sha256:e1875ceaf350bf833d06993d39df75cf56d78ce75d4e9ee37a8d53f23d70d68f",
+                "source_cut_id": "long72-cut-69"
+              },
+              {
+                "attestation_content_hash": "sha256:5811c459362385c12a0aef06c0c6c52c40f08baaaf51dc54aeffa8f5f0774fbe",
+                "definition_content_hash": "sha256:3893d7479b2f5c0b1bc6b6d4bfdc9ac670bfdd826ddea1f53091a7538c1b36ec",
+                "materialization_id": "f3eac2b0-9ba8-4595-8a76-0545062c58dc",
+                "membership_content_hash": "sha256:a5d9ae9a14db341d23c4c8a90a4e785a9833ff265dd5823c6f1003ee4728fb15",
+                "method_binding": {
+                  "digest": "sha256:141be7a2f115254c6e7eeb7add7f81ad6c2b5896aae0c0aed7d1b83b5bfcd6b5",
+                  "product_name": "SyntheticReturnMethodProfile",
+                  "product_version": "v1",
+                  "revision": "synthetic.method.r1"
+                },
+                "period_end": "2025-10-31",
+                "period_start": "2025-10-01",
+                "restatement_sequence": 70,
+                "retained_receipt_fingerprint": "sha256:ae9e5c95efb17b0a17a42147a19cee9aee8b308f1c328b70e6f45713878c6031",
+                "source_cut_id": "long72-cut-70"
+              },
+              {
+                "attestation_content_hash": "sha256:12527b3eb74b404a53ee4a3120564b52ce72d611d188a965d0d905e2efceec7d",
+                "definition_content_hash": "sha256:32e3fd71e1207d49196cfb3ec1ee095a0221b92626b1563f6cf33d739f37e5b2",
+                "materialization_id": "541c5f40-9860-4256-9c30-a307a14c0f86",
+                "membership_content_hash": "sha256:0fff50506dbdf5333893e1c70d1877c729e20538637d8708fc2ecdd332a29da2",
+                "method_binding": {
+                  "digest": "sha256:141be7a2f115254c6e7eeb7add7f81ad6c2b5896aae0c0aed7d1b83b5bfcd6b5",
+                  "product_name": "SyntheticReturnMethodProfile",
+                  "product_version": "v1",
+                  "revision": "synthetic.method.r1"
+                },
+                "period_end": "2025-11-30",
+                "period_start": "2025-11-01",
+                "restatement_sequence": 71,
+                "retained_receipt_fingerprint": "sha256:1fdd4c1a433b54ee0b6b1da9d5352037305eeaab4fc53ceb9a620d0f533b6749",
+                "source_cut_id": "long72-cut-71"
+              },
+              {
+                "attestation_content_hash": "sha256:5de8110238d23bb934fe448e9c66da221105eae7accd13eb05bede314cf61443",
+                "definition_content_hash": "sha256:4b443abf701fed25a87b8a549f2b5d744c45981dfe998a5c853d1b43c3e9c737",
+                "materialization_id": "6fccb1f9-e8ae-4072-9c0f-665a27150e2e",
+                "membership_content_hash": "sha256:fdfc490901804e9a0d7043e9ee34a3b1d9cf0f7b96eb7134e56bc0da74ef7db3",
+                "method_binding": {
+                  "digest": "sha256:141be7a2f115254c6e7eeb7add7f81ad6c2b5896aae0c0aed7d1b83b5bfcd6b5",
+                  "product_name": "SyntheticReturnMethodProfile",
+                  "product_version": "v1",
+                  "revision": "synthetic.method.r1"
+                },
+                "period_end": "2025-12-31",
+                "period_start": "2025-12-01",
+                "restatement_sequence": 72,
+                "retained_receipt_fingerprint": "sha256:0cfc002ae25fd537de603d77840bc30801d31c073968044081b7bdbc16aa8a78",
+                "source_cut_id": "long72-cut-72"
+              }
+            ]
+          }
+        },
+        "source_response_digest": "sha256:039d6068f734b42483027074648ea0a096a97bab1b6e3d109440590dd402eddd"
+      }
+    ],
+    "source_revision_digest": "cd7ee44280879c87a61c89153a796bb837adc18fef9eaaccf877c837a5910e58"
+  },
+  "frequency": "ad_hoc",
+  "portfolio_id": null,
+  "portfolio_scope": "composite",
+  "region": "APAC",
+  "report_request_id": "rrq_1d864057eb934f23bd43ddf7eebb8a9c",
+  "report_revision_id": "rrv3_986944d96975bff1ebb749794039cb887d060d0a3fcc8a6215cc72f561127f29",
+  "reporting_period_end": "2025-12-31",
+  "reporting_period_start": "2020-01-01",
+  "retention_start_date": "2025-12-31",
+  "tenant_id": "tenant-a"
+}

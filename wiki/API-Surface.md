@@ -182,7 +182,7 @@ identifiers do not leak into log aggregation.
 exclusive source-owned `composite_id`. Its immutable `composite_report_identity`
 retains the exact Report selection and revision digests with calculated-replay
 qualification and `NOT_ATTESTED` publication. `POST /documents` admits only the
-`composite-review/v1` XLSX contract and verifies actual bounded OOXML bytes and
+version-matched `composite-review/v1` or `composite-review/v2` XLSX contract and verifies actual bounded OOXML bytes and
 declared SHA-256 before storage. Existing metadata, checksum-verified download,
 source-event, correction, retention and legal-hold routes preserve the identity.
 The [delivery ledger](https://github.com/sgajbi/lotus-archive/blob/main/docs/composite-custody-delivery-ledger.md)
@@ -194,3 +194,11 @@ Report supplies the technical relationship; authorized Archive API proof supplie
 the financial relationship. Custody confers no official financial authority,
 all-product acceptance or enterprise certification. The [source contract and executable tutorial](https://github.com/sgajbi/lotus-archive/blob/main/docs/composite-custody-contract.md)
 cover the exact fields, migration and retry/retrieval flow.
+
+V2 additionally retains one to eight ordered, uniquely keyed calendar/trailing
+source products with typed complete-month horizons, exact primary window pins
+and matching response digests. Metadata, downloads, source events and retained
+correction use the existing routes. Unknown fields, versions and mixed template
+axes refuse; a changed product order or digest under an existing request conflicts.
+Migration 015 preserves v1 records. Its populated upgrade and separate-process
+reopen proof is distinct from genuine v2 producer HTTP acceptance under #182.
