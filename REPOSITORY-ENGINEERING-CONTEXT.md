@@ -325,8 +325,14 @@ Migration 016 follows 014+015 without modifying retained rows or historical SQL.
 Never replay 014/015 over v3; retain compatible readers/schema and forward-fix.
 `tests/integration/test_postgres_composite_linked_upgrade.py` proves populated
 v1/v2 upgrade, atomic unsafe old replay refusal and five-record process reopen.
-`docs/composite-linked-custody-acceptance.md` tracks component versus pending
-qualified joined v3 HTTP acceptance; v1/v2 acceptance remains completed.
+`docs/composite-linked-custody-acceptance.md` records qualified joined v3 HTTP
+custody, explicit original→technical→financial correction, actual restart,
+isolated PostgreSQL/copied-object restore and owned retirement. Fresh complete
+Report snapshots bind opaque lifecycle digests; frozen r4 is the financial
+baseline only. Restore compares all rows and bytes before API audit writes;
+PostgreSQL's complete reparse/deparse verifies CHECK expressions when dump
+reparse removes redundant parentheses. Controlled local calculated replay remains
+`NOT_ATTESTED`; enterprise recovery and bank/source authority are separate.
 
 `archive/composite_products.py` adds strict v2 calendar/trailing source-product
 pins using the existing selection/window models. Migration 015 admits matched

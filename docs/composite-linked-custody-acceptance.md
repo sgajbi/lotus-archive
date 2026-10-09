@@ -3,8 +3,10 @@
 Issue [#185](https://github.com/sgajbi/lotus-archive/issues/185) adds strict
 `composite_review.v3` to the existing XLSX document, immutable retry, source-event,
 retention and correction paths. Component and populated PostgreSQL proof are
-complete locally. Qualified joined Report→Render→Archive HTTP acceptance remains
-pending; v1/v2 acceptance under #176/#182 remains completed.
+complete. Qualified joined Report→Render→Archive HTTP custody, actual restart,
+isolated PostgreSQL/object restore and owned runtime retirement are proved below.
+V1/v2 acceptance under #176/#182 remains completed. Calculated replay remains
+controlled and `NOT_ATTESTED`.
 
 ## Contract and authority
 
@@ -96,7 +98,7 @@ filesystem/database, checks full content, all three identity versions, retries,
 source events and both corrected-current chains. Backup, restore, runtime HTTP
 restart and enterprise qualification remain distinct evidence requirements.
 
-## Delivery evidence and remaining acceptance
+## Component delivery evidence
 
 Local native evidence: baseline valid-v3 refusal `b24d99` exit 1; restored focused
 v1/v2/v3 proof `61a640` exit 0; deliberately disabled vector validator `1b6429`
@@ -134,11 +136,145 @@ waive a required check. Root owns the central auditor follow-up. No other repo
 or unrelated wiki page was changed.
 The README already links the custody contract, so no README change is needed.
 
-Signed PR, required checks, exact-main release, wiki publication/parity and actual
-qualified joined HTTP custody are pending. Public evidence must be posted and
-read back before bounded closure. Full Report #417/programme #923, institutional
-supplier/bank authority, wider product acceptance, nonfunctional qualification
-and actual restore certification remain open.
+## Actual joined v3 custody and recovery
+
+The qualified source cohort used Archive
+`f75adf60873b06ae4cea90fff8ebf4ac21cb5faa`, Report
+`7fc0dbc6ce3a81fedb9bcf3d9b6e5ec22cd03648`, and Render
+`535d0d5f87fd2f8bd701ba8707b343022060d030`. Archive implementation PR
+[#186](https://github.com/sgajbi/lotus-archive/pull/186) has a verified signed
+candidate and identical rebased-main tree; exact-main release run
+`37917714507` passed all nine jobs. Published wiki commit
+`0810ebb2aa968c1200b40f8d2de8f831434f0f1f` passed strict committed-blob parity.
+The replacement source admission explicitly records corrected Render qualification;
+historical startup cohort and leases remain preserved.
+
+The actual 52-file producer manifest is
+`25a991954fcaed28a76f82daace59471cc362855a84e4a9b4b4b26662009d2bb`.
+Archive independently rehashed every file and bound each complete package to its
+fresh Report snapshot payload, job, revision and three custody digests. Frozen r4
+selection and source response remain the financial baseline; fresh opaque Report
+lifecycle digests are bound to the actual snapshot rather than assumed unchanged.
+
+| Label | Retained document | Meaning |
+|---|---|---|
+| O | `doc_b2da366ee2f6440bb9afa25996fe66bb` | Original calculated linked report |
+| T | `doc_9395309ec8ba439a859218d09b351ad4` | Technical rerender from the retained original snapshot |
+| C | `doc_411beb7906ac4775b51cd6edfdf89b91` | Financially corrected source result |
+
+O and T retain the same Report job, snapshot, revision and custody identity, with
+distinct Render jobs, document IDs and measured XLSX bytes. C has a distinct
+Report lifecycle and financial custody identity. The existing lifecycle records
+explicit `correct` edges O→T→C; every current lookup resolves C. Historical
+metadata and complete downloads remain available unchanged.
+
+Archive actual HTTP proof `3eb100` exit 0 verifies full retained metadata and
+workbook bytes against the fresh packages and Render sender wires, source events,
+retention and access audit. Exact retries return 201; changed source digest,
+absent-versus-null sequence and changed content return 409. Foreign tenant
+metadata, download, source-event and retention requests return 403. Root's
+independent live reader `4dd41e` exit 0 accepted the joined chain; the public
+[programme evidence](https://github.com/sgajbi/lotus-report/issues/417#issuecomment-6080034790)
+records the bounded acceptance and its qualification limits.
+
+Actual restart `7d5605` exit 0 opens the same owned PostgreSQL volume and original
+filesystem objects at the same source revision, with a new HTTP process and no
+migration replay. All four SQL tables, the compatible constraint and all three
+objects match the pre-restart snapshot exactly. Fresh network HTTP proof
+`0b7766` exit 0 compares complete metadata, source events, retention and downloads
+to the live proof and verifies the final chain and tenant refusals again.
+
+Actual isolated restore `4d6c9d` exit 0 restores a custom PostgreSQL dump into a
+fresh database and copies the object root without overwriting either live store.
+The 31,458-byte dump SHA-256 is
+`8ee31bb921ea61b92aa38342229994c8c4160155de3ca9832f62f1caac835fee`;
+its table-of-contents read succeeds. Full before/after-dump snapshots are equal:
+three documents, 123 access-audit rows, two lifecycle relationships and no legal
+holds. Every full SQL row and workbook hash/size matches the restored copy before
+any restored API audit writes.
+
+The initial strict printed-constraint comparison `f05ab9` exit 1 is preserved.
+PostgreSQL reparses the dumped CHECK and removes redundant parentheses; all rows
+and objects already matched. A transaction-local temporary table reparses the
+original CHECK, then its complete PostgreSQL deparse exactly equals the restored
+constraint. The temporary transaction is rolled back. Both expressions and this
+proof are retained; substring matching does not qualify the guard.
+
+A fresh registered API process reads the restored database and copied objects,
+verifying all three custody identities, full downloads, source events, retention,
+final current chain and tenant refusal. This is actual isolated PostgreSQL and
+object recovery with registered API verification, separately from the original
+network HTTP proof. It does not certify enterprise recovery, RTO or RPO.
+
+Earlier failed process-generation string formatting and UTF-8 BOM launch attempts
+are retained in the task evidence. They do not qualify a restart; the successful
+source-bound generation and exact before/after proof do. No historical migration,
+financial source recapture, shared service or original retained object was changed.
+
+### Reader and transmitter examples
+
+Report reads retained metadata and bytes; Render alone transmits artifacts.
+Report's technical rerender uses the existing retained snapshot and records the
+O→T correction. The controlled financial correction records T→C through the
+same lifecycle API. Archive does not infer correction order from timestamps.
+For an existing request, use `/documents/by-request-id/{archive_request_id}`;
+historical document lookup and `/current` serve different reader needs.
+
+The following read example uses the actual synthetic O identifier and caller
+scope from the sealed HTTP packet. Run from any directory against a separately
+authorized local runtime containing that packet; the delivery runtime is retired
+after acceptance. These headers exercise local trusted-caller admission, not a
+production identity provider.
+
+Windows PowerShell:
+
+```powershell
+$archiveBaseUrl = 'http://127.0.0.1:55887'
+$documentId = 'doc_b2da366ee2f6440bb9afa25996fe66bb'
+$headers = @{'X-Caller-Service'='lotus-report'; 'X-Actor-Type'='service'; 'X-Actor-Id'='archive-custody-reader'; 'X-Tenant-Id'='synthetic-tenant-a'; 'X-Region'='APAC'; 'X-Correlation-Id'='linked-custody-reader'; 'X-Trace-Id'='linked-custody-reader'}
+Invoke-RestMethod -Uri "$archiveBaseUrl/documents/$documentId" -Headers $headers
+Invoke-RestMethod -Uri "$archiveBaseUrl/documents/$documentId/current" -Headers $headers
+Invoke-WebRequest -Uri "$archiveBaseUrl/documents/$documentId/download" -Headers $headers -OutFile './retained-original.xlsx'
+Get-FileHash -LiteralPath './retained-original.xlsx' -Algorithm SHA256
+```
+
+Linux/macOS Bash:
+
+```bash
+archive_base_url=http://127.0.0.1:55887
+document_id=doc_b2da366ee2f6440bb9afa25996fe66bb
+headers=(-H 'X-Caller-Service: lotus-report' -H 'X-Actor-Type: service' -H 'X-Actor-Id: archive-custody-reader' -H 'X-Tenant-Id: synthetic-tenant-a' -H 'X-Region: APAC' -H 'X-Correlation-Id: linked-custody-reader' -H 'X-Trace-Id: linked-custody-reader')
+curl --fail-with-body "${headers[@]}" "$archive_base_url/documents/$document_id"
+curl --fail-with-body "${headers[@]}" "$archive_base_url/documents/$document_id/current"
+curl --fail-with-body "${headers[@]}" "$archive_base_url/documents/$document_id/download" -o ./retained-original.xlsx
+```
+
+Compare the full downloaded byte count and SHA-256 to the metadata response;
+the sealed original hash is
+`4becf3da6d37f11aac6c103c7589f374be04eec153ea1d5a0b203e3d2082ee25`.
+The same supported paths were invoked by `3eb100` and `0b7766`, including full
+byte comparison and the persisted tenant/region boundary. The current response
+identifies C while the historical O response retains its original identity.
+
+Root independent post-restart/restore review `f6f8eb` exit 0 accepted actual
+original/restored PostgreSQL rows, audit prefixes, object bytes and the parsed
+guard. Retirement `ce47f9` exit 0 rechecked the exact owned process generations,
+source, container and volume, then proved those processes, the container, named
+volume and ports absent. Final original and restored custom dumps, readable TOCs,
+and full before/after snapshots are retained; the backup manifest is
+`2b6612ca37bc082161ab95819710e7d969929884ef94049d4f6fb41eac41fbe4`.
+Original and copied object roots remain identical. The final 103-file evidence
+manifest is `26e19c103f86400f26adef3c83ca7c843897a99070fa065bf3064fd9a522aced`
+(native `11fc5a` exit 0). Earlier sealed R2–R5 evidence remains unchanged.
+Bounded issue closure requires this documentation on validated main, authored
+wiki publication/parity and public final evidence posted and read back.
+Calculated replay remains controlled synthetic, uses local trusted caller
+headers, and is `NOT_ATTESTED`. Report #417/programme #923, institutional source
+and bank authority, production authentication, enterprise scale and broader
+nonfunctional qualification remain open. The separately reproduced wiki-auditor
+false positive is tracked in
+[lotus-platform #943](https://github.com/sgajbi/lotus-platform/issues/943);
+the original advisory audit remains failed.
 
 The manual checkout, wiki-source junction and seven earlier recovery refs remain
 retained after automatic approval review rejected their removal with only

@@ -5,8 +5,8 @@ There are **22**: sixteen on documents, six operational. The behaviour behind th
 [Document Lifecycle](Document-Lifecycle).
 
 Current scope: existing generated-document APIs, completed bounded v1/v2 Composite
-custody evidence, and strict linked v3 component/PostgreSQL support. Joined v3
-HTTP acceptance is pending. Use Documents below for callers, Composite XLSX
+custody evidence, and bounded joined linked v3 HTTP custody with actual restart
+and isolated restore. Use Documents below for callers, Composite XLSX
 custody for version contracts, and Operational endpoints for runtime diagnostics.
 
 ## Documents
@@ -188,8 +188,12 @@ complete ordered window pins, replacing the v1/v2 selection shape. Return
 `source_products` are not admitted in this profile. Metadata retains Report's
 opaque digests; full member source facts remain in Report snapshot/source-bearing
 bytes. [Linked custody acceptance](https://github.com/sgajbi/lotus-archive/blob/main/docs/composite-linked-custody-acceptance.md)
-records local API/PostgreSQL proof and pending qualified joined v3 HTTP acceptance.
-Custody does not grant source or financial publication authority.
+records qualified original→technical→financial HTTP custody, exact bytes and
+fresh Report snapshot bindings, retries/refusals, restart and isolated restore.
+Its reader examples distinguish historical metadata/download from current
+resolution. Render alone transmits bytes; Report owns lifecycle decisions.
+Custody remains controlled calculated replay and does not grant source or
+financial publication authority.
 
 `composite_review` uses `portfolio_scope=composite`, null `portfolio_id`, and an
 exclusive source-owned `composite_id`. Its immutable `composite_report_identity`
