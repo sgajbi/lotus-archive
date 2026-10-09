@@ -334,6 +334,17 @@ PostgreSQL's complete reparse/deparse verifies CHECK expressions when dump
 reparse removes redundant parentheses. Controlled local calculated replay remains
 `NOT_ATTESTED`; enterprise recovery and bank/source authority are separate.
 
+`archive/composite_amendment.py` adds strict Report-owned v6 monthly amendment
+identity to the existing union. Exact selection_version=v2/lineage receipt pins
+and published parent publication digest retain controlled, NOT_ATTESTED provenance.
+Source product v2 is independent of definition product v1/v2. The existing writer,
+scope join, JSON persistence, replay and lifecycle serializers remain unchanged.
+Append migration019 after018; never replay historical guards over retained v6.
+The required populated upgrade/fresh-reader test retains thirty-one v1-v6 documents.
+`docs/composite-amendment-custody-acceptance.md` separates frozen source/component
+and required PostgreSQL proof from pending actual joined v6 delivery/restore.
+No new financial engine, source evaluator, endpoint, ledger or runtime is introduced.
+
 `archive/composite_pooled.py` adds the Report-owned v5 pooled selector to the existing
 identity union. Exact policy/fallback/source/population/page and paired predecessor
 pins retain opaque Report digests; Archive performs no financial calculation or

@@ -6,7 +6,8 @@ There are **22**: sixteen on documents, six operational. The behaviour behind th
 
 Current scope: existing generated-document APIs, completed bounded v1/v2 Composite
 custody evidence, and bounded joined linked v3 HTTP custody with actual restart
-and isolated restore. Use Documents below for callers, Composite XLSX
+and isolated restore. Monthly amendment v6 adds strict component custody; actual
+v6 producer delivery/restore remain pending. Use Documents below for callers, Composite XLSX
 custody for version contracts, and Operational endpoints for runtime diagnostics.
 
 ## Documents
@@ -183,6 +184,14 @@ identifiers do not leak into log aggregation.
 3. [Architecture](Architecture) — how a request becomes a stored document
 ## Composite XLSX custody
 
+Monthly amendment v6 adds the exact Report-owned selection_version=v2 selector,
+bounded ordered lineage receipt pins and published parent publication digest.
+Qualification remains `CONTROLLED_MONTHLY_SOURCE_AMENDMENT_REPLAY` /
+`NOT_ATTESTED`; source product v2 is independent of definition product v1/v2.
+[Monthly amendment custody](https://github.com/sgajbi/lotus-archive/blob/main/docs/composite-amendment-custody-acceptance.md)
+separates synthetic component/required PostgreSQL proof from pending actual v6
+delivery and restore. Report remains JSON-only until receiver support.
+
 Pooled v5 extends the same family/routes with exact Report-owned source, policy,
 fallback, population/page and predecessor pins. Opaque revision digests remain
 unchanged; unavailable/fallback results are not promoted to financial success or
@@ -220,7 +229,8 @@ exclusive source-owned `composite_id`. Its immutable `composite_report_identity`
 retains the exact Report selection and revision digests with version-specific
 controlled replay qualification and `NOT_ATTESTED` publication. `POST /documents` admits only the
 version-matched `composite-review/v1`, `composite-review/v2` or linked-analysis
-`composite-review/v3`, eligibility `composite-review/v4` or pooled `composite-review/v5` XLSX contract and verifies actual bounded OOXML bytes and
+`composite-review/v3`, eligibility `composite-review/v4`, pooled `composite-review/v5`
+or monthly amendment `composite-review/v6` XLSX contract and verifies actual bounded OOXML bytes and
 declared SHA-256 before storage. Existing metadata, checksum-verified download,
 source-event, correction, retention and legal-hold routes preserve the identity.
 The [delivery ledger](https://github.com/sgajbi/lotus-archive/blob/main/docs/composite-custody-delivery-ledger.md)

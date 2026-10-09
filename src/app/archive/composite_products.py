@@ -9,6 +9,7 @@ from app.archive.composite_identity import CompositeReportIdentity, CompositeSel
 from app.archive.composite_linked import CompositeReportIdentityV3
 from app.archive.composite_eligibility import CompositeReportIdentityV4
 from app.archive.composite_pooled import CompositeReportIdentityV5
+from app.archive.composite_amendment import CompositeReportIdentityV6
 
 ProductKey = Annotated[str, Field(pattern=r"^[a-z][a-z0-9_]{0,63}$")]
 
@@ -126,6 +127,7 @@ CompositeCustodyIdentity = Annotated[
     | CompositeReportIdentityV2
     | CompositeReportIdentityV3
     | CompositeReportIdentityV4
-    | CompositeReportIdentityV5,
+    | CompositeReportIdentityV5
+    | CompositeReportIdentityV6,
     Field(discriminator="contract_version"),
 ]

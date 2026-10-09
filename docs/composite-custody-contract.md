@@ -194,6 +194,18 @@ extends the existing scope CHECK without rewriting retained v1–v4. See
 [pooled custody acceptance](composite-pooled-custody-acceptance.md) for producer
 provenance, component/required database proof and the pending actual joined boundary.
 
+### V6 monthly amendment evidence
+
+`composite_review.v6` adds the exact Report-owned monthly amendment selector to
+the existing family/routes with `CONTROLLED_MONTHLY_SOURCE_AMENDMENT_REPLAY` /
+`NOT_ATTESTED`. Required `selection_version=v2`, full bounded ordered lineage
+receipt pins and published parent publication response digest remain immutable
+metadata. Source product v2 is independent of definition product v1/v2. Existing
+v1-v5 contracts are unchanged. See [monthly amendment custody](composite-amendment-custody-acceptance.md)
+for exact handoff/schema provenance, append migration019, component and required
+PostgreSQL proof, and the pending actual joined/restore boundary. Report's current
+v6 producer remains JSON-only; synthetic component XLSX is not delivery evidence.
+
 ### V4 eligibility evidence
 
 `composite_review.v4` uses the same Composite XLSX family and routes with

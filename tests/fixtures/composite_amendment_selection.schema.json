@@ -1,0 +1,351 @@
+{
+  "additionalProperties": false,
+  "description": "Explicit source-v2 ordinary-month selection; independent definition version.",
+  "properties": {
+    "selection_version": {
+      "const": "v2",
+      "title": "Selection Version",
+      "type": "string"
+    },
+    "tenant_id": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^\\S+$",
+      "title": "Tenant Id",
+      "type": "string"
+    },
+    "composite_id": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^\\S+$",
+      "title": "Composite Id",
+      "type": "string"
+    },
+    "definition_version": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^\\S+$",
+      "title": "Definition Version",
+      "type": "string"
+    },
+    "reporting_currency": {
+      "pattern": "^[A-Z]{3}$",
+      "title": "Reporting Currency",
+      "type": "string"
+    },
+    "period_start": {
+      "format": "date",
+      "title": "Period Start",
+      "type": "string"
+    },
+    "period_end": {
+      "format": "date",
+      "title": "Period End",
+      "type": "string"
+    },
+    "months": {
+      "items": {
+        "discriminator": {
+          "mapping": {
+            "EVALUATED_ONLY": "#/$defs/AmendmentEvaluatedPin",
+            "PUBLISHED": "#/$defs/AmendmentPublishedPin"
+          },
+          "propertyName": "evidence_kind"
+        },
+        "oneOf": [
+          {
+            "$ref": "#/$defs/AmendmentPublishedPin"
+          },
+          {
+            "$ref": "#/$defs/AmendmentEvaluatedPin"
+          }
+        ]
+      },
+      "maxItems": 120,
+      "minItems": 1,
+      "title": "Months",
+      "type": "array"
+    }
+  },
+  "required": [
+    "selection_version",
+    "tenant_id",
+    "composite_id",
+    "definition_version",
+    "reporting_currency",
+    "period_start",
+    "period_end",
+    "months"
+  ],
+  "title": "AmendmentEligibilitySelection",
+  "type": "object",
+  "$defs": {
+    "AmendmentPublishedPin": {
+      "additionalProperties": false,
+      "properties": {
+        "evidence_kind": {
+          "const": "PUBLISHED",
+          "title": "Evidence Kind",
+          "type": "string"
+        },
+        "month": {
+          "pattern": "^[0-9]{4}-(?:0[1-9]|1[0-2])$",
+          "title": "Month",
+          "type": "string"
+        },
+        "evaluation_revision": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^\\S+$",
+          "title": "Evaluation Revision",
+          "type": "string"
+        },
+        "proposal_content_hash": {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "title": "Proposal Content Hash",
+          "type": "string"
+        },
+        "approval_content_hash": {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "title": "Approval Content Hash",
+          "type": "string"
+        },
+        "receipt_content_hash": {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "title": "Receipt Content Hash",
+          "type": "string"
+        },
+        "receipt_response_digest": {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "title": "Receipt Response Digest",
+          "type": "string"
+        },
+        "membership_revision": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^\\S+$",
+          "title": "Membership Revision",
+          "type": "string"
+        },
+        "membership_content_hash": {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "title": "Membership Content Hash",
+          "type": "string"
+        },
+        "membership_response_digest": {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "title": "Membership Response Digest",
+          "type": "string"
+        },
+        "attestation_version": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^\\S+$",
+          "title": "Attestation Version",
+          "type": "string"
+        },
+        "universe_content_hash": {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "title": "Universe Content Hash",
+          "type": "string"
+        },
+        "universe_response_digest": {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "title": "Universe Response Digest",
+          "type": "string"
+        },
+        "parent_membership_revision": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^\\S+$",
+          "title": "Parent Membership Revision",
+          "type": "string"
+        },
+        "parent_membership_content_hash": {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "title": "Parent Membership Content Hash",
+          "type": "string"
+        },
+        "parent_response_digest": {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "title": "Parent Response Digest",
+          "type": "string"
+        },
+        "publication_sequence": {
+          "exclusiveMinimum": 0,
+          "title": "Publication Sequence",
+          "type": "integer"
+        },
+        "publication_response_digest": {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "title": "Publication Response Digest",
+          "type": "string"
+        },
+        "source_cut_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^\\S+$",
+          "title": "Source Cut Id",
+          "type": "string"
+        },
+        "lineage_receipts": {
+          "items": {
+            "$ref": "#/$defs/MonthlyReceiptPin"
+          },
+          "maxItems": 31,
+          "minItems": 1,
+          "title": "Lineage Receipts",
+          "type": "array"
+        },
+        "parent_publication_response_digest": {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "title": "Parent Publication Response Digest",
+          "type": "string"
+        }
+      },
+      "required": [
+        "evidence_kind",
+        "month",
+        "evaluation_revision",
+        "proposal_content_hash",
+        "approval_content_hash",
+        "receipt_content_hash",
+        "receipt_response_digest",
+        "membership_revision",
+        "membership_content_hash",
+        "membership_response_digest",
+        "attestation_version",
+        "universe_content_hash",
+        "universe_response_digest",
+        "parent_membership_revision",
+        "parent_membership_content_hash",
+        "parent_response_digest",
+        "publication_sequence",
+        "publication_response_digest",
+        "source_cut_id",
+        "lineage_receipts",
+        "parent_publication_response_digest"
+      ],
+      "title": "AmendmentPublishedPin",
+      "type": "object"
+    },
+    "AmendmentEvaluatedPin": {
+      "additionalProperties": false,
+      "properties": {
+        "evidence_kind": {
+          "const": "EVALUATED_ONLY",
+          "title": "Evidence Kind",
+          "type": "string"
+        },
+        "month": {
+          "pattern": "^[0-9]{4}-(?:0[1-9]|1[0-2])$",
+          "title": "Month",
+          "type": "string"
+        },
+        "evaluation_revision": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^\\S+$",
+          "title": "Evaluation Revision",
+          "type": "string"
+        },
+        "proposal_content_hash": {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "title": "Proposal Content Hash",
+          "type": "string"
+        },
+        "proposal_response_digest": {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "title": "Proposal Response Digest",
+          "type": "string"
+        },
+        "parent_membership_revision": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^\\S+$",
+          "title": "Parent Membership Revision",
+          "type": "string"
+        },
+        "parent_membership_content_hash": {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "title": "Parent Membership Content Hash",
+          "type": "string"
+        },
+        "source_cut_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^\\S+$",
+          "title": "Source Cut Id",
+          "type": "string"
+        },
+        "lineage_receipts": {
+          "items": {
+            "$ref": "#/$defs/MonthlyReceiptPin"
+          },
+          "maxItems": 31,
+          "minItems": 1,
+          "title": "Lineage Receipts",
+          "type": "array"
+        }
+      },
+      "required": [
+        "evidence_kind",
+        "month",
+        "evaluation_revision",
+        "proposal_content_hash",
+        "proposal_response_digest",
+        "parent_membership_revision",
+        "parent_membership_content_hash",
+        "source_cut_id",
+        "lineage_receipts"
+      ],
+      "title": "AmendmentEvaluatedPin",
+      "type": "object"
+    },
+    "MonthlyReceiptPin": {
+      "additionalProperties": false,
+      "description": "Caller-pinned retained monthly receipt; no latest authority inference.",
+      "properties": {
+        "product_version": {
+          "enum": [
+            "v1",
+            "v2"
+          ],
+          "title": "Product Version",
+          "type": "string"
+        },
+        "evaluation_revision": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^\\S+$",
+          "title": "Evaluation Revision",
+          "type": "string"
+        },
+        "approval_content_hash": {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "title": "Approval Content Hash",
+          "type": "string"
+        },
+        "receipt_content_hash": {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "title": "Receipt Content Hash",
+          "type": "string"
+        },
+        "receipt_response_digest": {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "title": "Receipt Response Digest",
+          "type": "string"
+        }
+      },
+      "required": [
+        "product_version",
+        "evaluation_revision",
+        "approval_content_hash",
+        "receipt_content_hash",
+        "receipt_response_digest"
+      ],
+      "title": "MonthlyReceiptPin",
+      "type": "object"
+    }
+  }
+}
