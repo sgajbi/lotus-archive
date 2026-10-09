@@ -45,8 +45,9 @@ financial recomputation, latest-source lookup or publication qualification.
 
 ## Format, scope and event contracts
 
-The admitted tuples are `composite-review` / `v1` / `composite_review.v1` / `xlsx`
-and `composite-review` / `v2` / `composite_review.v2` / `xlsx`
+The admitted tuples are `composite-review` / `v1` / `composite_review.v1` / `xlsx`,
+`composite-review` / `v2` / `composite_review.v2` / `xlsx`, and
+`composite-review` / `v3` / `composite_review.v3` / `xlsx`
 with `application/vnd.openxmlformats-officedocument.spreadsheetml.sheet`.
 Archive verifies a real OOXML ZIP workbook, content types, workbook/worksheet
 XML and relationships before storage. At most 4,096 ZIP parts and 128 MiB
@@ -145,6 +146,39 @@ shows existing create, retry, download, source-event and correction calls. Actua
 qualified Report→Render→Archive v2 HTTP acceptance is recorded separately in the
 [v2 delivery ledger](composite-v2-custody-delivery-ledger.md), under issue #182.
 
+### V3 linked analysis
+
+V3 is a standalone linked-analysis profile in the same report family and custody
+path. It keeps the same qualification, publication state and three opaque Report
+digests. Its strict `selection` contains `tenant_id`, `source_request`, ordered
+`windows`, `engine_version`, `calculation_fingerprint`, and `response_digest`.
+The request requires `metric_id=LINKED_MEMBER_CONTRIBUTION`, `method=CARINO:v1`,
+`composite_id`, `calculation_id`, inclusive dates, `return_view`, three-letter
+`reporting_currency`, and one to 120 `materialization_ids`.
+
+Request materializations must equal the complete unique window vector in order.
+An optional `source_request.restatement_sequence` may be explicitly null only.
+Its absence and explicit null are preserved as different raw request identities;
+changing that presence under an existing Archive request conflicts. A numeric,
+boolean or textual competing sequence refuses; per-window sequences remain
+strict positive integers.
+Window authority pins use the same strict fields as v1/v2; dates are contiguous
+and cover the exact request horizon. Tenant, composite and dates must agree with
+enclosing Archive metadata. All three template/data/identity axes must be v3.
+Unknown fields, old selection fields and `source_products` refuse; linked analysis
+cannot be relabelled as v1/v2 or joined to return products through this profile.
+
+Member-level `source_authority_identity` stays in Report's retained source
+response/snapshot and source-bearing workbook. Archive retains the exact Report
+digests, job/snapshot/revision identity and measured content hash; it does not
+denormalize raw member facts into metadata or recalculate their financial values.
+These digests prove custody identity, not bank/source/publication approval.
+Unavailable evidence remains source-owned; Archive never manufactures a zero,
+successful linked result or approval to fill missing source content.
+
+See [linked custody acceptance](composite-linked-custody-acceptance.md) for the
+component examples and the separately tracked actual HTTP acceptance boundary.
+
 ### Upgrade and recovery
 
 Apply append-only migration `015_add_composite_v2_custody.sql` once after 014,
@@ -160,6 +194,14 @@ For rollback, disable new v2 admissions and retain the compatible schema and
 reader. Do not deploy a v1-only reader over v2 custody, restore the 014 constraint,
 drop retained identity, or delete objects to make rollback pass. Forward-fix the
 reader/admission defect while retaining the database backup and objects together.
+
+For linked v3, apply pending `016_add_composite_linked_custody.sql` after 015
+before enabling admissions. It replaces only the existing scope guard and changes
+no retained row or object. Keep a v3-compatible reader/schema for retained v3;
+disable new admissions and forward-fix when needed. Never replay 014 or 015 over
+retained v3. Both historical files remain unchanged. The populated upgrade test
+proves unsafe replay refuses atomically without changing rows or the compatible
+constraint. This is distinct from backup/restore or operated deployment proof.
 
 From the Archive root, with an isolated test database URL and
 `LOTUS_ARCHIVE_REQUIRE_DATABASE_PROOF=1`, run on Windows:

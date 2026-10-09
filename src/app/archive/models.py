@@ -8,6 +8,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator, model_valida
 
 from app.archive.checksum import SUPPORTED_CHECKSUM_ALGORITHM
 from app.archive.composite_products import CompositeCustodyIdentity
+from app.archive.composite_linked import CompositeLinkedSelection
 
 
 class PurgeStatus(StrEnum):
@@ -320,12 +321,13 @@ class ArchiveDocumentInput(BaseModel):
             if identity is None or not self.composite_id:
                 raise ValueError("composite reports require typed composite identity")
             pin = identity.selection
-            if (pin.tenant_id, pin.composite_id, pin.period_start, pin.period_end) != (
+            scope = pin.source_request if isinstance(pin, CompositeLinkedSelection) else pin
+            if (pin.tenant_id, scope.composite_id, scope.period_start, scope.period_end) != (
                 self.tenant_id,
                 self.composite_id,
                 self.reporting_period_start,
                 self.reporting_period_end,
-            ) or self.as_of_date != pin.period_end:
+            ) or self.as_of_date != scope.period_end:
                 raise ValueError("composite identity must match archive scope and horizon")
             if (
                 self.template_id,
