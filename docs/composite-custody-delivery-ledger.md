@@ -44,11 +44,14 @@ security, image signature and provenance. First RPT-01 custody does not establis
 twelve report products, official/GIPS authority, financial publication approval,
 enterprise scale or full composite readiness. Candidate qualification remains
 `EXPLICIT_RETAINED_CALCULATED_REPLAY`; publication remains `NOT_ATTESTED`.
-Issue #176 remains open for completed producer orchestration and a qualified
-actual corrected-source artifact. Mainline CI and authored wiki publication have
-passed; actual controlled candidate custody and template rerender are proved
-below. Neither recorded transport nor controlled source admission establishes
-joined live acceptance.
+Issue #176 remains open for a qualified actual corrected-financial-source
+artifact and final acceptance. Mainline CI and authored wiki publication have
+passed. The later actual Performance-wire candidate and registered retained
+rerender below prove genuine Render-to-Archive HTTP custody and Report-to-Archive
+lifecycle orchestration. Performance input/verifier and Report XLSX catalogue
+admission remain controlled; Report adopts captured genuine sender responses.
+This bounded proof does not establish official or fully live financial-source
+acceptance.
 
 Source docs, wiki, repository context and supported features changed together.
 No central skill/routing change is needed: existing backend and custody patterns
@@ -140,3 +143,80 @@ confirmed all three local feature patches are present on main. The clean owned
 worktree, wiki-source junction and local feature branch were retained after
 automatic approval review rejected their cleanup command as `blocked by policy`.
 They contain no unique unmerged durable truth; no foreign work was reverted.
+
+## Actual Performance-wire candidate and retained rerender
+
+The subsequent Report package consumes an actual registered Performance main
+response from `c100c885752c86b8d950d7970c99a8d223e6376a`, with controlled synthetic
+inputs and verifier. Report runtime source is main
+`02052b4c95b88e6fafa6254aa3bf283cfc007c97`; XLSX catalogue admission remains
+test-only. The new package SHA-256 is
+`ead799a97341533ec9e267424de959424f4260abc0fb83c8e18658bf4ee5b5b0`, with genuine
+composite `SYNTHETIC_OR-02`, null portfolio ID, job
+`rjob_5922448d2e084525ade847752baa2852`, snapshot
+`rsnap_a9a271444add44a1bd71cea447932a48` and revision
+`rrv3_55832129dbec2790a54020a7712ef55ebc87dc4f36ca52da9d2551e94fefbb13`.
+Earlier synthetic/historical document identities were not spliced into this chain.
+
+Clean Render main `f3670e577137491caafe102a58074055836a80c4` produced the workbook
+and transmitted it with its unmodified `StdlibArchiveTransport` to unchanged
+Archive main `f05d0f0c46b2b208dfadc9fa99dc88fabda2e79b` registered routes, with
+explicit owned diagnostic PostgreSQL/filesystem/audit adapter bindings. Actual
+HTTP POST returned 201, document `doc_ae12cc642013499094177eebc253f40c`, request
+`areq_0cce4b565b0941489fbad6c54a00e2f3`. Independent authorized Report HTTP
+metadata/download returned 200, exact 35,178 bytes and SHA-256
+`25dc83decb917cddde772b9848f6690e3ae533d8ed9192e779ad4c3db9f2f860`.
+The independently recomputed bounded XLSX member fingerprint is distinct:
+`febdb210fb816326d1b997eb5d8b378a34af3accf3a65cf5a3239c21f47109d1`.
+Render's initial diagnostic exited 1 after successful ingest because its ingest
+principal correctly received download 403. The preserved successor complete
+producer command exited 0 using the existing Report read boundary; no policy
+was weakened. Render independently reconciled 162 canonical and 162 display
+cells, the full pinned dataset and raw bytes. Archive verified every producer
+metadata pin, genuine replay 201, foreign-tenant read/create 403, malformed XLSX
+400 before replay, changed revision under the same request 409, request-ID
+recovery and persisted access/source/retention receipts. These native-exit-0
+receipts were posted and read back in
+[6072429820](https://github.com/sgajbi/lotus-archive/issues/176#issuecomment-6072429820).
+
+Report's registered PostgreSQL worker adopted that genuine captured sender
+receipt after a controlled lost-response/restart: one source call, one submit,
+one recovery lookup and unchanged snapshot. The same Report database then
+issued registered rerender package SHA-256
+`bb71ffbd8bfc8d8accda9bf72f2e6a803bd57e0fd237849214a32212c53351c2`, changing
+only render job to `rdr_rrnd_1133e1085f364963b6596b42056c71e2_xlsx`.
+Render again used genuine HTTP transport to the same Archive database and
+received document `doc_47daf239ddc644ab80844db4c319376e`, request
+`areq_665c29c98316fbf800eea64fc07e359e`, 35,200 bytes and SHA-256
+`8a6764ac195c0654bb2387679e3e1b860f3f24ad3d6575e48723914b1eb8af50`.
+Report's unmodified `ArchiveClient` then posted the original-to-rerender
+`/correct` lifecycle call over actual HTTP, returning 201. Report's same-key
+retry reused the attempt; its producer command completed with native exit 0.
+
+Archive independently verified both exact downloads, all supplier metadata
+pins, equal snapshot/revision/source identity, reciprocal relationship fields,
+original `/current` resolving to the rerender, persisted Report lifecycle audit,
+source-event composite scope, both replay 201 responses and foreign-tenant
+download 403. The lifecycle relation is `correction`, but the financial dataset
+is unchanged: this is a technical retained rerender, not a corrected financial
+source. [6072497586](https://github.com/sgajbi/lotus-archive/issues/176#issuecomment-6072497586)
+records the independently verified pair proof.
+
+After explicit coordinator phase completion, verified owned HTTP processes
+were restarted while retaining the database/filesystem. The bare pair verifier
+exited 0 after restart (`7040f6`), preserving bytes, identities, current resolution,
+relationships, audit, replay and tenant refusals. Final native database backup
+and copy exited 0; preserved backup SHA-256 is
+`1ab5164e1e0d74541af596f905f167d71ca8d9c05c807d5c14db04cb50493cb3`.
+The exact owned processes, labelled PostgreSQL container and verified volume
+were removed and their absence verified with native exit 0. Objects, workbooks,
+receipts and backups remain preserved; the diagnostic endpoint is no longer
+live. [6072522307](https://github.com/sgajbi/lotus-archive/issues/176#issuecomment-6072522307)
+records restart, backup and cleanup. No shared/canonical runtime was affected
+and previously policy-blocked worktree cleanup was not retried.
+
+This evidence establishes the bounded registered producer custody and technical
+rerender relationship. It retains `EXPLICIT_RETAINED_CALCULATED_REPLAY`,
+development template and `NOT_ATTESTED` qualification; it does not establish
+qualified financial correction, official authority, all twelve report families
+or enterprise capacity.
