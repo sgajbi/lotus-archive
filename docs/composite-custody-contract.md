@@ -69,7 +69,7 @@ identity. Existing portfolio events keep their non-null portfolio identifier.
 Migration `014_add_composite_report_scope.sql` adds nullable `composite_id` and
 JSONB identity, relaxes `portfolio_id` nullability only with an exclusive scope
 constraint, and expands the report-family constraint. Historical rows remain
-unchanged. Apply all ordered migrations using the established migration flow;
+unchanged. Apply pending ordered migrations through the owning deployment procedure;
 deploy the schema before admitting new composite requests. Rollback disables
 new admissions while preserving existing composite rows and bytes; never drop
 their columns or restore portfolio non-nullability over retained history.
@@ -142,8 +142,8 @@ The executable client example in `tests/fixtures/composite_v2.py` loads the froz
 Report original and financial-correction identities; its bytes are deliberately
 synthetic component transport. `tests/integration/test_composite_v2_custody.py`
 shows existing create, retry, download, source-event and correction calls. Actual
-qualified Report→Render→Archive v2 HTTP acceptance remains a separate release
-requirement under issue #182.
+qualified Report→Render→Archive v2 HTTP acceptance is recorded separately in the
+[v2 delivery ledger](composite-v2-custody-delivery-ledger.md), under issue #182.
 
 ### Upgrade and recovery
 
@@ -152,8 +152,9 @@ before enabling v2 admissions. It replaces the exclusive scope constraint with
 matching v1/v2 identity, template and data-contract axes and bounded v2 product
 arrays. It changes no row, object, idempotency key or column. Do not replay
 historical migration 014 over retained v2 rows: its original constraint is
-intentionally v1-only. The established migration runner must apply only pending
-migrations in order.
+intentionally v1-only. Apply only pending migrations in order through the owning
+deployment procedure. This repository exposes migration contracts and gates; it
+does not supply an operated production migration runner.
 
 For rollback, disable new v2 admissions and retain the compatible schema and
 reader. Do not deploy a v1-only reader over v2 custody, restore the 014 constraint,
@@ -201,5 +202,6 @@ On Linux/macOS, replace `.venv/Scripts/python.exe` with `.venv/bin/python`.
 The PostgreSQL command requires `LOTUS_ARCHIVE_TEST_DATABASE_URL`; governed CI
 sets `LOTUS_ARCHIVE_REQUIRE_DATABASE_PROOF=1` so absent database proof fails.
 No local skip is durable adapter evidence. All twelve report products, official
-authority, GIPS publication, joined live acceptance and enterprise capacity
-remain separately unproven.
+authority, GIPS publication and enterprise capacity remain separately unproven.
+The bounded controlled-replay
+HTTP custody acceptance is recorded in the cited delivery ledgers.

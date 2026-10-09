@@ -334,6 +334,14 @@ Performance intake/verifier and `NOT_ATTESTED` qualification retained. See
 is conferred by custody. The decoded-content extraction reduces the largest module
 from 913 to 910 lines; `SOURCE_FILE_MAX_LINES` ratchets to the measured 910.
 
+The v2 original/financial-correction/retained-original HTTP phase is accepted in
+`docs/composite-v2-custody-delivery-ledger.md`: full product identities, bytes,
+retries/refusals, Root independent pre/post readers, same-PG/files actual restart,
+final backup and exact owned retirement. The tested runtime is main `280f6d8`; its
+documentation/test successor preserves source and migration committed blobs.
+This is bounded controlled replay with explicit development health, not an
+operated production migration runner or enterprise restore/authority acceptance.
+
 Update this document when:
 
 1. repository ownership changes,

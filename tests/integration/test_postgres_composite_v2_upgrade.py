@@ -63,6 +63,24 @@ def test_populated_v1_upgrade_v2_refusals_and_process_reopen(tmp_path: Path) -> 
             )
             original, corrected = v2_custody_journey((api, service))
         with psycopg.connect(DATABASE_URL, autocommit=True) as connection:
+            retained_query = (
+                "SELECT document_id, to_jsonb(d) FROM archive_documents d ORDER BY document_id"
+            )
+            constraint_query = (
+                "SELECT pg_get_constraintdef(oid) FROM pg_constraint "
+                "WHERE conrelid='archive_documents'::regclass "
+                "AND conname='archive_documents_scope_check'"
+            )
+            retained_before = connection.execute(retained_query).fetchall()
+            constraint_before = connection.execute(constraint_query).fetchone()
+            # An unsafe rollback to the historical v1-only constraint must fail
+            # atomically, keeping all retained v1/v2 rows and the compatible guard.
+            with pytest.raises(psycopg.errors.CheckViolation):
+                connection.execute(
+                    (ROOT / "migrations/014_add_composite_report_scope.sql").read_text()
+                )
+            assert connection.execute(retained_query).fetchall() == retained_before
+            assert connection.execute(constraint_query).fetchone() == constraint_before
             connection.execute(migration.read_text())
             oversized = (
                 "jsonb_build_array("
