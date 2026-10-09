@@ -14,7 +14,7 @@ from tests.fixtures.composite_workbook import workbook_bytes
 from tests.integration.test_archive_documents_api import _headers
 from tests.integration.test_composite_custody_api import (
     payload,
-    test_composite_binary_custody_lifecycle_and_qualification as custody_journey,
+    composite_custody_journey as custody_journey,
     test_corrupt_bytes_hash_conflicts_and_tenant_refusal as custody_refusals,
 )
 from tests.integration.test_postgres_document_scope_authorization import _postgres_service

@@ -36,7 +36,7 @@ def client(tmp_path: Path) -> Iterator[ClientService]:
         app.dependency_overrides.clear()
 
 
-def test_composite_binary_custody_lifecycle_and_qualification(
+def composite_custody_journey(
     client: ClientService, tmp_path: Path
 ) -> None:
     api, service = client
