@@ -201,4 +201,8 @@ and matching response digests. Metadata, downloads, source events and retained
 correction use the existing routes. Unknown fields, versions and mixed template
 axes refuse; a changed product order or digest under an existing request conflicts.
 Migration 015 preserves v1 records. Its populated upgrade and separate-process
-reopen proof is distinct from genuine v2 producer HTTP acceptance under #182.
+reopen proof is distinct from the accepted [genuine v2 producer HTTP phase](https://github.com/sgajbi/lotus-archive/blob/main/docs/composite-v2-custody-delivery-ledger.md)
+under #182. That phase proves original/corrected/retained-original bytes and product
+identities, exact retries, incompatible retries, tenant refusals and existing
+technical→financial correction/current resolution with real PostgreSQL and files.
+Independent pre/post readers and actual restart preserved all three records.

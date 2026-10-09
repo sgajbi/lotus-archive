@@ -125,3 +125,12 @@ Apply pending migration 015 after 014 before enabling v2 admissions. Never repla
 compatible reader/schema; preserve all objects and source identities and
 forward-fix the defect. The [custody contract](https://github.com/sgajbi/lotus-archive/blob/main/docs/composite-custody-contract.md)
 documents exact identity, retry semantics, populated upgrade proof and commands.
+
+The [v2 custody acceptance ledger](https://github.com/sgajbi/lotus-archive/blob/main/docs/composite-v2-custody-delivery-ledger.md)
+records the single fresh R5 phase on qualified main `280f6d8`: actual restart retained
+the same PostgreSQL, objects and schema, with independent pre/post HTTP readers.
+The final native PostgreSQL dump and all three objects are retained and verified;
+only the owned R5 HTTP/PG/anonymous volume were retired and absence checked.
+Historical R2/R3/R4 evidence remains unchanged. This explicit development runtime
+does not establish production migration operation, full restore certification or
+official financial authority.
