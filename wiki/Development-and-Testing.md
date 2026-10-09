@@ -150,6 +150,14 @@ the package installer removed after installation so vendored metadata cannot pol
 
 ## Documentation changes
 
+Composite custody implementation is mainline validated. Actual supplier candidate
+workbooks and a controlled template rerender have registered PostgreSQL/filesystem
+custody and byte-identical download proof. Completed producer orchestration and
+qualified corrected financial-source acceptance remain open; candidate publication
+is `NOT_ATTESTED`. The [delivery ledger](https://github.com/sgajbi/lotus-archive/blob/main/docs/composite-custody-delivery-ledger.md)
+links the exact main release and verified issue receipts, keeping component,
+controlled supplier and live acceptance boundaries explicit.
+
 Repo-local `wiki/` is the authored source of truth; the GitHub wiki is only a publication target and
 must never receive hand-edited content absent from repo source. Update `wiki/` in the same PR as the
 change it describes, verify before merge and publish after, using
