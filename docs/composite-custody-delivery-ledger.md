@@ -34,8 +34,11 @@ producer chain.
 
 ## Closure posture
 
-Status: Archive implementation merged and mainline validated; producer acceptance
-remains open. [PR #177](https://github.com/sgajbi/lotus-archive/pull/177) merged to
+Status: Archive implementation merged and mainline validated; the subsequent
+supported-producer financial correction phase below completes the bounded
+custody proof. Final delivery reconciliation remains open until this evidence
+is on validated main and the authored wiki is published.
+[PR #177](https://github.com/sgajbi/lotus-archive/pull/177) merged to
 `c1a8dbd58e422bc2a5e6a48e7cff338531be91b7` after all seven required exact-head
 checks passed on signed `f25e66766b3737b8c5527bb89a8c3cf0fae77410`.
 [Main releasability run 37865598868](https://github.com/sgajbi/lotus-archive/actions/runs/37865598868)
@@ -44,9 +47,9 @@ security, image signature and provenance. First RPT-01 custody does not establis
 twelve report products, official/GIPS authority, financial publication approval,
 enterprise scale or full composite readiness. Candidate qualification remains
 `EXPLICIT_RETAINED_CALCULATED_REPLAY`; publication remains `NOT_ATTESTED`.
-Issue #176 remains open for a qualified actual corrected-financial-source
-artifact and final acceptance. Mainline CI and authored wiki publication have
-passed. The later actual Performance-wire candidate and registered retained
+The earlier phases left corrected-financial-source custody unproved. Mainline CI
+and authored wiki publication passed for those phases. The actual
+Performance-wire candidate and registered retained
 rerender below prove genuine Render-to-Archive HTTP custody and Report-to-Archive
 lifecycle orchestration. Performance input/verifier and Report XLSX catalogue
 admission remain controlled; Report adopts captured genuine sender responses.
@@ -220,3 +223,87 @@ rerender relationship. It retains `EXPLICIT_RETAINED_CALCULATED_REPLAY`,
 development template and `NOT_ATTESTED` qualification; it does not establish
 qualified financial correction, official authority, all twelve report families
 or enterprise capacity.
+
+## Supported producer and financial correction phase
+
+Phase `composite-supported-report-http-20261009-r2` used a fresh owned Archive
+instance at clean main `524d4d607712324b6f04a980590d55cf1db55ca9`. No document
+identity or database from the previous phase was restored. Actual registered
+Performance main `c100c885752c86b8d950d7970c99a8d223e6376a` produced the matched
+original and financially corrected calculated responses: calculation IDs
+`a9686913-27da-49d6-a12a-1b77b89c906e` and
+`95d340cd-1545-4075-acef-aae8fd5008fc`, respectively. The handoff SHA-256 is
+`41016a8db54e4fd26d57f76bc6b1532bf79f1e8d18e2735416399ebf6d111860`.
+January materialization changed from sequence 1 to 3; the retained February
+window stayed identical. The source cumulative figures changed from 3.02% to
+5.57%. Archive checked each artifact against its own source vector, without
+recalculating financial figures or requiring equality across a financial correction.
+
+Report's signed producer `e7737eab3dab0493529c69fd7ba1a9f4927f31c9` used normal
+supported `composite_review` XLSX admission, registered PostgreSQL orders and
+unmodified RenderHTTPClient/ArchiveClient. The actual producer command
+`exec-7141cc91-d8e6-40b6-8778-c2ec4cbf810f` completed with native exit 0.
+Performance response intake remained a frozen matched controlled response pair;
+Report-to-Render and Render-to-Archive were genuine HTTP. Render main
+`162016d4a64769b31c90511f7604c145929979f0` supplied its actual catalogue and
+workbook production. Report [PR #420](https://github.com/sgajbi/lotus-report/pull/420)
+subsequently merged as `bbc1d65f64357e2267002fff0b1db76505a14317` from final
+head `2705df948b478364052948e75d76fa0e8e1dc829`; exact-main releasability is
+a separate final-delivery dependency, not inferred from the producer result.
+
+All three artifacts carry genuine composite `SYNTHETIC_OR-02`, null portfolio
+scope, controlled source/verifier and `NOT_ATTESTED` publication:
+
+| Artifact | Retained document | Bytes | Exact raw SHA-256 |
+|---|---|---:|---|
+| Original | `doc_d9ca4116c60c4a0897ddd102eb9d1db0` | 35,181 | `28a986ac6197897d7a114fdd7578c494ed8ee8e9484fa715164a7309f86fc018` |
+| Technical retained original rerender | `doc_aeda2ce252a44354b6cb51d525a00b79` | 35,202 | `4f277ba036a656f95d0f40dfe9f36f2667d67f5884053f5740592c5eeedf34a7` |
+| Financially corrected | `doc_cd52613e0e724eb28d9f36b79238d9a8` | 35,190 | `fd42d9004c2c59f91313999759cb6c7b6cc26d4c5570c2e1534bb36028b2d148` |
+
+Report's actual ArchiveClient linked original to technical rerender. After
+the producer completed, the coordinator-authorized Archive proof used the
+existing controlled Report service principal and registered `/correct` API
+to link technical rerender to financial correction. This second lifecycle
+call is owner API proof, not a claim that Report orchestrated that financial
+relationship. All reciprocal links persisted; `/current` from the original
+resolved to the financial correction, while all three remained downloadable.
+No authorization policy was weakened.
+
+Independent Archive proof checked each actual producer package/wire identity,
+own report/snapshot/revision/render/template pins, typed source identity and
+retained vector, raw download/filesystem/producer byte equality, MIME/extension,
+source events, access audit and retention. Independently bounded ZIP-member
+fingerprints matched their declared values. Explicitly reconstructed ingest
+replay returned the same document; changed revision under the same request
+returned 409, malformed XLSX was refused before replay, foreign tenants were
+refused 403, and the Render ingest principal remained unable to read. Native
+proofs exited 0; [receipt 6072995170](https://github.com/sgajbi/lotus-archive/issues/176#issuecomment-6072995170)
+was posted and read back. Existing mainline PostgreSQL hold/purge fencing and
+immutable-pin guard tests remain the authority for those adapter behaviours.
+
+The coordinator independently read all three actual HTTP artifacts and reconciled
+each workbook's 162 canonical/display values, 62 policies, 13 tables, 17 sheets
+and complete pinned dataset; Decimal results were 3.02% and 5.57%. Its qualified
+reader command `e40aab` exited 0. Only after that reader window completed did
+Archive restart its exact owned HTTP processes against the same PostgreSQL and
+filesystem. Postrestart custody `535729`, lifecycle `0024a7`, producer-pin/replay
+guards `944f3b` and consolidated preservation `17fef2` all exited 0. All three
+full metadata responses and exact bytes, current resolution, lifecycle retry,
+audit, source and retention receipts remained intact.
+
+Final native database dump/copy exited 0, preserved at SHA-256
+`9ab96528138f9ff0e8f40e58c69f7ae54c2ad9579b7dc57457e3c26e099ae377`.
+After exact process ancestry/entrypoint and container owner/task/phase/volume
+checks, only the owned processes, container and volume were removed. Cleanup
+`b7b9a1`, `7b7e8d`, `1f3cbd` and absence verification `5ba80c` exited 0.
+Retained objects, workbooks, receipts and backups remain; the endpoint is no
+longer live. Canonical/shared runtime and foreign producer resources were untouched.
+Previously policy-blocked worktree cleanup was not retried.
+
+This phase proves the bounded original, technical rerender and financially
+corrected XLSX custody requirement using the normal supported producer family.
+It retains `EXPLICIT_RETAINED_CALCULATED_REPLAY` and `NOT_ATTESTED`: controlled
+Performance intake/verifier, diagnostic real adapters and a development template
+do not establish official authority, all twelve products or enterprise certification.
+No source, migration, API, workflow or central context change is needed for this
+evidence update. Authored wiki truth changes in the same slice.

@@ -150,14 +150,20 @@ the package installer removed after installation so vendored metadata cannot pol
 
 ## Documentation changes
 
-Composite custody implementation is mainline validated. The actual registered
-Performance-wire candidate and retained technical rerender have genuine
-Render-to-Archive HTTP custody, exact byte downloads and Report-to-Archive
-lifecycle proof, including restart, audit, replay and tenant refusal checks with
-real PostgreSQL/filesystem backing. Financial inputs/verifier and Report XLSX
-admission remain controlled; Report adopts captured genuine sender responses.
-Qualified corrected financial-source acceptance and official authority remain
-open; publication is `NOT_ATTESTED`. The
+Composite custody implementation is mainline validated. The subsequent normal
+supported Report XLSX producer used genuine Report-to-Render-to-Archive HTTP
+for matched original and financially corrected calculated source responses,
+plus an original retained rerender. All three exact downloads, own source and
+producer pins, reciprocal original→technical→financial links and current
+resolution survived Archive process restart with real PostgreSQL/filesystem
+backing. Replay, audit, retention and tenant refusal proofs exited 0; the
+completed owned runtime was backed up and removed. Report orchestrated the
+original-to-technical link; the authorized Archive owner API proof supplied the
+technical-to-financial link. Controlled frozen Performance intake/verifier,
+diagnostic adapters and development template remain explicit; publication is
+`NOT_ATTESTED`. Official authority, all twelve products and enterprise certification
+remain unproved. Report's protected main validation and this evidence's main/wiki
+publication are separate final-delivery checks. The
 [delivery ledger](https://github.com/sgajbi/lotus-archive/blob/main/docs/composite-custody-delivery-ledger.md)
 records the exact producer/main revisions, verified issue receipts and owned
 runtime cleanup, keeping each transport and qualification boundary explicit.
