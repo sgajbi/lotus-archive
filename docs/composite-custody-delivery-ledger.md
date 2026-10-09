@@ -241,7 +241,7 @@ recalculating financial figures or requiring equality across a financial correct
 
 Report's signed producer `e7737eab3dab0493529c69fd7ba1a9f4927f31c9` used normal
 supported `composite_review` XLSX admission, registered PostgreSQL orders and
-unmodified RenderHTTPClient/ArchiveClient. The actual producer command
+unmodified RenderClient/ArchiveClient. The actual producer command
 `exec-7141cc91-d8e6-40b6-8778-c2ec4cbf810f` completed with native exit 0.
 Performance response intake remained a frozen matched controlled response pair;
 Report-to-Render and Render-to-Archive were genuine HTTP. Render main
@@ -251,8 +251,9 @@ subsequently merged as `bbc1d65f64357e2267002fff0b1db76505a14317` from final
 head `2705df948b478364052948e75d76fa0e8e1dc829`; exact-main releasability is
 a separate final-delivery dependency, not inferred from the producer result.
 
-All three artifacts carry genuine composite `SYNTHETIC_OR-02`, null portfolio
-scope, controlled source/verifier and `NOT_ATTESTED` publication:
+All three artifacts carry genuine composite `SYNTHETIC_OR-02`,
+`portfolio_scope=composite`, null `portfolio_id`, controlled source/verifier and
+`NOT_ATTESTED` publication:
 
 | Artifact | Retained document | Bytes | Exact raw SHA-256 |
 |---|---|---:|---|
