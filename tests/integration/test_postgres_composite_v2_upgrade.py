@@ -29,7 +29,7 @@ def test_populated_v1_upgrade_v2_refusals_and_process_reopen(tmp_path: Path) -> 
         if existing and existing[0]:
             connection.execute("TRUNCATE archive_documents CASCADE")
         for migration in sorted((ROOT / "migrations").glob("*.sql")):
-            if migration.name.startswith("015_"):
+            if int(migration.name.split("_", 1)[0]) >= 15:
                 continue
             connection.execute(migration.read_text())
         connection.execute("TRUNCATE archive_access_audit")

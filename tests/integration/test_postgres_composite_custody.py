@@ -8,6 +8,7 @@ import pytest
 
 from app.archive.api import archive_service
 from app.archive.exceptions import HistoricalIntegrityError
+from app.archive.composite_identity import CompositeReportIdentity
 from app.main import app
 from tests.database_proof import required_database_url
 from tests.fixtures.composite_workbook import workbook_bytes
@@ -95,7 +96,7 @@ def test_postgres_scope_guard_and_immutable_source_pins(tmp_path: Path) -> None:
         stored = service.repository.get_by_document_id(document_id)
         assert stored is not None and stored.composite_report_identity is not None
         changed = stored.model_copy(deep=True)
-        assert changed.composite_report_identity is not None
+        assert isinstance(changed.composite_report_identity, CompositeReportIdentity)
         changed.composite_report_identity.selection.windows[0].source_cut_id = "changed-cut"
         with pytest.raises(HistoricalIntegrityError):
             service.repository.save(changed)

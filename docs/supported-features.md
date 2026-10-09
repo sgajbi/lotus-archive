@@ -67,6 +67,12 @@ PostgreSQL and S3 adapters plus their mandatory configuration.
 Workbench-facing archive retrieval is supported only through the `lotus-workbench` BFF and
 `lotus-gateway`. Workbench must not call `lotus-archive` directly.
 
+Eligibility `composite_review.v4` has strict component admission and existing API custody
+coverage for both `PUBLISHED` and `EVALUATED_ONLY` monthly evidence. It retains
+`CONTROLLED_ELIGIBILITY_SOURCE_REPLAY` / `NOT_ATTESTED` posture. PostgreSQL upgrade
+execution and actual coordinated producer acceptance remain pending; see
+[eligibility custody acceptance](composite-eligibility-custody-acceptance.md).
+
 ## Supported Internal Capabilities
 
 | Capability | Support state | Backing implementation |

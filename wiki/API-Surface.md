@@ -183,6 +183,15 @@ identifiers do not leak into log aggregation.
 3. [Architecture](Architecture) — how a request becomes a stored document
 ## Composite XLSX custody
 
+Eligibility v4 extends the same family and routes with strict Report-owned Manage
+month pins. `PUBLISHED` retains whole source receipt/canonical product pins;
+`EVALUATED_ONLY` retains proposal pins without approval/publication/history.
+Neither grants bank authority. Source qualification remains controlled/unverified
+and `NOT_ATTESTED`; no fake Performance calculation is added. The existing create,
+replay, source-event, download and explicit correction/current paths retain the
+identity. [Eligibility custody acceptance](https://github.com/sgajbi/lotus-archive/blob/main/docs/composite-eligibility-custody-acceptance.md)
+documents the exact source/qualification examples and pending actual joined proof.
+
 Linked v3 uses the same family/routes with a strict CARINO source request and
 complete ordered window pins, replacing the v1/v2 selection shape. Return
 `source_products` are not admitted in this profile. Metadata retains Report's
@@ -197,10 +206,10 @@ financial publication authority.
 
 `composite_review` uses `portfolio_scope=composite`, null `portfolio_id`, and an
 exclusive source-owned `composite_id`. Its immutable `composite_report_identity`
-retains the exact Report selection and revision digests with calculated-replay
-qualification and `NOT_ATTESTED` publication. `POST /documents` admits only the
+retains the exact Report selection and revision digests with version-specific
+controlled replay qualification and `NOT_ATTESTED` publication. `POST /documents` admits only the
 version-matched `composite-review/v1`, `composite-review/v2` or linked-analysis
-`composite-review/v3` XLSX contract and verifies actual bounded OOXML bytes and
+`composite-review/v3` or eligibility `composite-review/v4` XLSX contract and verifies actual bounded OOXML bytes and
 declared SHA-256 before storage. Existing metadata, checksum-verified download,
 source-event, correction, retention and legal-hold routes preserve the identity.
 The [delivery ledger](https://github.com/sgajbi/lotus-archive/blob/main/docs/composite-custody-delivery-ledger.md)

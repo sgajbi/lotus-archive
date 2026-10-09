@@ -334,6 +334,17 @@ PostgreSQL's complete reparse/deparse verifies CHECK expressions when dump
 reparse removes redundant parentheses. Controlled local calculated replay remains
 `NOT_ATTESTED`; enterprise recovery and bank/source authority are separate.
 
+`archive/composite_eligibility.py` adds the strict Report-owned v4 Manage
+eligibility selection to the same identity union. Published and evaluated-only
+month pins are distinct; explicit gaps remain gaps, and no Performance calculation
+is invented. The existing direct-selection scope join already applies unchanged.
+Migration 017 follows 016 and admits only the new controlled qualification/axes;
+historical 014/015/016 remain unchanged and must not be replayed over v4. Existing
+JSON persistence, immutable replay and serializers preserve the whole identity.
+`docs/composite-eligibility-custody-acceptance.md` separates component/upgrade
+proof from pending actual joined acceptance. Archive owns custody, not source
+eligibility evaluation, Report's eight-table projection or bank attestation.
+
 `archive/composite_products.py` adds strict v2 calendar/trailing source-product
 pins using the existing selection/window models. Migration 015 admits matched
 v1/v2 axes without rewriting rows; apply pending migrations only, because
