@@ -67,6 +67,13 @@ PostgreSQL and S3 adapters plus their mandatory configuration.
 Workbench-facing archive retrieval is supported only through the `lotus-workbench` BFF and
 `lotus-gateway`. Workbench must not call `lotus-archive` directly.
 
+Pooled `composite_review.v5` has strict selector/opaque identity admission through
+the existing Composite XLSX custody path. It retains source, predecessor and
+fallback policy pins with `EXPLICIT_RETAINED_CALCULATED_REPLAY` / `NOT_ATTESTED`.
+Actual v5 producer workbook/Archive handoff and institutional acceptance remain
+pending; [pooled custody acceptance](composite-pooled-custody-acceptance.md) separates
+component and required PostgreSQL proof from joined runtime qualification.
+
 Eligibility `composite_review.v4` has strict component admission, required populated
 PostgreSQL upgrade proof and actual R7 custody for eight XLSX documents across
 `PUBLISHED` and `EVALUATED_ONLY` monthly evidence. Native HTTP restart, isolated

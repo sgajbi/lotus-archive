@@ -183,6 +183,17 @@ snapshots bind complete payloads, lifecycle IDs and digests. The frozen financia
 baseline does not imply unchanged opaque digests across a fresh lifecycle.
 Explicit correction relationships resolve O→T→C while retaining historical bytes.
 
+### V5 pooled result evidence
+
+`composite_review.v5` retains Report's strict pooled result selector through the
+existing seven-field identity and XLSX custody routes. Selection includes exact
+source/correction/fallback/policy/population/page pins; Report digests stay opaque.
+It remains `EXPLICIT_RETAINED_CALCULATED_REPLAY` / `NOT_ATTESTED`. Archive neither
+calculates XIRR nor promotes fallback/unavailable outcomes. Pending migration018
+extends the existing scope CHECK without rewriting retained v1–v4. See
+[pooled custody acceptance](composite-pooled-custody-acceptance.md) for producer
+provenance, component/required database proof and the pending actual joined boundary.
+
 ### V4 eligibility evidence
 
 `composite_review.v4` uses the same Composite XLSX family and routes with

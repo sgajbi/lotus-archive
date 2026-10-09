@@ -124,6 +124,17 @@ The ordered operational procedures are in the repository:
 2. [Security and Controls](Security-and-Controls) — what the audit trail records
 3. [Document Lifecycle](Document-Lifecycle) — why a purge was refused
 
+## Composite pooled custody upgrade
+
+V5 requires pending migration018 after017. Preserve historical014–017 and all
+retained v1–v4 rows/objects; old guards cannot admit v5. The existing CHECK now
+admits bounded pooled axes and paired source predecessor pins; API models own
+full nested strictness. Keep compatible readers/schema and forward-fix.
+[Pooled custody acceptance](https://github.com/sgajbi/lotus-archive/blob/main/docs/composite-pooled-custody-acceptance.md)
+provides exact producer schema provenance, isolated populated upgrade commands and
+the pending actual joined qualification boundary. Source correction and explicit
+document lineage remain separate; no source fetch/calculation occurs on retrieval.
+
 ## Composite eligibility custody upgrade
 
 V4 requires pending migration 017 after 016: the existing JSON store is reused,

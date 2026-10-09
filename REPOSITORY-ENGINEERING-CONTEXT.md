@@ -334,6 +334,17 @@ PostgreSQL's complete reparse/deparse verifies CHECK expressions when dump
 reparse removes redundant parentheses. Controlled local calculated replay remains
 `NOT_ATTESTED`; enterprise recovery and bank/source authority are separate.
 
+`archive/composite_pooled.py` adds the Report-owned v5 pooled selector to the existing
+identity union. Exact policy/fallback/source/population/page and paired predecessor
+pins retain opaque Report digests; Archive performs no financial calculation or
+outcome promotion. The existing direct scope join, JSON persistence, full metadata
+replay and lifecycle serializers apply unchanged. Append migration018 after017;
+historical014–017 are immutable and unsafe to replay over retained v5. The populated
+upgrade test preserves nineteen v1–v5 documents with separate-process reads.
+`docs/composite-pooled-custody-acceptance.md` records raw/committed schema provenance
+and the component-versus-required PostgreSQL-versus-actual joined proof boundary.
+No runtime split, new table or source facts store is introduced.
+
 `archive/composite_eligibility.py` adds the strict Report-owned v4 Manage
 eligibility selection to the same identity union. Published and evaluated-only
 month pins are distinct; explicit gaps remain gaps, and no Performance calculation
