@@ -4,6 +4,11 @@ Every operation `lotus-archive` publishes, taken from the generated OpenAPI docu
 There are **22**: sixteen on documents, six operational. The behaviour behind them is in
 [Document Lifecycle](Document-Lifecycle).
 
+Current scope: existing generated-document APIs, completed bounded v1/v2 Composite
+custody evidence, and strict linked v3 component/PostgreSQL support. Joined v3
+HTTP acceptance is pending. Use Documents below for callers, Composite XLSX
+custody for version contracts, and Operational endpoints for runtime diagnostics.
+
 ## Documents
 
 | operation | purpose | permitted callers |
@@ -178,11 +183,20 @@ identifiers do not leak into log aggregation.
 3. [Architecture](Architecture) — how a request becomes a stored document
 ## Composite XLSX custody
 
+Linked v3 uses the same family/routes with a strict CARINO source request and
+complete ordered window pins, replacing the v1/v2 selection shape. Return
+`source_products` are not admitted in this profile. Metadata retains Report's
+opaque digests; full member source facts remain in Report snapshot/source-bearing
+bytes. [Linked custody acceptance](https://github.com/sgajbi/lotus-archive/blob/main/docs/composite-linked-custody-acceptance.md)
+records local API/PostgreSQL proof and pending qualified joined v3 HTTP acceptance.
+Custody does not grant source or financial publication authority.
+
 `composite_review` uses `portfolio_scope=composite`, null `portfolio_id`, and an
 exclusive source-owned `composite_id`. Its immutable `composite_report_identity`
 retains the exact Report selection and revision digests with calculated-replay
 qualification and `NOT_ATTESTED` publication. `POST /documents` admits only the
-version-matched `composite-review/v1` or `composite-review/v2` XLSX contract and verifies actual bounded OOXML bytes and
+version-matched `composite-review/v1`, `composite-review/v2` or linked-analysis
+`composite-review/v3` XLSX contract and verifies actual bounded OOXML bytes and
 declared SHA-256 before storage. Existing metadata, checksum-verified download,
 source-event, correction, retention and legal-hold routes preserve the identity.
 The [delivery ledger](https://github.com/sgajbi/lotus-archive/blob/main/docs/composite-custody-delivery-ledger.md)

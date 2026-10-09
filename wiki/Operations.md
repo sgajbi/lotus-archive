@@ -4,6 +4,12 @@ How to tell whether `lotus-archive` is healthy, what its posture surfaces do and
 where the procedures live. The step-by-step checks are authored in the repository and linked below
 rather than repeated here.
 
+Current scope covers existing archive runtime controls and bounded v1/v2
+Composite custody. Linked v3 has component/PostgreSQL upgrade proof; qualified
+joined HTTP acceptance remains pending. Start with The surfaces for health,
+Procedures for composition, and Composite v2 custody upgrade for migration
+and recovery boundaries.
+
 ## The surfaces
 
 | surface | answers |
@@ -119,6 +125,14 @@ The ordered operational procedures are in the repository:
 3. [Document Lifecycle](Document-Lifecycle) — why a purge was refused
 
 ## Composite v2 custody upgrade
+
+Linked v3 adds pending migration 016 after 015, with strict linked request/window
+pins on the existing custody path. Never replay historical 014 or 015 over v3
+records; keep a compatible schema/reader and forward-fix. Populated legacy-row,
+atomic historical replay refusal and fresh-process proof are documented in
+[linked custody acceptance](https://github.com/sgajbi/lotus-archive/blob/main/docs/composite-linked-custody-acceptance.md).
+Actual qualified joined v3 HTTP acceptance remains pending; completed v1/v2
+acceptance does not establish it.
 
 Apply pending migration 015 after 014 before enabling v2 admissions. Never replay
 014 over retained v2 records. For rollback, stop new v2 admissions and keep the

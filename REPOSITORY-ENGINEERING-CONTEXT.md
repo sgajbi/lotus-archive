@@ -317,6 +317,17 @@ selection vector and lifecycle digests, and `archive/artifact_format.py` for bou
 decoded content and XLSX OOXML admission. `composite_review` requires exclusive
 composite scope, null portfolio ID, matching tenant/horizon and retained qualified
 `NOT_ATTESTED` identity. Migration 014 preserves historical portfolio rows.
+`archive/composite_linked.py` adds standalone strict v3 linked-analysis selection
+to the same discriminated custody identity: exact CARINO request, ordered window
+authority pins, engine/fingerprint/digest, and Report's opaque lifecycle digests.
+Member financial/source facts remain in Report snapshot/source-bearing bytes.
+Migration 016 follows 014+015 without modifying retained rows or historical SQL.
+Never replay 014/015 over v3; retain compatible readers/schema and forward-fix.
+`tests/integration/test_postgres_composite_linked_upgrade.py` proves populated
+v1/v2 upgrade, atomic unsafe old replay refusal and five-record process reopen.
+`docs/composite-linked-custody-acceptance.md` tracks component versus pending
+qualified joined v3 HTTP acceptance; v1/v2 acceptance remains completed.
+
 `archive/composite_products.py` adds strict v2 calendar/trailing source-product
 pins using the existing selection/window models. Migration 015 admits matched
 v1/v2 axes without rewriting rows; apply pending migrations only, because
