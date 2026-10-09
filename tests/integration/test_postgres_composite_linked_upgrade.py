@@ -33,7 +33,7 @@ def test_populated_v1_v2_linked_upgrade_atomic_guards_and_process_reopen(tmp_pat
         if existing and existing[0]:
             connection.execute("TRUNCATE archive_documents CASCADE")
         for migration in sorted((ROOT / "migrations").glob("*.sql")):
-            if migration.name.startswith("016_"):
+            if int(migration.name.split("_", 1)[0]) >= 16:
                 continue
             connection.execute(migration.read_text())
         connection.execute("TRUNCATE archive_access_audit")

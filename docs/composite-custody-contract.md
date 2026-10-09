@@ -183,6 +183,22 @@ snapshots bind complete payloads, lifecycle IDs and digests. The frozen financia
 baseline does not imply unchanged opaque digests across a fresh lifecycle.
 Explicit correction relationships resolve O→T→C while retaining historical bytes.
 
+### V4 eligibility evidence
+
+`composite_review.v4` uses the same Composite XLSX family and routes with
+`CONTROLLED_ELIGIBILITY_SOURCE_REPLAY` / `NOT_ATTESTED` qualification. Its strict
+Report-owned selection retains tenant/composite/definition/currency/horizon and
+ordered unique monthly `PUBLISHED` or `EVALUATED_ONLY` pins. It has no invented
+Performance calculation or financial selection fields. Published source receipt
+availability does not imply bank authority; evaluated-only proposals cannot
+masquerade as approval or canonical publication/history.
+
+The existing scope, measured-byte, immutable replay, lifecycle and tenant controls
+preserve the identity. See [eligibility custody acceptance](composite-eligibility-custody-acceptance.md)
+for the exact frozen wire, source/qualification examples, additive migration 017,
+component proof and remaining actual joined acceptance. V1/v2/v3 contracts and
+retained bytes remain compatible.
+
 ### Upgrade and recovery
 
 Apply append-only migration `015_add_composite_v2_custody.sql` once after 014,

@@ -124,6 +124,19 @@ The ordered operational procedures are in the repository:
 2. [Security and Controls](Security-and-Controls) — what the audit trail records
 3. [Document Lifecycle](Document-Lifecycle) — why a purge was refused
 
+## Composite eligibility custody upgrade
+
+V4 requires pending migration 017 after 016: the existing JSON store is reused,
+but the old guard explicitly limits versions/qualification. Preserve historical
+014/015/016 and all retained v1/v2/v3 records. Keep compatible readers/schema and
+forward-fix; never replay old guards over v4. Full nested identity validation is
+owned by the API model; PostgreSQL retains the bounded scope/axis guard.
+Published versus evaluated-only describes source evidence availability, not bank
+approval. The [eligibility custody acceptance](https://github.com/sgajbi/lotus-archive/blob/main/docs/composite-eligibility-custody-acceptance.md)
+provides exact source/qualification examples, populated upgrade commands and the
+remaining coordinated HTTP acceptance boundary. Component proof alone is not
+actual joined acceptance or enterprise recovery certification.
+
 ## Composite v2 custody upgrade
 
 Linked v3 adds pending migration 016 after 015, with strict linked request/window
