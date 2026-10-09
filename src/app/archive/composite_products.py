@@ -8,6 +8,7 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 from app.archive.composite_identity import CompositeReportIdentity, CompositeSelection, Digest
 from app.archive.composite_linked import CompositeReportIdentityV3
 from app.archive.composite_eligibility import CompositeReportIdentityV4
+from app.archive.composite_pooled import CompositeReportIdentityV5
 
 ProductKey = Annotated[str, Field(pattern=r"^[a-z][a-z0-9_]{0,63}$")]
 
@@ -124,6 +125,7 @@ CompositeCustodyIdentity = Annotated[
     CompositeReportIdentity
     | CompositeReportIdentityV2
     | CompositeReportIdentityV3
-    | CompositeReportIdentityV4,
+    | CompositeReportIdentityV4
+    | CompositeReportIdentityV5,
     Field(discriminator="contract_version"),
 ]

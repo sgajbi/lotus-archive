@@ -1,0 +1,506 @@
+{
+  "original": {
+    "contract_version": "composite_review.v5",
+    "qualification": "EXPLICIT_RETAINED_CALCULATED_REPLAY",
+    "publication_state": "NOT_ATTESTED",
+    "selection": {
+      "tenant_id": "controlled-tenant",
+      "composite_id": "CONTROLLED_POOL",
+      "calculation_id": "6a7fd1c2-31ba-4597-9422-36c4cee79700",
+      "schema_version": "composite-pooled-mwr.v1",
+      "metric_id": "POOLED_MONEY_WEIGHTED_RETURN",
+      "method": "XIRR:v1",
+      "period_start": "2025-01-01",
+      "period_end": "2026-01-01",
+      "reporting_currency": "USD",
+      "return_view": "GROSS",
+      "fee_basis": "GROSS_BEFORE_FEES",
+      "policy_binding_id": "controlled-xirr-policy-v1",
+      "policy_content_hash": "controlled-policy-hash",
+      "day_count_basis": "ACT/365",
+      "fallback_policy": "REQUIRE_XIRR",
+      "engine_version": "lotus-performance-calculation-engine.v16",
+      "source_manifest_id": "controlled-original-v1",
+      "input_manifest_digest": "sha256:2f39f4d26adca83bf4fd01df0f4117c069f1df519af6f2137d6e2232fe2c0a49",
+      "source_bundle_digest": "sha256:cb9a30a8f55804daa3539c3115aac78a0e736587349b1b31d64109eea9d118ab",
+      "response_digest": "sha256:7416c3bfd7f1f03a6ba9724d137a9ff52a6e298622ae1eb2150d7e4aa3c46823",
+      "expected_portfolio_ids": [
+        "member-a",
+        "member-b"
+      ],
+      "source_pins": [
+        {
+          "pin_id": "population",
+          "owner": "CONTROLLED_TEST_OWNER",
+          "product_name": "population",
+          "product_version": "v1",
+          "revision": "population-v1",
+          "source_cut_id": "population-cut",
+          "payload_digest": "sha256:f84901088a8075f337a6bca5721c4c9e11425e63cb4dbd019fd71e05b0c9a821",
+          "compatibility_group": "population-owner-local",
+          "coverage_from": "2025-01-01",
+          "coverage_to": "2026-01-01",
+          "completeness": "COMPLETE",
+          "page_ids": [
+            "population-page-1"
+          ],
+          "expected_page_count": 1
+        },
+        {
+          "pin_id": "money",
+          "owner": "CONTROLLED_TEST_OWNER",
+          "product_name": "money",
+          "product_version": "v1",
+          "revision": "money-v1",
+          "source_cut_id": "money-cut",
+          "payload_digest": "sha256:ec877a5ba0f0a422f10da2e593494c92128c6afbea59da4d480e5d4b80b24bb8",
+          "compatibility_group": "money-owner-local",
+          "coverage_from": "2025-01-01",
+          "coverage_to": "2026-01-01",
+          "completeness": "COMPLETE",
+          "page_ids": [
+            "money-page-1"
+          ],
+          "expected_page_count": 1
+        }
+      ],
+      "correction_of_calculation_id": null,
+      "predecessor_response_digest": null
+    },
+    "series_digest": "92910425d296a269cd015b047938c6d1c3583e03eb9d473d479dc5707a58fd1e",
+    "source_revision_digest": "a33e03960e3df36ef545ab00bb2dcb69f7d88acfd618cb5384074b7620503ff1",
+    "factual_content_digest": "4a0488d27085b389d3668bbd5460dcd740e9b6f7f0ce4b469a00ff03fb1d4b20"
+  },
+  "corrected": {
+    "contract_version": "composite_review.v5",
+    "qualification": "EXPLICIT_RETAINED_CALCULATED_REPLAY",
+    "publication_state": "NOT_ATTESTED",
+    "selection": {
+      "tenant_id": "controlled-tenant",
+      "composite_id": "CONTROLLED_POOL",
+      "calculation_id": "244ffcc5-16c1-4402-af7f-74e544bc9c83",
+      "schema_version": "composite-pooled-mwr.v1",
+      "metric_id": "POOLED_MONEY_WEIGHTED_RETURN",
+      "method": "XIRR:v1",
+      "period_start": "2025-01-01",
+      "period_end": "2026-01-01",
+      "reporting_currency": "USD",
+      "return_view": "GROSS",
+      "fee_basis": "GROSS_BEFORE_FEES",
+      "policy_binding_id": "controlled-xirr-policy-v1",
+      "policy_content_hash": "controlled-policy-hash",
+      "day_count_basis": "ACT/365",
+      "fallback_policy": "REQUIRE_XIRR",
+      "engine_version": "lotus-performance-calculation-engine.v16",
+      "source_manifest_id": "controlled-correction-v2",
+      "input_manifest_digest": "sha256:d46cc70004a28001f65471245af1d2630fc3afef241b945a2cdf5cb0c77d60d8",
+      "source_bundle_digest": "sha256:1d9ddbb9b935a9810c405cd5d7741b38a8f769108ae369a39f1cc382b2fcda9b",
+      "response_digest": "sha256:ded4e2d39acf79b382886943af41c2d70ea61236d0b7f3a2f0e5ab0845aca2e0",
+      "expected_portfolio_ids": [
+        "member-a",
+        "member-b"
+      ],
+      "source_pins": [
+        {
+          "pin_id": "population",
+          "owner": "CONTROLLED_TEST_OWNER",
+          "product_name": "population",
+          "product_version": "v1",
+          "revision": "population-v1",
+          "source_cut_id": "population-cut",
+          "payload_digest": "sha256:f84901088a8075f337a6bca5721c4c9e11425e63cb4dbd019fd71e05b0c9a821",
+          "compatibility_group": "population-owner-local",
+          "coverage_from": "2025-01-01",
+          "coverage_to": "2026-01-01",
+          "completeness": "COMPLETE",
+          "page_ids": [
+            "population-page-1"
+          ],
+          "expected_page_count": 1
+        },
+        {
+          "pin_id": "money",
+          "owner": "CONTROLLED_TEST_OWNER",
+          "product_name": "money",
+          "product_version": "v1",
+          "revision": "money-v1",
+          "source_cut_id": "money-cut",
+          "payload_digest": "sha256:31a1b1f8333a3f9bbe9313435c9b0b93cbd4be28a13bdccbfea01a58523363e8",
+          "compatibility_group": "money-owner-local",
+          "coverage_from": "2025-01-01",
+          "coverage_to": "2026-01-01",
+          "completeness": "COMPLETE",
+          "page_ids": [
+            "money-page-1"
+          ],
+          "expected_page_count": 1
+        }
+      ],
+      "correction_of_calculation_id": "6a7fd1c2-31ba-4597-9422-36c4cee79700",
+      "predecessor_response_digest": "sha256:7416c3bfd7f1f03a6ba9724d137a9ff52a6e298622ae1eb2150d7e4aa3c46823"
+    },
+    "series_digest": "758a37438905b37768df06deb01692a7b9f571407022c8350eb660e3fd6cd8ff",
+    "source_revision_digest": "fcc1d647d9a0403c52639320e4808be4e99007639146832b3e607c033e54655e",
+    "factual_content_digest": "6b6c59afb81984a33aa5e057b398cb817b772e2001b62a4b07a5eb80775c8405"
+  },
+  "ambiguous": {
+    "contract_version": "composite_review.v5",
+    "qualification": "EXPLICIT_RETAINED_CALCULATED_REPLAY",
+    "publication_state": "NOT_ATTESTED",
+    "selection": {
+      "tenant_id": "controlled-tenant",
+      "composite_id": "CONTROLLED_POOL",
+      "calculation_id": "b19ff855-3bc3-4bb3-ac1b-abd2fc5368a9",
+      "schema_version": "composite-pooled-mwr.v1",
+      "metric_id": "POOLED_MONEY_WEIGHTED_RETURN",
+      "method": "XIRR:v1",
+      "period_start": "2025-01-01",
+      "period_end": "2027-01-01",
+      "reporting_currency": "USD",
+      "return_view": "GROSS",
+      "fee_basis": "GROSS_BEFORE_FEES",
+      "policy_binding_id": "controlled-xirr-policy-v1",
+      "policy_content_hash": "controlled-policy-hash",
+      "day_count_basis": "ACT/365",
+      "fallback_policy": "REQUIRE_XIRR",
+      "engine_version": "lotus-performance-calculation-engine.v16",
+      "source_manifest_id": "controlled-original-v1",
+      "input_manifest_digest": "sha256:5f338c6552e4808ac56b2626b0a5f6095137821e5d2015622328daae878fb1e7",
+      "source_bundle_digest": "sha256:5bed9d50776990edab41225751a340a910cec95f5a3c75b1f92fafae407c93d1",
+      "response_digest": "sha256:eb65cacd8a68a715fc7fc98bc89f1685678e2b396da5fa24aa1ee8efbb5011cf",
+      "expected_portfolio_ids": [
+        "member-a",
+        "member-b"
+      ],
+      "source_pins": [
+        {
+          "pin_id": "population",
+          "owner": "CONTROLLED_TEST_OWNER",
+          "product_name": "population",
+          "product_version": "v1",
+          "revision": "population-v1",
+          "source_cut_id": "population-cut",
+          "payload_digest": "sha256:a58341447d0a9a4a06a0d2743892828b13784b1049368cb742af95d834bd83cc",
+          "compatibility_group": "population-owner-local",
+          "coverage_from": "2025-01-01",
+          "coverage_to": "2027-01-01",
+          "completeness": "COMPLETE",
+          "page_ids": [
+            "population-page-1"
+          ],
+          "expected_page_count": 1
+        },
+        {
+          "pin_id": "money",
+          "owner": "CONTROLLED_TEST_OWNER",
+          "product_name": "money",
+          "product_version": "v1",
+          "revision": "money-v1",
+          "source_cut_id": "money-cut",
+          "payload_digest": "sha256:dcdf8be480a0e6ae4bcbc27782acb14ccddcf55ee3707d0de8c606682cedf9d4",
+          "compatibility_group": "money-owner-local",
+          "coverage_from": "2025-01-01",
+          "coverage_to": "2027-01-01",
+          "completeness": "COMPLETE",
+          "page_ids": [
+            "money-page-1"
+          ],
+          "expected_page_count": 1
+        }
+      ],
+      "correction_of_calculation_id": null,
+      "predecessor_response_digest": null
+    },
+    "series_digest": "ea7e7590dd2d5de752423cc1c183ea19ef4922970f8ccd318187306e0364c8cf",
+    "source_revision_digest": "559d77b9ec8686682b3d61f33130d532384658bd7d6723417d3d12c23577ca0e",
+    "factual_content_digest": "58435d2891a7f055344be78fe8bb9fdbfb1d3d30db02c387ecad04d510f9ca4d"
+  },
+  "elected_fallback": {
+    "contract_version": "composite_review.v5",
+    "qualification": "EXPLICIT_RETAINED_CALCULATED_REPLAY",
+    "publication_state": "NOT_ATTESTED",
+    "selection": {
+      "tenant_id": "controlled-tenant",
+      "composite_id": "CONTROLLED_POOL",
+      "calculation_id": "2919b0ba-f961-4f96-b2e9-a46cfb396cc5",
+      "schema_version": "composite-pooled-mwr.v1",
+      "metric_id": "POOLED_MONEY_WEIGHTED_RETURN",
+      "method": "XIRR:v1",
+      "period_start": "2025-01-01",
+      "period_end": "2027-01-01",
+      "reporting_currency": "USD",
+      "return_view": "GROSS",
+      "fee_basis": "GROSS_BEFORE_FEES",
+      "policy_binding_id": "controlled-xirr-policy-v1",
+      "policy_content_hash": "controlled-policy-hash",
+      "day_count_basis": "ACT/365",
+      "fallback_policy": "ALLOW_MODIFIED_DIETZ",
+      "engine_version": "lotus-performance-calculation-engine.v16",
+      "source_manifest_id": "controlled-original-v1",
+      "input_manifest_digest": "sha256:e276b26453331b366662999368ec984e55136b9ced2a8f7646f5c82874c5e148",
+      "source_bundle_digest": "sha256:4c6f9a3e6f0ee3b987900c34aad488002f570c46398ad1f69fecd2503d806713",
+      "response_digest": "sha256:97a27d7a63b21efeae31dbd43c650372c4d944b7e5a387426e08d231d5c4de95",
+      "expected_portfolio_ids": [
+        "member-a",
+        "member-b"
+      ],
+      "source_pins": [
+        {
+          "pin_id": "population",
+          "owner": "CONTROLLED_TEST_OWNER",
+          "product_name": "population",
+          "product_version": "v1",
+          "revision": "population-v1",
+          "source_cut_id": "population-cut",
+          "payload_digest": "sha256:ddfb9b4833931bb06075002da208c86778d0980b7a27f58aca099ca8dbe21ff3",
+          "compatibility_group": "population-owner-local",
+          "coverage_from": "2025-01-01",
+          "coverage_to": "2027-01-01",
+          "completeness": "COMPLETE",
+          "page_ids": [
+            "population-page-1"
+          ],
+          "expected_page_count": 1
+        },
+        {
+          "pin_id": "money",
+          "owner": "CONTROLLED_TEST_OWNER",
+          "product_name": "money",
+          "product_version": "v1",
+          "revision": "money-v1",
+          "source_cut_id": "money-cut",
+          "payload_digest": "sha256:dcdf8be480a0e6ae4bcbc27782acb14ccddcf55ee3707d0de8c606682cedf9d4",
+          "compatibility_group": "money-owner-local",
+          "coverage_from": "2025-01-01",
+          "coverage_to": "2027-01-01",
+          "completeness": "COMPLETE",
+          "page_ids": [
+            "money-page-1"
+          ],
+          "expected_page_count": 1
+        }
+      ],
+      "correction_of_calculation_id": null,
+      "predecessor_response_digest": null
+    },
+    "series_digest": "c8457ae116943d0ed323f792727a5dbe046045cc548a06cf43d401f1dd4f2be8",
+    "source_revision_digest": "58c2d018893d3dfcaaa8d672221a86338f9f9cf91f8087233f487ecd0e683715",
+    "factual_content_digest": "dd9d961bdce731f36769c73477028bb99bd5419493351704b1da0e4de628a2ea"
+  },
+  "one_sided": {
+    "contract_version": "composite_review.v5",
+    "qualification": "EXPLICIT_RETAINED_CALCULATED_REPLAY",
+    "publication_state": "NOT_ATTESTED",
+    "selection": {
+      "tenant_id": "controlled-tenant",
+      "composite_id": "CONTROLLED_POOL",
+      "calculation_id": "07c38004-708a-47f7-86fe-d959e93394a5",
+      "schema_version": "composite-pooled-mwr.v1",
+      "metric_id": "POOLED_MONEY_WEIGHTED_RETURN",
+      "method": "XIRR:v1",
+      "period_start": "2025-01-01",
+      "period_end": "2026-01-01",
+      "reporting_currency": "USD",
+      "return_view": "GROSS",
+      "fee_basis": "GROSS_BEFORE_FEES",
+      "policy_binding_id": "controlled-xirr-policy-v1",
+      "policy_content_hash": "controlled-policy-hash",
+      "day_count_basis": "ACT/365",
+      "fallback_policy": "REQUIRE_XIRR",
+      "engine_version": "lotus-performance-calculation-engine.v16",
+      "source_manifest_id": "controlled-original-v1",
+      "input_manifest_digest": "sha256:d7985873928c7bbdcddc44fbfe7fcc13c4d36b5ca4d98f0411c355766d051e91",
+      "source_bundle_digest": "sha256:7b5dc2776804cde0b3e8d7fc3d1a49a7aa3a8437f5f5dfe12975171de302639b",
+      "response_digest": "sha256:4d8711bb46c77acfbee4226ee6e5c9cbb2c32bacbdbc494f3baa7edaa433b5c3",
+      "expected_portfolio_ids": [
+        "member-a",
+        "member-b"
+      ],
+      "source_pins": [
+        {
+          "pin_id": "population",
+          "owner": "CONTROLLED_TEST_OWNER",
+          "product_name": "population",
+          "product_version": "v1",
+          "revision": "population-v1",
+          "source_cut_id": "population-cut",
+          "payload_digest": "sha256:f84901088a8075f337a6bca5721c4c9e11425e63cb4dbd019fd71e05b0c9a821",
+          "compatibility_group": "population-owner-local",
+          "coverage_from": "2025-01-01",
+          "coverage_to": "2026-01-01",
+          "completeness": "COMPLETE",
+          "page_ids": [
+            "population-page-1"
+          ],
+          "expected_page_count": 1
+        },
+        {
+          "pin_id": "money",
+          "owner": "CONTROLLED_TEST_OWNER",
+          "product_name": "money",
+          "product_version": "v1",
+          "revision": "money-v1",
+          "source_cut_id": "money-cut",
+          "payload_digest": "sha256:cb360c8df75120973a8ce5906877d3448664e19d4dde51b223e5e81d75a8e9d0",
+          "compatibility_group": "money-owner-local",
+          "coverage_from": "2025-01-01",
+          "coverage_to": "2026-01-01",
+          "completeness": "COMPLETE",
+          "page_ids": [
+            "money-page-1"
+          ],
+          "expected_page_count": 1
+        }
+      ],
+      "correction_of_calculation_id": null,
+      "predecessor_response_digest": null
+    },
+    "series_digest": "2242a6bec168b65df7dab5964a566e2980d48933b11c88c9884c23c4e6caffad",
+    "source_revision_digest": "af9dfb20ce8d3283c95463dccde1e3691bce11a0f4b81b35068202b050755c66",
+    "factual_content_digest": "43c5c2b652e789a0a3e2840b6b8d988aae9047676dc647cae1140520737c30f1"
+  },
+  "work_limit": {
+    "contract_version": "composite_review.v5",
+    "qualification": "EXPLICIT_RETAINED_CALCULATED_REPLAY",
+    "publication_state": "NOT_ATTESTED",
+    "selection": {
+      "tenant_id": "controlled-tenant",
+      "composite_id": "CONTROLLED_POOL",
+      "calculation_id": "38603074-5d78-45e3-a2f0-6e5568998a70",
+      "schema_version": "composite-pooled-mwr.v1",
+      "metric_id": "POOLED_MONEY_WEIGHTED_RETURN",
+      "method": "XIRR:v1",
+      "period_start": "2025-01-01",
+      "period_end": "2026-01-01",
+      "reporting_currency": "USD",
+      "return_view": "GROSS",
+      "fee_basis": "GROSS_BEFORE_FEES",
+      "policy_binding_id": "controlled-xirr-policy-v1",
+      "policy_content_hash": "controlled-policy-hash",
+      "day_count_basis": "ACT/365",
+      "fallback_policy": "REQUIRE_XIRR",
+      "engine_version": "lotus-performance-calculation-engine.v16",
+      "source_manifest_id": "controlled-original-v1",
+      "input_manifest_digest": "sha256:bfdbf566195419f04c5f480bd0e0287720acab9e8e0801e4e01bbfa5d4624036",
+      "source_bundle_digest": "sha256:84f2ce0818cd5101ea648d1dace6c8a9497b7c4252ae5a112ca6003c96936626",
+      "response_digest": "sha256:051f0f439193fd6caf1dbe17f7ef741579a8e52691d7a62b56de3f5770ba2c17",
+      "expected_portfolio_ids": [
+        "member-a",
+        "member-b"
+      ],
+      "source_pins": [
+        {
+          "pin_id": "population",
+          "owner": "CONTROLLED_TEST_OWNER",
+          "product_name": "population",
+          "product_version": "v1",
+          "revision": "population-v1",
+          "source_cut_id": "population-cut",
+          "payload_digest": "sha256:f84901088a8075f337a6bca5721c4c9e11425e63cb4dbd019fd71e05b0c9a821",
+          "compatibility_group": "population-owner-local",
+          "coverage_from": "2025-01-01",
+          "coverage_to": "2026-01-01",
+          "completeness": "COMPLETE",
+          "page_ids": [
+            "population-page-1"
+          ],
+          "expected_page_count": 1
+        },
+        {
+          "pin_id": "money",
+          "owner": "CONTROLLED_TEST_OWNER",
+          "product_name": "money",
+          "product_version": "v1",
+          "revision": "money-v1",
+          "source_cut_id": "money-cut",
+          "payload_digest": "sha256:d7bbe486b57b0a35eb80f3dea542920793c83857e5c0ade2b3f90225f962e1c3",
+          "compatibility_group": "money-owner-local",
+          "coverage_from": "2025-01-01",
+          "coverage_to": "2026-01-01",
+          "completeness": "COMPLETE",
+          "page_ids": [
+            "money-page-1"
+          ],
+          "expected_page_count": 1
+        }
+      ],
+      "correction_of_calculation_id": null,
+      "predecessor_response_digest": null
+    },
+    "series_digest": "f1af6a51660d7562c8c36befea53d3c3a92396454d5d7f63eeb9cdd60f67fb81",
+    "source_revision_digest": "777bde407070f5e32d47954d531ae0cb4f5bd29aba7ba27e95dff067e7f4ca89",
+    "factual_content_digest": "4110f92ca2b8b839f9bd1a62165623fb763c11c44d01b6891259dcdbb4b929d4"
+  },
+  "zero": {
+    "contract_version": "composite_review.v5",
+    "qualification": "EXPLICIT_RETAINED_CALCULATED_REPLAY",
+    "publication_state": "NOT_ATTESTED",
+    "selection": {
+      "tenant_id": "controlled-tenant",
+      "composite_id": "CONTROLLED_POOL",
+      "calculation_id": "6b0e4888-f21d-4578-b4d2-fd13d3572701",
+      "schema_version": "composite-pooled-mwr.v1",
+      "metric_id": "POOLED_MONEY_WEIGHTED_RETURN",
+      "method": "XIRR:v1",
+      "period_start": "2025-01-01",
+      "period_end": "2026-01-01",
+      "reporting_currency": "USD",
+      "return_view": "GROSS",
+      "fee_basis": "GROSS_BEFORE_FEES",
+      "policy_binding_id": "controlled-xirr-policy-v1",
+      "policy_content_hash": "controlled-policy-hash",
+      "day_count_basis": "ACT/365",
+      "fallback_policy": "REQUIRE_XIRR",
+      "engine_version": "lotus-performance-calculation-engine.v16",
+      "source_manifest_id": "controlled-original-v1",
+      "input_manifest_digest": "sha256:22f41b00d8aded217be7d9cc845c553e6f9e7eda6c837d3207fb056b0b23cf9a",
+      "source_bundle_digest": "sha256:d1a6d3936c31206ac55988b6888ac38d5257b462a73aa5857c159149683e4f6e",
+      "response_digest": "sha256:9ca9c64bc50ce0c5e37f963a3436808665c17f7b9dd5a13604ba6b79a9ab552b",
+      "expected_portfolio_ids": [
+        "member-a",
+        "member-b"
+      ],
+      "source_pins": [
+        {
+          "pin_id": "population",
+          "owner": "CONTROLLED_TEST_OWNER",
+          "product_name": "population",
+          "product_version": "v1",
+          "revision": "population-v1",
+          "source_cut_id": "population-cut",
+          "payload_digest": "sha256:f84901088a8075f337a6bca5721c4c9e11425e63cb4dbd019fd71e05b0c9a821",
+          "compatibility_group": "population-owner-local",
+          "coverage_from": "2025-01-01",
+          "coverage_to": "2026-01-01",
+          "completeness": "COMPLETE",
+          "page_ids": [
+            "population-page-1"
+          ],
+          "expected_page_count": 1
+        },
+        {
+          "pin_id": "money",
+          "owner": "CONTROLLED_TEST_OWNER",
+          "product_name": "money",
+          "product_version": "v1",
+          "revision": "money-v1",
+          "source_cut_id": "money-cut",
+          "payload_digest": "sha256:c3b25b3744e2cc787f09cfc7832d8ab1982f1d62956aca2b1857a9ac1d09ee70",
+          "compatibility_group": "money-owner-local",
+          "coverage_from": "2025-01-01",
+          "coverage_to": "2026-01-01",
+          "completeness": "COMPLETE",
+          "page_ids": [
+            "money-page-1"
+          ],
+          "expected_page_count": 1
+        }
+      ],
+      "correction_of_calculation_id": null,
+      "predecessor_response_digest": null
+    },
+    "series_digest": "3e72e40ec7df6b330f5ea6b5107c52d38d2e3d2ef677b1dcd1a1fd9d5741cf83",
+    "source_revision_digest": "e19d9dd754859160addd34d225fb43feb2fd7e4e01742843552ec1d3c62eb156",
+    "factual_content_digest": "f7da9bf9d08e4d11386ff18a5635e155e14d63d15832d1290e72fb167a58768c"
+  }
+}

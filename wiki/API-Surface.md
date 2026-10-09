@@ -183,6 +183,13 @@ identifiers do not leak into log aggregation.
 3. [Architecture](Architecture) — how a request becomes a stored document
 ## Composite XLSX custody
 
+Pooled v5 extends the same family/routes with exact Report-owned source, policy,
+fallback, population/page and predecessor pins. Opaque revision digests remain
+unchanged; unavailable/fallback results are not promoted to financial success or
+bank publication. [Pooled custody acceptance](https://github.com/sgajbi/lotus-archive/blob/main/docs/composite-pooled-custody-acceptance.md)
+separates component admission and required database proof from pending actual v5
+workbook/Archive handoff and institutional acceptance.
+
 Eligibility v4 extends the same family and routes with strict Report-owned Manage
 month pins. `PUBLISHED` retains whole source receipt/canonical product pins;
 `EVALUATED_ONLY` retains proposal pins without approval/publication/history.
@@ -213,7 +220,7 @@ exclusive source-owned `composite_id`. Its immutable `composite_report_identity`
 retains the exact Report selection and revision digests with version-specific
 controlled replay qualification and `NOT_ATTESTED` publication. `POST /documents` admits only the
 version-matched `composite-review/v1`, `composite-review/v2` or linked-analysis
-`composite-review/v3` or eligibility `composite-review/v4` XLSX contract and verifies actual bounded OOXML bytes and
+`composite-review/v3`, eligibility `composite-review/v4` or pooled `composite-review/v5` XLSX contract and verifies actual bounded OOXML bytes and
 declared SHA-256 before storage. Existing metadata, checksum-verified download,
 source-event, correction, retention and legal-hold routes preserve the identity.
 The [delivery ledger](https://github.com/sgajbi/lotus-archive/blob/main/docs/composite-custody-delivery-ledger.md)
