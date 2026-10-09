@@ -14,6 +14,7 @@ from app.archive.access_preflight import (
     ArchiveAccessState,
 )
 from app.archive.audit import AccessAuditEvent
+from app.archive.composite_identity import CompositeReportIdentity
 from app.archive.models import (
     AdvisorCommentaryArchiveSummary,
     ArchiveDocumentInput,
@@ -146,7 +147,16 @@ class ArchiveDocumentResponse(BaseModel):
     render_attempt_id: str = Field(description="Render attempt identifier.")
     report_type: GeneratedReportType = Field(description="Generated report type.")
     portfolio_scope: str = Field(description="Portfolio scope represented by the document.")
-    portfolio_id: str = Field(description="Portfolio identifier represented by the document.")
+    portfolio_id: str | None = Field(
+        description="Portfolio identifier for portfolio-scoped documents."
+    )
+    composite_id: str | None = Field(
+        default=None, description="Source-owned composite scope identifier."
+    )
+    composite_report_identity: CompositeReportIdentity | None = Field(
+        default=None,
+        description="Immutable qualified composite selection and Report revision digests.",
+    )
     client_reference: str | None = Field(
         default=None,
         description="Support-safe client reference when provided by the reporting source.",
@@ -459,6 +469,14 @@ class ArchiveArtifactRef(BaseModel):
 
 
 class ArchiveDocumentSourceEvent(BaseModel):
+    report_revision_id: str | None = Field(
+        default=None, description="Opaque Report-owned revision identity."
+    )
+    document_reference: str | None = Field(
+        default=None, description="Governed Report document reference."
+    )
+    mime_type: str = Field(description="Custodied artifact MIME type.")
+    output_format: str = Field(description="Custodied artifact output format.")
     event_id: str = Field(description="Stable archive-owned source-event identifier.")
     event_type: str = Field(
         description=(
@@ -471,7 +489,16 @@ class ArchiveDocumentSourceEvent(BaseModel):
     source_event_family: str = Field(description="Governed source-event family identifier.")
     source_type: str = Field(description="Archive source record type behind this event.")
     source_id: str = Field(description="Archive source record identifier behind this event.")
-    portfolio_id: str = Field(description="Portfolio represented by the archived document.")
+    portfolio_id: str | None = Field(
+        description="Portfolio represented by portfolio-scoped documents."
+    )
+    composite_id: str | None = Field(
+        default=None, description="Source-owned composite scope identifier."
+    )
+    composite_report_identity: CompositeReportIdentity | None = Field(
+        default=None,
+        description="Retained composite identity; confers no financial publication authority.",
+    )
     report_type: GeneratedReportType = Field(description="Generated report type.")
     report_job_id: str = Field(description="Source report job identifier.")
     snapshot_id: str = Field(description="Source report snapshot identifier.")
@@ -524,7 +551,16 @@ class ArchiveDocumentSourceEventsResponse(BaseModel):
     current_document_id: str = Field(
         description="Current archived document in the lifecycle chain."
     )
-    portfolio_id: str = Field(description="Portfolio represented by the archived document.")
+    portfolio_id: str | None = Field(
+        description="Portfolio represented by portfolio-scoped documents."
+    )
+    composite_id: str | None = Field(
+        default=None, description="Source-owned composite scope identifier."
+    )
+    composite_report_identity: CompositeReportIdentity | None = Field(
+        default=None,
+        description="Retained composite identity; confers no financial publication authority.",
+    )
     report_type: GeneratedReportType = Field(description="Generated report type.")
     event_count: int = Field(description="Number of returned source events.")
     returned_count: int = Field(description="Number of events returned in this page.")

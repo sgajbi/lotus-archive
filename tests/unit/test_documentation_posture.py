@@ -39,7 +39,7 @@ def test_supported_features_baseline_blocks_direct_workbench_overclaim() -> None
     assert "| Generated-document archival | `ready` |" in supported_features
     assert "| Controlled document binary download | `ready` |" in supported_features
     assert "| Archive document source events | `ready` |" in supported_features
-    assert "| Report-to-archive handoff | `ready` |" in supported_features
+    assert "| Render-to-archive handoff | `ready` |" in supported_features
     assert "| Gateway-backed document retrieval | `ready` |" in supported_features
     assert "| Gateway-backed Workbench document retrieval | `ready` |" in supported_features
     assert "| Reviewed advisory narrative archive summary | `ready` |" in supported_features

@@ -14,7 +14,7 @@ from app.archive.access_preflight import (
     ArchiveAccessReasonCode,
     ArchiveAccessState,
 )
-from app.archive.models import ArchiveDocumentMetadata, PurgeStatus
+from app.archive.models import ArchiveDocumentInput, ArchiveDocumentMetadata, PurgeStatus
 from app.security.caller_context import CallerContext, CallerScopeMissingError
 
 
@@ -123,7 +123,7 @@ class ArchiveAuthorizationPolicy:
     def document_tenant_scope_decision(
         self,
         *,
-        metadata: ArchiveDocumentMetadata,
+        metadata: ArchiveDocumentInput,
         caller_context: CallerContext,
     ) -> ArchiveAccessDecision:
         if not caller_context.tenant_id or not caller_context.region:
@@ -178,7 +178,7 @@ class ArchiveAuthorizationPolicy:
     def authorize_document_tenant_scope(
         self,
         *,
-        metadata: ArchiveDocumentMetadata,
+        metadata: ArchiveDocumentInput,
         caller_context: CallerContext,
         audit_repository: AccessAuditRepository,
         trace_id: str,
@@ -205,7 +205,7 @@ class ArchiveAuthorizationPolicy:
     @staticmethod
     def _require_audited_caller_scope(
         *,
-        metadata: ArchiveDocumentMetadata,
+        metadata: ArchiveDocumentInput,
         caller_context: CallerContext,
         audit_repository: AccessAuditRepository,
         trace_id: str,
@@ -220,7 +220,7 @@ class ArchiveAuthorizationPolicy:
                     trace_id=trace_id,
                     authorization_decision=AuthorizationDecision.DENIED,
                     authorization_reason_code="caller_scope_missing",
-                    document_id=metadata.document_id,
+                    document_id=getattr(metadata, "document_id", None),
                 )
             )
             raise
@@ -229,7 +229,7 @@ class ArchiveAuthorizationPolicy:
     def _enforce_document_scope_decision(
         *,
         decision: ArchiveAccessDecision,
-        metadata: ArchiveDocumentMetadata,
+        metadata: ArchiveDocumentInput,
         caller_context: CallerContext,
         audit_repository: AccessAuditRepository,
         trace_id: str,
@@ -243,7 +243,7 @@ class ArchiveAuthorizationPolicy:
                 trace_id=trace_id,
                 authorization_decision=AuthorizationDecision.DENIED,
                 authorization_reason_code=decision.reason_code.value,
-                document_id=metadata.document_id,
+                document_id=getattr(metadata, "document_id", None),
             )
         )
         raise AuthorizationFailedError(decision.reason_code.value)

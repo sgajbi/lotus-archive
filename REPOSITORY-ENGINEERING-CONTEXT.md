@@ -312,6 +312,17 @@ every lane that runs tests passed.
 
 ## Context Maintenance Rule
 
+Composite report custody uses `archive/composite_identity.py` for the exact Report
+selection vector and lifecycle digests, and `archive/artifact_format.py` for bounded
+decoded content and XLSX OOXML admission. `composite_review` requires exclusive
+composite scope, null portfolio ID, matching tenant/horizon and retained qualified
+`NOT_ATTESTED` identity. Migration 014 preserves historical portfolio rows. The
+API/filesystem component proof and required PostgreSQL restart proof are separate
+from actual source-qualified Report→Render→Archive acceptance. See
+`docs/composite-custody-contract.md`; no official authority or all-report completion
+is conferred by custody. The decoded-content extraction reduces the largest module
+from 913 to 910 lines; `SOURCE_FILE_MAX_LINES` ratchets to the measured 910.
+
 Update this document when:
 
 1. repository ownership changes,

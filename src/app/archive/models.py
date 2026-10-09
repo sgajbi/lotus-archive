@@ -7,6 +7,7 @@ from typing import Literal, Self
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from app.archive.checksum import SUPPORTED_CHECKSUM_ALGORITHM
+from app.archive.composite_identity import CompositeReportIdentity
 
 
 class PurgeStatus(StrEnum):
@@ -48,6 +49,7 @@ class DocumentClassification(StrEnum):
 
 
 class GeneratedReportType(StrEnum):
+    COMPOSITE_REVIEW = "composite_review"
     PORTFOLIO_REVIEW = "portfolio_review"
     OUTCOME_REVIEW = "outcome_review"
     PROOF_PACK = "proof_pack"
@@ -250,7 +252,9 @@ class ArchiveDocumentInput(BaseModel):
     render_attempt_id: str = Field(min_length=1)
     report_type: GeneratedReportType
     portfolio_scope: str = Field(min_length=1)
-    portfolio_id: str = Field(min_length=1)
+    portfolio_id: str | None = Field(default=None, min_length=1)
+    composite_id: str | None = Field(default=None, min_length=1, max_length=128)
+    composite_report_identity: CompositeReportIdentity | None = None
     client_reference: str | None = Field(default=None, min_length=1)
     as_of_date: date
     reporting_period_start: date
@@ -306,6 +310,51 @@ class ArchiveDocumentInput(BaseModel):
     #: interprets it. Nullable: documents delivered before revision identity
     #: existed archive unchanged - history is never relabelled.
     report_revision_id: str | None = Field(default=None, min_length=1)
+
+    @model_validator(mode="after")
+    def _report_scope_must_agree(self) -> Self:
+        if self.report_type is GeneratedReportType.COMPOSITE_REVIEW:
+            identity = self.composite_report_identity
+            if self.portfolio_scope != "composite" or self.portfolio_id is not None:
+                raise ValueError("composite reports require genuine composite-only scope")
+            if identity is None or not self.composite_id:
+                raise ValueError("composite reports require typed composite identity")
+            pin = identity.selection
+            if (pin.tenant_id, pin.composite_id, pin.period_start, pin.period_end) != (
+                self.tenant_id,
+                self.composite_id,
+                self.reporting_period_start,
+                self.reporting_period_end,
+            ) or self.as_of_date != pin.period_end:
+                raise ValueError("composite identity must match archive scope and horizon")
+            if (
+                self.template_id,
+                self.template_version,
+                self.report_data_contract_version,
+                self.output_format,
+                self.mime_type,
+            ) != (
+                "composite-review",
+                "v1",
+                "composite_review.v1",
+                "xlsx",
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            ):
+                raise ValueError("composite reports require the supported XLSX template contract")
+            if not all(
+                (self.report_revision_id, self.document_reference, self.declared_artifact_sha256)
+            ):
+                raise ValueError(
+                    "composite custody requires report revision and declared artifact identity"
+                )
+        elif (
+            self.portfolio_id is None
+            or self.portfolio_scope == "composite"
+            or self.composite_id is not None
+            or self.composite_report_identity is not None
+        ):
+            raise ValueError("existing report families require exclusive portfolio scope")
+        return self
 
     @field_validator("template_publication")
     @classmethod

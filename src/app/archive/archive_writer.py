@@ -5,6 +5,8 @@ from uuid import uuid4
 
 from pydantic import ValidationError
 
+from app.archive.artifact_format import validate_artifact_format
+
 from app.archive.checksum import SUPPORTED_CHECKSUM_ALGORITHM, calculate_checksum
 from app.archive.exceptions import (
     ArtifactIdentityCollisionError,
@@ -33,6 +35,11 @@ class ArchiveWriter:
         metadata_input: ArchiveDocumentInput,
         content: bytes,
     ) -> ArchiveDocumentMetadata:
+        validate_artifact_format(
+            output_format=metadata_input.output_format,
+            mime_type=metadata_input.mime_type,
+            content=content,
+        )
         checksum = calculate_checksum(content)
         # Custody verification comes FIRST - before idempotent replay, before
         # storage. A declared identity that does not match what arrived is

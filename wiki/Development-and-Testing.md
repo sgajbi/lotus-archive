@@ -77,7 +77,7 @@ is the correct local state, not a fault.
 | `make migration-gate` | migration contract validation |
 | `make code-health-gates` | the four gates below, as one target |
 | `make complexity-gate` | no rank D–F function; maximum cyclomatic complexity at or below the banked 17 |
-| `make source-size-gate` | no module past the banked 914 lines |
+| `make source-size-gate` | no module past the banked 910 lines |
 | `make dead-code-gate` | no vulture finding at 80% confidence |
 | `make dependency-hygiene-gate` | no deptry finding; direct imports must be declared dependencies |
 | `python scripts/check_branch_protection_policy.py --offline` | the branch-protection policy table is complete and self-consistent (also run by the unit gate) |

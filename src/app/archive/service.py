@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from base64 import b64decode
-from binascii import Error as Base64DecodeError
 from collections.abc import Callable
 from datetime import date, datetime, timezone
 from uuid import uuid4
@@ -22,6 +20,7 @@ from app.archive.access_preflight import (
     result_state_for_items,
 )
 from app.archive.archive_writer import ArchiveWriter
+from app.archive.artifact_format import decode_document_content
 from app.archive.audit import (
     AccessAuditEvent,
     AccessAuditRepository,
@@ -123,7 +122,14 @@ class ArchiveDocumentService:
             audit_repository=self.audit_repository,
             trace_id=trace_id,
         )
-        content = self._decode_content(command.content_base64)
+        if command.metadata.composite_id is not None:
+            self.authorization_policy.authorize_document_tenant_scope(
+                metadata=command.metadata,
+                caller_context=caller_context,
+                audit_repository=self.audit_repository,
+                trace_id=trace_id,
+            )
+        content = decode_document_content(command.content_base64, self.max_decoded_document_bytes)
         metadata = self.writer.archive_document(metadata_input=command.metadata, content=content)
         self._record_allowed(
             event_type=AccessEventType.ARCHIVE_CREATE,
@@ -902,12 +908,3 @@ class ArchiveDocumentService:
                 operation_reason_code=operation_reason_code,
             )
         )
-
-    def _decode_content(self, content_base64: str) -> bytes:
-        try:
-            content = b64decode(content_base64, validate=True)
-        except Base64DecodeError as exc:
-            raise MetadataValidationError("document content must be valid base64") from exc
-        if len(content) > self.max_decoded_document_bytes:
-            raise MetadataValidationError("document content exceeds configured archive size limit")
-        return content
