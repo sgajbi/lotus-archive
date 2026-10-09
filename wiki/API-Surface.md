@@ -185,6 +185,12 @@ qualification and `NOT_ATTESTED` publication. `POST /documents` admits only the
 `composite-review/v1` XLSX contract and verifies actual bounded OOXML bytes and
 declared SHA-256 before storage. Existing metadata, checksum-verified download,
 source-event, correction, retention and legal-hold routes preserve the identity.
-This Archive capability does not prove actual upstream producer acceptance or
-official financial authority. The [source contract and executable tutorial](https://github.com/sgajbi/lotus-archive/blob/main/docs/composite-custody-contract.md)
+The [delivery ledger](https://github.com/sgajbi/lotus-archive/blob/main/docs/composite-custody-delivery-ledger.md)
+records the subsequent normal supported producer's actual HTTP original,
+financially corrected and retained technical rerender custody, including own
+source pins, exact downloads, restart, audit and access refusals. Controlled
+Performance intake/verifier and `NOT_ATTESTED` qualification remain explicit.
+Report supplies the technical relationship; authorized Archive API proof supplies
+the financial relationship. Custody confers no official financial authority,
+all-product acceptance or enterprise certification. The [source contract and executable tutorial](https://github.com/sgajbi/lotus-archive/blob/main/docs/composite-custody-contract.md)
 cover the exact fields, migration and retry/retrieval flow.

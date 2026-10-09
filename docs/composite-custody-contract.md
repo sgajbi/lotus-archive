@@ -5,7 +5,11 @@ Archive accepts the first `composite_review` XLSX family through the existing
 Render is the sole transmit authority and supplies actual artifact SHA-256 and
 render provenance. Archive independently verifies bytes and retains evidence.
 Retention grants no financial approval. Joined source-qualified producer
-acceptance remains separate from component proof under issue #176.
+acceptance remains separate from component proof under issue #176. The
+[delivery ledger](composite-custody-delivery-ledger.md) records the subsequent
+normal supported producer's bounded actual HTTP original, financially corrected
+and technical rerender custody. Controlled Performance intake/verifier and
+`NOT_ATTESTED` qualification remain explicit.
 
 ## Identity dictionary
 
