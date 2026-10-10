@@ -254,3 +254,10 @@ under #182. That phase proves original/corrected/retained-original bytes and pro
 identities, exact retries, incompatible retries, tenant refusals and existing
 technical→financial correction/current resolution with real PostgreSQL and files.
 Independent pre/post readers and actual restart preserved all three records.
+# Historical policy custody
+
+Report v7 (`composite-review/v7`) uses selection v3 with ordinary v3/correction v4
+pins and a required controlled calculation boundary. Publication is `NOT_ATTESTED`;
+configured identity confers no cryptographic or bank authority. Existing tenant,
+immutable replay, exact download and lifecycle controls apply. See
+[historical policy custody](https://github.com/sgajbi/lotus-archive/blob/main/docs/composite-historical-policy-custody.md).

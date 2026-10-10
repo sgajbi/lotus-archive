@@ -396,6 +396,15 @@ documentation/test successor preserves source and migration committed blobs.
 This is bounded controlled replay with explicit development health, not an
 operated production migration runner or enterprise restore/authority acceptance.
 
+`archive/composite_historical.py` adds Report v7/selection v3 custody with explicit
+ordinary-v3/correction-v4 pins and the required controlled calculation boundary.
+Frozen v1–v6 remain closed. Migration020 extends the existing scope guard without
+new columns/tables. Manage owns verification/admission; Report retains source proofs;
+Archive preserves exact XLSX bytes and opaque identity without policy/cryptographic
+recomputation. Configured identity is not authenticated bank provenance. Keep compatible
+readers and forward-fix rather than replay019 over v7. See
+`docs/composite-historical-policy-custody.md` for proof and release boundaries.
+
 Update this document when:
 
 1. repository ownership changes,
