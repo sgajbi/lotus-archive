@@ -1,0 +1,142 @@
+{
+  "later-window": {
+    "contract_version": "composite_review.v8",
+    "qualification": "EXPLICIT_RETAINED_CALCULATED_REPLAY",
+    "publication_state": "NOT_ATTESTED",
+    "selection": {
+      "tenant_id": "tenant-a",
+      "composite_id": "NEUTRAL_BALANCED",
+      "calculation_id": "00000000-0000-0000-0000-000000000099",
+      "period_start": "2026-01-01",
+      "period_end": "2026-02-28",
+      "reporting_currency": "USD",
+      "return_view": "NET_ACTUAL",
+      "methodology": "persisted_member_return_asset_weighted_twr_v1",
+      "engine_version": "synthetic-engine.v1",
+      "calculation_fingerprint": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+      "response_digest": "sha256:dbbad76218a88bc2fa2f6befdef1babaf312e7fc5dd977d3822648b31bb2b3db",
+      "windows": [
+        {
+          "materialization_id": "00000000-0000-0000-0000-000000000001",
+          "period_start": "2026-01-01",
+          "period_end": "2026-01-31",
+          "restatement_sequence": 1,
+          "definition_content_hash": "sha256:79494d055bb440cec0628a5947b4b22a3e0914621f3c2b0e0e17735c2ab757f7",
+          "membership_content_hash": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "attestation_content_hash": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+          "source_cut_id": "source-cut-1",
+          "method_binding": {
+            "method_id": "ASSET_WEIGHTED",
+            "method_version": "v1"
+          },
+          "retained_receipt_fingerprint": "sha256:1111111111111111111111111111111111111111111111111111111111111111"
+        },
+        {
+          "materialization_id": "00000000-0000-0000-0000-000000000002",
+          "period_start": "2026-02-01",
+          "period_end": "2026-02-28",
+          "restatement_sequence": 1,
+          "definition_content_hash": "sha256:79494d055bb440cec0628a5947b4b22a3e0914621f3c2b0e0e17735c2ab757f7",
+          "membership_content_hash": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "attestation_content_hash": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+          "source_cut_id": "source-cut-2",
+          "method_binding": {
+            "method_id": "ASSET_WEIGHTED",
+            "method_version": "v1"
+          },
+          "retained_receipt_fingerprint": "sha256:2222222222222222222222222222222222222222222222222222222222222222"
+        }
+      ]
+    },
+    "series_digest": "233286afbb5d296213211009f35d722ab1b4cc79cce05dee02b512cbb100822c",
+    "source_revision_digest": "eba97e1fb0841739157a6a587670b751823e432bf2c5134e424d1267450908bd",
+    "factual_content_digest": "90c52356d6af04caed4fda25706466ca5e3bd338d7e03dcb51bed1aaec207abc",
+    "source_context": {
+      "definition": {
+        "definition_version": "d1",
+        "content_hash": "sha256:79494d055bb440cec0628a5947b4b22a3e0914621f3c2b0e0e17735c2ab757f7",
+        "response_digest": "sha256:22c187671b3d6f81d87f1efefba69f53790c3f66b9a75ac464f94751263ec12e"
+      },
+      "since_inception": true,
+      "memberships": []
+    },
+    "definition": {
+      "pin": {
+        "definition_version": "d1",
+        "content_hash": "sha256:79494d055bb440cec0628a5947b4b22a3e0914621f3c2b0e0e17735c2ab757f7",
+        "response_digest": "sha256:22c187671b3d6f81d87f1efefba69f53790c3f66b9a75ac464f94751263ec12e"
+      },
+      "source_response_digest": "sha256:22c187671b3d6f81d87f1efefba69f53790c3f66b9a75ac464f94751263ec12e"
+    }
+  },
+  "si-positive": {
+    "contract_version": "composite_review.v8",
+    "qualification": "EXPLICIT_RETAINED_CALCULATED_REPLAY",
+    "publication_state": "NOT_ATTESTED",
+    "selection": {
+      "tenant_id": "tenant-a",
+      "composite_id": "NEUTRAL_BALANCED",
+      "calculation_id": "00000000-0000-0000-0000-000000000099",
+      "period_start": "2026-01-01",
+      "period_end": "2026-02-28",
+      "reporting_currency": "USD",
+      "return_view": "NET_ACTUAL",
+      "methodology": "persisted_member_return_asset_weighted_twr_v1",
+      "engine_version": "synthetic-engine.v1",
+      "calculation_fingerprint": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+      "response_digest": "sha256:ef727278a1326a25fde2ef035845477d95530a835ce0979233973e6985edee22",
+      "windows": [
+        {
+          "materialization_id": "00000000-0000-0000-0000-000000000001",
+          "period_start": "2026-01-01",
+          "period_end": "2026-01-31",
+          "restatement_sequence": 1,
+          "definition_content_hash": "sha256:c8d2022010ca14a4965e4b6d49d3f15ff8af4562156dafc9f48635551f4727e9",
+          "membership_content_hash": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "attestation_content_hash": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+          "source_cut_id": "source-cut-1",
+          "method_binding": {
+            "method_id": "ASSET_WEIGHTED",
+            "method_version": "v1"
+          },
+          "retained_receipt_fingerprint": "sha256:1111111111111111111111111111111111111111111111111111111111111111"
+        },
+        {
+          "materialization_id": "00000000-0000-0000-0000-000000000002",
+          "period_start": "2026-02-01",
+          "period_end": "2026-02-28",
+          "restatement_sequence": 1,
+          "definition_content_hash": "sha256:c8d2022010ca14a4965e4b6d49d3f15ff8af4562156dafc9f48635551f4727e9",
+          "membership_content_hash": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "attestation_content_hash": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+          "source_cut_id": "source-cut-2",
+          "method_binding": {
+            "method_id": "ASSET_WEIGHTED",
+            "method_version": "v1"
+          },
+          "retained_receipt_fingerprint": "sha256:2222222222222222222222222222222222222222222222222222222222222222"
+        }
+      ]
+    },
+    "series_digest": "dd2b231a38180353ca8fcb75b93eb25f4a2c3ad2e5b0ee10232c9387d2340175",
+    "source_revision_digest": "7837cee122f16b23052e8e94f4dbd4c22115e9f0c8df4cd820c9ab954c34966b",
+    "factual_content_digest": "52c9cf6ec65429f51678a21a43e3cb3f6be44738f75cc96b79a2b22916d4bc5d",
+    "source_context": {
+      "definition": {
+        "definition_version": "d1",
+        "content_hash": "sha256:c8d2022010ca14a4965e4b6d49d3f15ff8af4562156dafc9f48635551f4727e9",
+        "response_digest": "sha256:f5e867e0c2e8da0270ea0610146656ccf114006e6f0697eeb1524893af2e5c1e"
+      },
+      "since_inception": true,
+      "memberships": []
+    },
+    "definition": {
+      "pin": {
+        "definition_version": "d1",
+        "content_hash": "sha256:c8d2022010ca14a4965e4b6d49d3f15ff8af4562156dafc9f48635551f4727e9",
+        "response_digest": "sha256:f5e867e0c2e8da0270ea0610146656ccf114006e6f0697eeb1524893af2e5c1e"
+      },
+      "source_response_digest": "sha256:f5e867e0c2e8da0270ea0610146656ccf114006e6f0697eeb1524893af2e5c1e"
+    }
+  }
+}

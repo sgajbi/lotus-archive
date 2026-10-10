@@ -198,7 +198,17 @@ only the owned R5 HTTP/PG/anonymous volume were retired and absence checked.
 Historical R2/R3/R4 evidence remains unchanged. This explicit development runtime
 does not establish production migration operation, full restore certification or
 official financial authority.
+# Financial source-context custody operations
+
+For v8, apply pending migration021 after020 before enabling admissions. Preserve
+compatible readers/schema and both pure JSON guard functions; disable writes and
+forward-fix rather than replay020 over retained v8. Required proof covers populated
+v1–v7 preservation, direct SQL refusals and eleven fresh-process reads. Component
+tests and local skips do not qualify Root's final joined campaign.
+See [v8 rollout and recovery](https://github.com/sgajbi/lotus-archive/blob/main/docs/composite-source-context-custody.md).
+
 # Historical policy custody operations
+
 
 Apply pending migration020 after019 before v7 writes. Keep compatible readers/schema;
 disable writes and forward-fix rather than replaying old guards over retained v7.

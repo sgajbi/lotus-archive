@@ -254,7 +254,16 @@ under #182. That phase proves original/corrected/retained-original bytes and pro
 identities, exact retries, incompatible retries, tenant refusals and existing
 technical→financial correction/current resolution with real PostgreSQL and files.
 Independent pre/post readers and actual restart preserved all three records.
+# Financial source-context custody
+
+V8 additionally retains cohesive financial replay, exact definition/membership
+context and optional calendar/trailing product pins through the existing document
+routes. Metadata, downloads and source events preserve opaque Report revisions and
+identities. Publication remains `NOT_ATTESTED`; source verification belongs upstream.
+See [v8 contract and executable client example](https://github.com/sgajbi/lotus-archive/blob/main/docs/composite-source-context-custody.md).
+
 # Historical policy custody
+
 
 Report v7 (`composite-review/v7`) uses selection v3 with ordinary v3/correction v4
 pins and a required controlled calculation boundary. Publication is `NOT_ATTESTED`;
