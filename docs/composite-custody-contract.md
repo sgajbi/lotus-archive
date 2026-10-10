@@ -1,5 +1,9 @@
 # Composite report custody
 
+The additive [v8 source-context contract](composite-source-context-custody.md)
+documents cohesive financial replay with retained definition/membership pins,
+optional source products, migration021 and the registered client example.
+
 Archive accepts the first `composite_review` XLSX family through the existing
 `POST /documents` route. Report owns selection, snapshot and revision identity;
 Render is the sole transmit authority and supplies actual artifact SHA-256 and

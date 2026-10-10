@@ -1,0 +1,88 @@
+{
+  "CompositeDefinitionPin": {
+    "additionalProperties": false,
+    "description": "Exact original Manage v1 definition; the caller cannot supply inception.",
+    "properties": {
+      "definition_version": {
+        "maxLength": 128,
+        "minLength": 1,
+        "pattern": "^\\S+$",
+        "title": "Definition Version",
+        "type": "string"
+      },
+      "content_hash": {
+        "pattern": "^sha256:[0-9a-f]{64}$",
+        "title": "Content Hash",
+        "type": "string"
+      },
+      "response_digest": {
+        "pattern": "^sha256:[0-9a-f]{64}$",
+        "title": "Response Digest",
+        "type": "string"
+      }
+    },
+    "required": [
+      "definition_version",
+      "content_hash",
+      "response_digest"
+    ],
+    "title": "CompositeDefinitionPin",
+    "type": "object"
+  },
+  "CompositeMembershipPin": {
+    "additionalProperties": false,
+    "properties": {
+      "membership_revision": {
+        "maxLength": 128,
+        "minLength": 1,
+        "pattern": "^\\S+$",
+        "title": "Membership Revision",
+        "type": "string"
+      },
+      "content_hash": {
+        "pattern": "^sha256:[0-9a-f]{64}$",
+        "title": "Content Hash",
+        "type": "string"
+      },
+      "response_digest": {
+        "pattern": "^sha256:[0-9a-f]{64}$",
+        "title": "Response Digest",
+        "type": "string"
+      }
+    },
+    "required": [
+      "membership_revision",
+      "content_hash",
+      "response_digest"
+    ],
+    "title": "CompositeMembershipPin",
+    "type": "object"
+  },
+  "CompositeSourceContextSelection": {
+    "additionalProperties": false,
+    "description": "Shared definition custody with explicitly selected optional attachments.",
+    "properties": {
+      "definition": {
+        "$ref": "#/$defs/CompositeDefinitionPin"
+      },
+      "since_inception": {
+        "default": false,
+        "title": "Since Inception",
+        "type": "boolean"
+      },
+      "memberships": {
+        "items": {
+          "$ref": "#/$defs/CompositeMembershipPin"
+        },
+        "maxItems": 2,
+        "title": "Memberships",
+        "type": "array"
+      }
+    },
+    "required": [
+      "definition"
+    ],
+    "title": "CompositeSourceContextSelection",
+    "type": "object"
+  }
+}

@@ -2,6 +2,13 @@
 
 ## Repository Role
 
+V8 financial/source-context custody reuses `archive/composite_products.py` with
+strict context pins in `archive/composite_source_context.py`. Migration021 extends
+the existing scope guard with pure JSON helper functions; old migration blobs
+remain frozen. Required populated v1–v7 upgrade and separate-process v8 readback
+live in `test_postgres_composite_source_context_upgrade.py`. No new endpoint,
+source ledger or calculator is introduced. See `docs/composite-source-context-custody.md`.
+
 `lotus-archive` is a Lotus backend service.
 
 ## Business And Domain Responsibility

@@ -4,6 +4,13 @@ This document records implementation-backed support posture for `lotus-archive`.
 
 ## Current State
 
+The v8 component adds cohesive financial replay/source-context custody through
+existing document APIs. Definition/membership joins, optional calendar/trailing
+pins, exact opaque revisions and actual original/corrected handoffs are covered by
+component tests; required PostgreSQL and final joined qualification remain release
+conditions. See [v8 custody](composite-source-context-custody.md). This does not
+change the frozen v1–v7 support or issue188's original v4 acceptance criteria.
+
 `lotus-archive` currently supports the governed service boundary scaffold plus the first internal
 archive API surface:
 

@@ -6,3 +6,6 @@
 *.gif binary
 *.webp binary
 *.zip binary
+
+# Immutable supplier handoffs include CRLF; their raw hashes are custody evidence.
+tests/fixtures/composite_source_context/*.handoff.json -text whitespace=cr-at-eol
