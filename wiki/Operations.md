@@ -198,3 +198,10 @@ only the owned R5 HTTP/PG/anonymous volume were retired and absence checked.
 Historical R2/R3/R4 evidence remains unchanged. This explicit development runtime
 does not establish production migration operation, full restore certification or
 official financial authority.
+# Historical policy custody operations
+
+Apply pending migration020 after019 before v7 writes. Keep compatible readers/schema;
+disable writes and forward-fix rather than replaying old guards over retained v7.
+Manage owns source-format/trust/revocation admission; Archive adds no verifier or ledger.
+Source-format and service-principal production qualification remain unavailable. See
+[proof and rollout boundary](https://github.com/sgajbi/lotus-archive/blob/main/docs/composite-historical-policy-custody.md).

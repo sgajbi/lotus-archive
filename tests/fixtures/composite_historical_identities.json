@@ -1,0 +1,544 @@
+{
+  "v1-correction-2-evaluated-only": {
+    "calculation_boundary": "Configured-identity controlled producer custody only; no cryptographic or bank provenance acceptance, TWR, MWR, dispersion, contribution or model-fee calculation. CONTROLLED / NOT_ATTESTED.",
+    "contract_version": "composite_review.v7",
+    "factual_content_digest": "5e50c53b77c412f876b8ad3fb97ecd4e177e628ac40f77de3826524a830e6a21",
+    "publication_state": "NOT_ATTESTED",
+    "qualification": "CONTROLLED_HISTORICAL_POLICY_EVIDENCE_REPLAY",
+    "selection": {
+      "composite_id": "synthetic-composite",
+      "definition_version": "synthetic-definition",
+      "months": [
+        {
+          "evaluation_revision": "synthetic.corrected.evaluation.r2",
+          "evidence_kind": "EVALUATED_ONLY",
+          "lineage_receipts": [
+            {
+              "approval_content_hash": "sha256:abfbaa02d6dff2950de62ebbe625b193ddcac2d40f1d32a59698275dec077932",
+              "evaluation_revision": "synthetic.original.evaluation.r1",
+              "product_version": "v3",
+              "receipt_content_hash": "sha256:422cdf554a8e3f9d7f8ff6c3a205b8a58f4610c0f2475cd40c23db341b42f0f4",
+              "receipt_response_digest": "sha256:eb3c3332e3d0fa3d418438c677ef8dffe5dafa21845656924d6dab39d45304e1"
+            }
+          ],
+          "month": "2026-09",
+          "parent_membership_content_hash": "sha256:6f0a7abb08ee3922cfeae5c726006143fd07f1bdbf4d1cccd35b649b1caed3a0",
+          "parent_membership_revision": "synthetic.original.membership.r1",
+          "product_version": "v4",
+          "proposal_content_hash": "sha256:e94a735ef44ac1a4845e13d3d9b136d9ca1b2549ecd2a9a8bc93002df0b0e741",
+          "proposal_response_digest": "sha256:0cce89687a89bd6eff80dbc023004d45566d7279ce330bc2adedf65faf58b385",
+          "source_cut_id": "synthetic-monthly-cut"
+        }
+      ],
+      "period_end": "2026-09-30",
+      "period_start": "2026-09-01",
+      "reporting_currency": "USD",
+      "selection_version": "v3",
+      "tenant_id": "synthetic-tenant"
+    },
+    "series_digest": "587e0e85b9c26f997244299ce82bc56aa023b0c8e7180a396fca747abc507d22",
+    "source_revision_digest": "3e5fc7856be54b228b0775ec1329cec8165c230a1e3d35a19a5af00b5b7b4ece"
+  },
+  "v1-correction-2-published": {
+    "calculation_boundary": "Configured-identity controlled producer custody only; no cryptographic or bank provenance acceptance, TWR, MWR, dispersion, contribution or model-fee calculation. CONTROLLED / NOT_ATTESTED.",
+    "contract_version": "composite_review.v7",
+    "factual_content_digest": "76f7b9d526c1c2764ec2dcb9f85094f21188036a67929363662366bda11ecea6",
+    "publication_state": "NOT_ATTESTED",
+    "qualification": "CONTROLLED_HISTORICAL_POLICY_EVIDENCE_REPLAY",
+    "selection": {
+      "composite_id": "synthetic-composite",
+      "definition_version": "synthetic-definition",
+      "months": [
+        {
+          "approval_content_hash": "sha256:7db02e5b443762b894431e7fdebcc81e0ed5c45d20c3e1440d93331835c56777",
+          "attestation_version": "synthetic.corrected.evaluation.r2",
+          "evaluation_revision": "synthetic.corrected.evaluation.r2",
+          "evidence_kind": "PUBLISHED",
+          "lineage_receipts": [
+            {
+              "approval_content_hash": "sha256:abfbaa02d6dff2950de62ebbe625b193ddcac2d40f1d32a59698275dec077932",
+              "evaluation_revision": "synthetic.original.evaluation.r1",
+              "product_version": "v3",
+              "receipt_content_hash": "sha256:422cdf554a8e3f9d7f8ff6c3a205b8a58f4610c0f2475cd40c23db341b42f0f4",
+              "receipt_response_digest": "sha256:eb3c3332e3d0fa3d418438c677ef8dffe5dafa21845656924d6dab39d45304e1"
+            }
+          ],
+          "membership_content_hash": "sha256:2a2f479d42ed9e150c33b76dc23ce0af0f768e5fbed2381d6ccaf648f906c723",
+          "membership_response_digest": "sha256:80d8f34135f444e8d5bf6a702e3342156b4b224e9bc9e235c1ddf91d7dfdb489",
+          "membership_revision": "synthetic.corrected.membership.r2",
+          "month": "2026-09",
+          "parent_membership_content_hash": "sha256:6f0a7abb08ee3922cfeae5c726006143fd07f1bdbf4d1cccd35b649b1caed3a0",
+          "parent_membership_revision": "synthetic.original.membership.r1",
+          "parent_publication_response_digest": "sha256:6692d591ff60a967fccb9fc21fa9d50f15b167b09dc5b1b305b4fd277aeedc4b",
+          "parent_response_digest": "sha256:bb4df0fa6f5c9e9d840d620a09bf4800089277796b1bc6150f25419f6dce2813",
+          "product_version": "v4",
+          "proposal_content_hash": "sha256:e94a735ef44ac1a4845e13d3d9b136d9ca1b2549ecd2a9a8bc93002df0b0e741",
+          "publication_response_digest": "sha256:15f75b21fc1bdf9da51b5d1c6be2cb17966f7c4edd8bf1d99982a7b2da7ae6b3",
+          "publication_sequence": 3,
+          "receipt_content_hash": "sha256:1f84cab1dacc4181d39bd345014491d61e9c5b9befd9f7889aaa2b42f0564a04",
+          "receipt_response_digest": "sha256:9443b702ac3e4cf8dd448ad37ffed5d3402174294390c9945517f724585352cd",
+          "source_cut_id": "synthetic-monthly-cut",
+          "universe_content_hash": "sha256:efe536ad0c8f1f5e29f693c87c8078c478caed9deda30658431569b3410d42e1",
+          "universe_response_digest": "sha256:4b4e83175e3b74c66cdf1855fc8ac9be99030c6fa1a648bf463ce0ea9fdcb236"
+        }
+      ],
+      "period_end": "2026-09-30",
+      "period_start": "2026-09-01",
+      "reporting_currency": "USD",
+      "selection_version": "v3",
+      "tenant_id": "synthetic-tenant"
+    },
+    "series_digest": "3a34eae017a3f0c5c42dbf98db707d2f0060ec79c5f1da2c6bc55f9f541133a7",
+    "source_revision_digest": "ee9b27630ddf80e8e6c576d36481d73e21338e967d57a4ba71112b06eacb4e1d"
+  },
+  "v1-correction-3-evaluated-only": {
+    "calculation_boundary": "Configured-identity controlled producer custody only; no cryptographic or bank provenance acceptance, TWR, MWR, dispersion, contribution or model-fee calculation. CONTROLLED / NOT_ATTESTED.",
+    "contract_version": "composite_review.v7",
+    "factual_content_digest": "449d34d7a53421842f69252b977a90b33957d9d05ecf3aa4f2ee04af516a21a1",
+    "publication_state": "NOT_ATTESTED",
+    "qualification": "CONTROLLED_HISTORICAL_POLICY_EVIDENCE_REPLAY",
+    "selection": {
+      "composite_id": "synthetic-composite",
+      "definition_version": "synthetic-definition",
+      "months": [
+        {
+          "evaluation_revision": "synthetic.corrected.evaluation.r3",
+          "evidence_kind": "EVALUATED_ONLY",
+          "lineage_receipts": [
+            {
+              "approval_content_hash": "sha256:7db02e5b443762b894431e7fdebcc81e0ed5c45d20c3e1440d93331835c56777",
+              "evaluation_revision": "synthetic.corrected.evaluation.r2",
+              "product_version": "v4",
+              "receipt_content_hash": "sha256:1f84cab1dacc4181d39bd345014491d61e9c5b9befd9f7889aaa2b42f0564a04",
+              "receipt_response_digest": "sha256:9443b702ac3e4cf8dd448ad37ffed5d3402174294390c9945517f724585352cd"
+            },
+            {
+              "approval_content_hash": "sha256:abfbaa02d6dff2950de62ebbe625b193ddcac2d40f1d32a59698275dec077932",
+              "evaluation_revision": "synthetic.original.evaluation.r1",
+              "product_version": "v3",
+              "receipt_content_hash": "sha256:422cdf554a8e3f9d7f8ff6c3a205b8a58f4610c0f2475cd40c23db341b42f0f4",
+              "receipt_response_digest": "sha256:eb3c3332e3d0fa3d418438c677ef8dffe5dafa21845656924d6dab39d45304e1"
+            }
+          ],
+          "month": "2026-09",
+          "parent_membership_content_hash": "sha256:2a2f479d42ed9e150c33b76dc23ce0af0f768e5fbed2381d6ccaf648f906c723",
+          "parent_membership_revision": "synthetic.corrected.membership.r2",
+          "product_version": "v4",
+          "proposal_content_hash": "sha256:a4a830227928d67517bc8b4b41cf91b0ff7a0817a9aea75206a94ccec2fef05f",
+          "proposal_response_digest": "sha256:ae9befd07ece807fd4f8dd6c12639c801d4b1f28e12b7c75e6a3ea3d3607d1b9",
+          "source_cut_id": "synthetic-monthly-cut"
+        }
+      ],
+      "period_end": "2026-09-30",
+      "period_start": "2026-09-01",
+      "reporting_currency": "USD",
+      "selection_version": "v3",
+      "tenant_id": "synthetic-tenant"
+    },
+    "series_digest": "3d039f5fc4bf0073d4495cea4ca89afab424f53ae08d9b23c3e213018cd13bcc",
+    "source_revision_digest": "65acc573f0fc122419c09a6dde513915d0d2dca65ad261d6dc377dc837c5649b"
+  },
+  "v1-correction-3-published": {
+    "calculation_boundary": "Configured-identity controlled producer custody only; no cryptographic or bank provenance acceptance, TWR, MWR, dispersion, contribution or model-fee calculation. CONTROLLED / NOT_ATTESTED.",
+    "contract_version": "composite_review.v7",
+    "factual_content_digest": "68ec371823cbd9e371671f0389b2ad7ecadfc1f2e8a6e4d6934167812de7ead2",
+    "publication_state": "NOT_ATTESTED",
+    "qualification": "CONTROLLED_HISTORICAL_POLICY_EVIDENCE_REPLAY",
+    "selection": {
+      "composite_id": "synthetic-composite",
+      "definition_version": "synthetic-definition",
+      "months": [
+        {
+          "approval_content_hash": "sha256:5d58e6a67f737284e404bc5a9a0dd703a76bb4716a3fbecdc4a8484f5036be2d",
+          "attestation_version": "synthetic.corrected.evaluation.r3",
+          "evaluation_revision": "synthetic.corrected.evaluation.r3",
+          "evidence_kind": "PUBLISHED",
+          "lineage_receipts": [
+            {
+              "approval_content_hash": "sha256:7db02e5b443762b894431e7fdebcc81e0ed5c45d20c3e1440d93331835c56777",
+              "evaluation_revision": "synthetic.corrected.evaluation.r2",
+              "product_version": "v4",
+              "receipt_content_hash": "sha256:1f84cab1dacc4181d39bd345014491d61e9c5b9befd9f7889aaa2b42f0564a04",
+              "receipt_response_digest": "sha256:9443b702ac3e4cf8dd448ad37ffed5d3402174294390c9945517f724585352cd"
+            },
+            {
+              "approval_content_hash": "sha256:abfbaa02d6dff2950de62ebbe625b193ddcac2d40f1d32a59698275dec077932",
+              "evaluation_revision": "synthetic.original.evaluation.r1",
+              "product_version": "v3",
+              "receipt_content_hash": "sha256:422cdf554a8e3f9d7f8ff6c3a205b8a58f4610c0f2475cd40c23db341b42f0f4",
+              "receipt_response_digest": "sha256:eb3c3332e3d0fa3d418438c677ef8dffe5dafa21845656924d6dab39d45304e1"
+            }
+          ],
+          "membership_content_hash": "sha256:9abbf46e5e58b3dbf461a67afef6bb8c39020e2bdf4049ed8ae4035c999a337a",
+          "membership_response_digest": "sha256:d1fde888cb5a286ec78d52cdc9968e4f08cdce300ce5e594415594673b523d7d",
+          "membership_revision": "synthetic.corrected.membership.r3",
+          "month": "2026-09",
+          "parent_membership_content_hash": "sha256:2a2f479d42ed9e150c33b76dc23ce0af0f768e5fbed2381d6ccaf648f906c723",
+          "parent_membership_revision": "synthetic.corrected.membership.r2",
+          "parent_publication_response_digest": "sha256:15f75b21fc1bdf9da51b5d1c6be2cb17966f7c4edd8bf1d99982a7b2da7ae6b3",
+          "parent_response_digest": "sha256:80d8f34135f444e8d5bf6a702e3342156b4b224e9bc9e235c1ddf91d7dfdb489",
+          "product_version": "v4",
+          "proposal_content_hash": "sha256:a4a830227928d67517bc8b4b41cf91b0ff7a0817a9aea75206a94ccec2fef05f",
+          "publication_response_digest": "sha256:b2ea615387c44090e256c06621ac9e7dd875a2c89e25ffe5e0988a09b1ee84a6",
+          "publication_sequence": 4,
+          "receipt_content_hash": "sha256:3fbc685d7c88223c5ea3a7a41db00749d741bcd63a0a768b7cacc8175edd38fa",
+          "receipt_response_digest": "sha256:39224005601fead02392eee09b28de18dab7653c3dd8942ca071d748bbb93845",
+          "source_cut_id": "synthetic-monthly-cut",
+          "universe_content_hash": "sha256:0cb7a84d53ac4588f646e45fe145f117d8dc121198bc781ab40b3795f3961985",
+          "universe_response_digest": "sha256:db43e987396cde016012f3218afc37611e417ff3af842e61dd51895614617250"
+        }
+      ],
+      "period_end": "2026-09-30",
+      "period_start": "2026-09-01",
+      "reporting_currency": "USD",
+      "selection_version": "v3",
+      "tenant_id": "synthetic-tenant"
+    },
+    "series_digest": "daf416f70a53fc04a00d78421d1cb1e8b887ac54b51ff721c7ba665a3bba1071",
+    "source_revision_digest": "ae3a2084541a3a16220ff7122419307e24a0d31a8e08a10135e44a3f65be448d"
+  },
+  "v1-root-evaluated-only": {
+    "calculation_boundary": "Configured-identity controlled producer custody only; no cryptographic or bank provenance acceptance, TWR, MWR, dispersion, contribution or model-fee calculation. CONTROLLED / NOT_ATTESTED.",
+    "contract_version": "composite_review.v7",
+    "factual_content_digest": "2f9bbd327568e724ff2202fcb59abd5a06b905b58b86caa49f53893bd447fdb4",
+    "publication_state": "NOT_ATTESTED",
+    "qualification": "CONTROLLED_HISTORICAL_POLICY_EVIDENCE_REPLAY",
+    "selection": {
+      "composite_id": "synthetic-composite",
+      "definition_version": "synthetic-definition",
+      "months": [
+        {
+          "evaluation_revision": "synthetic.original.evaluation.r1",
+          "evidence_kind": "EVALUATED_ONLY",
+          "month": "2026-09",
+          "parent_membership_content_hash": "sha256:f29e58ac34f8b46e1ea859fd7b10c61b82fa9477e3c6d54f09bbf5b1796244f5",
+          "parent_membership_revision": "synthetic-membership",
+          "product_version": "v3",
+          "proposal_content_hash": "sha256:9a85b7185bfd427da2d22445f57e54c55ebc280fd6e4e80f784256667d33fd57",
+          "proposal_response_digest": "sha256:25b766b97ea657df574445c615951bf7049025de991d01c061625af24ed94587",
+          "source_cut_id": "synthetic-monthly-cut"
+        }
+      ],
+      "period_end": "2026-09-30",
+      "period_start": "2026-09-01",
+      "reporting_currency": "USD",
+      "selection_version": "v3",
+      "tenant_id": "synthetic-tenant"
+    },
+    "series_digest": "d1617a13f2444a8c2fe2951c0a477810ee6e5883c94a2cfea37b4e0635510e31",
+    "source_revision_digest": "ba9aaebf0140e6ec98b04d49cfe653d6972718c9435fb53ea399c0022ec050a4"
+  },
+  "v1-root-published": {
+    "calculation_boundary": "Configured-identity controlled producer custody only; no cryptographic or bank provenance acceptance, TWR, MWR, dispersion, contribution or model-fee calculation. CONTROLLED / NOT_ATTESTED.",
+    "contract_version": "composite_review.v7",
+    "factual_content_digest": "cb62817829528f59c9228c308280b36c84b860e7af9a1df2d1aff4c5c2a5894d",
+    "publication_state": "NOT_ATTESTED",
+    "qualification": "CONTROLLED_HISTORICAL_POLICY_EVIDENCE_REPLAY",
+    "selection": {
+      "composite_id": "synthetic-composite",
+      "definition_version": "synthetic-definition",
+      "months": [
+        {
+          "approval_content_hash": "sha256:abfbaa02d6dff2950de62ebbe625b193ddcac2d40f1d32a59698275dec077932",
+          "attestation_version": "synthetic.original.evaluation.r1",
+          "evaluation_revision": "synthetic.original.evaluation.r1",
+          "evidence_kind": "PUBLISHED",
+          "membership_content_hash": "sha256:6f0a7abb08ee3922cfeae5c726006143fd07f1bdbf4d1cccd35b649b1caed3a0",
+          "membership_response_digest": "sha256:bb4df0fa6f5c9e9d840d620a09bf4800089277796b1bc6150f25419f6dce2813",
+          "membership_revision": "synthetic.original.membership.r1",
+          "month": "2026-09",
+          "parent_membership_content_hash": "sha256:f29e58ac34f8b46e1ea859fd7b10c61b82fa9477e3c6d54f09bbf5b1796244f5",
+          "parent_membership_revision": "synthetic-membership",
+          "parent_response_digest": "sha256:1e70b5231d66bde704ffcbecc8ec36b7c798187921d4ae92b453f70c9ff4aa0e",
+          "product_version": "v3",
+          "proposal_content_hash": "sha256:9a85b7185bfd427da2d22445f57e54c55ebc280fd6e4e80f784256667d33fd57",
+          "publication_response_digest": "sha256:6692d591ff60a967fccb9fc21fa9d50f15b167b09dc5b1b305b4fd277aeedc4b",
+          "publication_sequence": 2,
+          "receipt_content_hash": "sha256:422cdf554a8e3f9d7f8ff6c3a205b8a58f4610c0f2475cd40c23db341b42f0f4",
+          "receipt_response_digest": "sha256:eb3c3332e3d0fa3d418438c677ef8dffe5dafa21845656924d6dab39d45304e1",
+          "source_cut_id": "synthetic-monthly-cut",
+          "universe_content_hash": "sha256:cfd510984700488be7ad0adbce54224317392b4fbe70328d4cba751a90849feb",
+          "universe_response_digest": "sha256:373ea71e1edfbe5f1defe8c561dc96b0720ee6821409547c09d12a26f571f313"
+        }
+      ],
+      "period_end": "2026-09-30",
+      "period_start": "2026-09-01",
+      "reporting_currency": "USD",
+      "selection_version": "v3",
+      "tenant_id": "synthetic-tenant"
+    },
+    "series_digest": "d697ea5454ec87f093cf78c427d21a755e6ee62f7b2e6455d6f6156090060826",
+    "source_revision_digest": "6179578466215891722e46183600058502872b6c0567ee5c2849ce0dd18a0685"
+  },
+  "v2-correction-2-evaluated-only": {
+    "calculation_boundary": "Configured-identity controlled producer custody only; no cryptographic or bank provenance acceptance, TWR, MWR, dispersion, contribution or model-fee calculation. CONTROLLED / NOT_ATTESTED.",
+    "contract_version": "composite_review.v7",
+    "factual_content_digest": "842b8729660665810b4305c149c2c812a0304f8c63e10252ffbaa2f5bf8d291c",
+    "publication_state": "NOT_ATTESTED",
+    "qualification": "CONTROLLED_HISTORICAL_POLICY_EVIDENCE_REPLAY",
+    "selection": {
+      "composite_id": "synthetic-composite",
+      "definition_version": "synthetic-definition",
+      "months": [
+        {
+          "evaluation_revision": "synthetic.corrected.evaluation.r2",
+          "evidence_kind": "EVALUATED_ONLY",
+          "lineage_receipts": [
+            {
+              "approval_content_hash": "sha256:abfbaa02d6dff2950de62ebbe625b193ddcac2d40f1d32a59698275dec077932",
+              "evaluation_revision": "synthetic.original.evaluation.r1",
+              "product_version": "v3",
+              "receipt_content_hash": "sha256:d040437ca4120fcb0385b9fe87d38400cf02cde18b89852c946708be5677bc21",
+              "receipt_response_digest": "sha256:ed427d030b536381e524f9aa1a04e96334c851c91813d33b87f959b429166837"
+            }
+          ],
+          "month": "2026-09",
+          "parent_membership_content_hash": "sha256:6f0a7abb08ee3922cfeae5c726006143fd07f1bdbf4d1cccd35b649b1caed3a0",
+          "parent_membership_revision": "synthetic.original.membership.r1",
+          "product_version": "v4",
+          "proposal_content_hash": "sha256:c31ebdae7691a5af602c471b20bf4032d6fe50c9c7bbcf3d7f89956de2acae27",
+          "proposal_response_digest": "sha256:82ff8876fd28d7ffe378e107002a2f31259bc9f66ecfdcf2d15dbf347f6eda5d",
+          "source_cut_id": "synthetic-monthly-cut"
+        }
+      ],
+      "period_end": "2026-09-30",
+      "period_start": "2026-09-01",
+      "reporting_currency": "USD",
+      "selection_version": "v3",
+      "tenant_id": "synthetic-tenant"
+    },
+    "series_digest": "703a194d3f7ce0ac3a1a3c130eb3272f1d742d35c5bffe123a38e3cc3613a96e",
+    "source_revision_digest": "6cddd1bf707a6ee9bc6f39edcde694e0cfcc3ee71980cea45bc7d92897adb89e"
+  },
+  "v2-correction-2-published": {
+    "calculation_boundary": "Configured-identity controlled producer custody only; no cryptographic or bank provenance acceptance, TWR, MWR, dispersion, contribution or model-fee calculation. CONTROLLED / NOT_ATTESTED.",
+    "contract_version": "composite_review.v7",
+    "factual_content_digest": "050a5aefea3745f216a588dcf0810c75d1146f583dd5c152181a4f2f8895fbf4",
+    "publication_state": "NOT_ATTESTED",
+    "qualification": "CONTROLLED_HISTORICAL_POLICY_EVIDENCE_REPLAY",
+    "selection": {
+      "composite_id": "synthetic-composite",
+      "definition_version": "synthetic-definition",
+      "months": [
+        {
+          "approval_content_hash": "sha256:f31aca178d0262a7938a024a923c7581f425210066cf4c7132f41d055d4cccef",
+          "attestation_version": "synthetic.corrected.evaluation.r2",
+          "evaluation_revision": "synthetic.corrected.evaluation.r2",
+          "evidence_kind": "PUBLISHED",
+          "lineage_receipts": [
+            {
+              "approval_content_hash": "sha256:abfbaa02d6dff2950de62ebbe625b193ddcac2d40f1d32a59698275dec077932",
+              "evaluation_revision": "synthetic.original.evaluation.r1",
+              "product_version": "v3",
+              "receipt_content_hash": "sha256:d040437ca4120fcb0385b9fe87d38400cf02cde18b89852c946708be5677bc21",
+              "receipt_response_digest": "sha256:ed427d030b536381e524f9aa1a04e96334c851c91813d33b87f959b429166837"
+            }
+          ],
+          "membership_content_hash": "sha256:925587446fc312a59a8da4483dcf219063ef0109216bffe431d46d852fbb8050",
+          "membership_response_digest": "sha256:cce4ab00eec0abc9bbf9b11a78470d9b386d1d1ea2d075f17400863c26fa1232",
+          "membership_revision": "synthetic.corrected.membership.r2",
+          "month": "2026-09",
+          "parent_membership_content_hash": "sha256:6f0a7abb08ee3922cfeae5c726006143fd07f1bdbf4d1cccd35b649b1caed3a0",
+          "parent_membership_revision": "synthetic.original.membership.r1",
+          "parent_publication_response_digest": "sha256:6692d591ff60a967fccb9fc21fa9d50f15b167b09dc5b1b305b4fd277aeedc4b",
+          "parent_response_digest": "sha256:bb4df0fa6f5c9e9d840d620a09bf4800089277796b1bc6150f25419f6dce2813",
+          "product_version": "v4",
+          "proposal_content_hash": "sha256:c31ebdae7691a5af602c471b20bf4032d6fe50c9c7bbcf3d7f89956de2acae27",
+          "publication_response_digest": "sha256:46b6edccd1851ea881e74a5723c1c18447d0df395ea0982da14149fd77795da3",
+          "publication_sequence": 3,
+          "receipt_content_hash": "sha256:d893a80b62a446a080a537b7b6b2d7c366bcdc7028f89b740e59ee5dd49211b5",
+          "receipt_response_digest": "sha256:d7b0be8079924fff5b8ff147ec329b1086c9292dfb849b6b5cd157ab8fcda2e8",
+          "source_cut_id": "synthetic-monthly-cut",
+          "universe_content_hash": "sha256:25ac878860603a494d36237d4585783293f91983caa4b1e4356fe8f929a99785",
+          "universe_response_digest": "sha256:44cd19bc6b34d78db54e22cdd453ba9a98a0e8401455c2911c2a52bafd890a4f"
+        }
+      ],
+      "period_end": "2026-09-30",
+      "period_start": "2026-09-01",
+      "reporting_currency": "USD",
+      "selection_version": "v3",
+      "tenant_id": "synthetic-tenant"
+    },
+    "series_digest": "2d17200c555d4e26e08a9f04af896a160acb728af99981483c334c3e76baeb41",
+    "source_revision_digest": "2cdbccf25680d256376f4296aa2aece59f784d16b49e2f26a0d4ac2ae37e410d"
+  },
+  "v2-correction-3-evaluated-only": {
+    "calculation_boundary": "Configured-identity controlled producer custody only; no cryptographic or bank provenance acceptance, TWR, MWR, dispersion, contribution or model-fee calculation. CONTROLLED / NOT_ATTESTED.",
+    "contract_version": "composite_review.v7",
+    "factual_content_digest": "b5160f3046e1c6f762bf1641637f7d67c4cd68ff130512636e558abb56db1f71",
+    "publication_state": "NOT_ATTESTED",
+    "qualification": "CONTROLLED_HISTORICAL_POLICY_EVIDENCE_REPLAY",
+    "selection": {
+      "composite_id": "synthetic-composite",
+      "definition_version": "synthetic-definition",
+      "months": [
+        {
+          "evaluation_revision": "synthetic.corrected.evaluation.r3",
+          "evidence_kind": "EVALUATED_ONLY",
+          "lineage_receipts": [
+            {
+              "approval_content_hash": "sha256:f31aca178d0262a7938a024a923c7581f425210066cf4c7132f41d055d4cccef",
+              "evaluation_revision": "synthetic.corrected.evaluation.r2",
+              "product_version": "v4",
+              "receipt_content_hash": "sha256:d893a80b62a446a080a537b7b6b2d7c366bcdc7028f89b740e59ee5dd49211b5",
+              "receipt_response_digest": "sha256:d7b0be8079924fff5b8ff147ec329b1086c9292dfb849b6b5cd157ab8fcda2e8"
+            },
+            {
+              "approval_content_hash": "sha256:abfbaa02d6dff2950de62ebbe625b193ddcac2d40f1d32a59698275dec077932",
+              "evaluation_revision": "synthetic.original.evaluation.r1",
+              "product_version": "v3",
+              "receipt_content_hash": "sha256:d040437ca4120fcb0385b9fe87d38400cf02cde18b89852c946708be5677bc21",
+              "receipt_response_digest": "sha256:ed427d030b536381e524f9aa1a04e96334c851c91813d33b87f959b429166837"
+            }
+          ],
+          "month": "2026-09",
+          "parent_membership_content_hash": "sha256:925587446fc312a59a8da4483dcf219063ef0109216bffe431d46d852fbb8050",
+          "parent_membership_revision": "synthetic.corrected.membership.r2",
+          "product_version": "v4",
+          "proposal_content_hash": "sha256:1af6f31a079bb74a2bf9b74676eea638790166fc67678ca604157caaab9f7119",
+          "proposal_response_digest": "sha256:dde0f671085f0af6883acd750f21a34af1ea15f5bc92f08807b81d87a550983e",
+          "source_cut_id": "synthetic-monthly-cut"
+        }
+      ],
+      "period_end": "2026-09-30",
+      "period_start": "2026-09-01",
+      "reporting_currency": "USD",
+      "selection_version": "v3",
+      "tenant_id": "synthetic-tenant"
+    },
+    "series_digest": "1c386505ea3741fa45d19953e631fb67440b705e3c049e46fab2f3685f5a56b3",
+    "source_revision_digest": "43d50e47e583fba4e43a6f5e412eda0c9bca18da2d8019b1d510850e46c81889"
+  },
+  "v2-correction-3-published": {
+    "calculation_boundary": "Configured-identity controlled producer custody only; no cryptographic or bank provenance acceptance, TWR, MWR, dispersion, contribution or model-fee calculation. CONTROLLED / NOT_ATTESTED.",
+    "contract_version": "composite_review.v7",
+    "factual_content_digest": "e8eaffe1913f72e43e73711939e51282b156fa34760650846e747b01465b491a",
+    "publication_state": "NOT_ATTESTED",
+    "qualification": "CONTROLLED_HISTORICAL_POLICY_EVIDENCE_REPLAY",
+    "selection": {
+      "composite_id": "synthetic-composite",
+      "definition_version": "synthetic-definition",
+      "months": [
+        {
+          "approval_content_hash": "sha256:3599267c0da507c3ef6d41fd88b42bd2a453cb1b761d2b3956832e7249ee8577",
+          "attestation_version": "synthetic.corrected.evaluation.r3",
+          "evaluation_revision": "synthetic.corrected.evaluation.r3",
+          "evidence_kind": "PUBLISHED",
+          "lineage_receipts": [
+            {
+              "approval_content_hash": "sha256:f31aca178d0262a7938a024a923c7581f425210066cf4c7132f41d055d4cccef",
+              "evaluation_revision": "synthetic.corrected.evaluation.r2",
+              "product_version": "v4",
+              "receipt_content_hash": "sha256:d893a80b62a446a080a537b7b6b2d7c366bcdc7028f89b740e59ee5dd49211b5",
+              "receipt_response_digest": "sha256:d7b0be8079924fff5b8ff147ec329b1086c9292dfb849b6b5cd157ab8fcda2e8"
+            },
+            {
+              "approval_content_hash": "sha256:abfbaa02d6dff2950de62ebbe625b193ddcac2d40f1d32a59698275dec077932",
+              "evaluation_revision": "synthetic.original.evaluation.r1",
+              "product_version": "v3",
+              "receipt_content_hash": "sha256:d040437ca4120fcb0385b9fe87d38400cf02cde18b89852c946708be5677bc21",
+              "receipt_response_digest": "sha256:ed427d030b536381e524f9aa1a04e96334c851c91813d33b87f959b429166837"
+            }
+          ],
+          "membership_content_hash": "sha256:30169440c8188a42070916b072b281d3c9f12e90c74580a1ad1e302be686ce63",
+          "membership_response_digest": "sha256:e156fc4f035adecdb121b4a644b0d0af0b5658bae4fc832d5b90ce0b1a70e667",
+          "membership_revision": "synthetic.corrected.membership.r3",
+          "month": "2026-09",
+          "parent_membership_content_hash": "sha256:925587446fc312a59a8da4483dcf219063ef0109216bffe431d46d852fbb8050",
+          "parent_membership_revision": "synthetic.corrected.membership.r2",
+          "parent_publication_response_digest": "sha256:46b6edccd1851ea881e74a5723c1c18447d0df395ea0982da14149fd77795da3",
+          "parent_response_digest": "sha256:cce4ab00eec0abc9bbf9b11a78470d9b386d1d1ea2d075f17400863c26fa1232",
+          "product_version": "v4",
+          "proposal_content_hash": "sha256:1af6f31a079bb74a2bf9b74676eea638790166fc67678ca604157caaab9f7119",
+          "publication_response_digest": "sha256:9802e23370e7ab3401b7b394425b82ca2a651baa46678d84f1b3b551eb2e0033",
+          "publication_sequence": 4,
+          "receipt_content_hash": "sha256:e7fd42df5174ed2af914480483476fee84f19275e99eccf56339efe0fe0e4388",
+          "receipt_response_digest": "sha256:c6deadcbf6d44d5400825e26176cdcb9b6e5491aa268152b60e04cc5ca4de5bb",
+          "source_cut_id": "synthetic-monthly-cut",
+          "universe_content_hash": "sha256:ff77101b56766a066b75950a8389629de0702fbb474ec10a9ef4c922d7a3c83c",
+          "universe_response_digest": "sha256:11fb6f7f85cffcf2b7ba6603f51da46c72a93698a647d6891f4ca4deffa10380"
+        }
+      ],
+      "period_end": "2026-09-30",
+      "period_start": "2026-09-01",
+      "reporting_currency": "USD",
+      "selection_version": "v3",
+      "tenant_id": "synthetic-tenant"
+    },
+    "series_digest": "4fa278c6415b000c81ddfcdcb19f83c0542b5d6839db7dfe4b611f72e47a575c",
+    "source_revision_digest": "d9e70d40672fdeaadb412070fc1e2b1d5d67af7b505b7df8cb27367c73f714de"
+  },
+  "v2-root-evaluated-only": {
+    "calculation_boundary": "Configured-identity controlled producer custody only; no cryptographic or bank provenance acceptance, TWR, MWR, dispersion, contribution or model-fee calculation. CONTROLLED / NOT_ATTESTED.",
+    "contract_version": "composite_review.v7",
+    "factual_content_digest": "2f9bbd327568e724ff2202fcb59abd5a06b905b58b86caa49f53893bd447fdb4",
+    "publication_state": "NOT_ATTESTED",
+    "qualification": "CONTROLLED_HISTORICAL_POLICY_EVIDENCE_REPLAY",
+    "selection": {
+      "composite_id": "synthetic-composite",
+      "definition_version": "synthetic-definition",
+      "months": [
+        {
+          "evaluation_revision": "synthetic.original.evaluation.r1",
+          "evidence_kind": "EVALUATED_ONLY",
+          "month": "2026-09",
+          "parent_membership_content_hash": "sha256:f29e58ac34f8b46e1ea859fd7b10c61b82fa9477e3c6d54f09bbf5b1796244f5",
+          "parent_membership_revision": "synthetic-membership",
+          "product_version": "v3",
+          "proposal_content_hash": "sha256:9a85b7185bfd427da2d22445f57e54c55ebc280fd6e4e80f784256667d33fd57",
+          "proposal_response_digest": "sha256:25b766b97ea657df574445c615951bf7049025de991d01c061625af24ed94587",
+          "source_cut_id": "synthetic-monthly-cut"
+        }
+      ],
+      "period_end": "2026-09-30",
+      "period_start": "2026-09-01",
+      "reporting_currency": "USD",
+      "selection_version": "v3",
+      "tenant_id": "synthetic-tenant"
+    },
+    "series_digest": "d1617a13f2444a8c2fe2951c0a477810ee6e5883c94a2cfea37b4e0635510e31",
+    "source_revision_digest": "ba9aaebf0140e6ec98b04d49cfe653d6972718c9435fb53ea399c0022ec050a4"
+  },
+  "v2-root-published": {
+    "calculation_boundary": "Configured-identity controlled producer custody only; no cryptographic or bank provenance acceptance, TWR, MWR, dispersion, contribution or model-fee calculation. CONTROLLED / NOT_ATTESTED.",
+    "contract_version": "composite_review.v7",
+    "factual_content_digest": "381516a3109024a7d1d370d6eb522b57435e91322e4436b002fcc26bbb2738c3",
+    "publication_state": "NOT_ATTESTED",
+    "qualification": "CONTROLLED_HISTORICAL_POLICY_EVIDENCE_REPLAY",
+    "selection": {
+      "composite_id": "synthetic-composite",
+      "definition_version": "synthetic-definition",
+      "months": [
+        {
+          "approval_content_hash": "sha256:abfbaa02d6dff2950de62ebbe625b193ddcac2d40f1d32a59698275dec077932",
+          "attestation_version": "synthetic.original.evaluation.r1",
+          "evaluation_revision": "synthetic.original.evaluation.r1",
+          "evidence_kind": "PUBLISHED",
+          "membership_content_hash": "sha256:6f0a7abb08ee3922cfeae5c726006143fd07f1bdbf4d1cccd35b649b1caed3a0",
+          "membership_response_digest": "sha256:bb4df0fa6f5c9e9d840d620a09bf4800089277796b1bc6150f25419f6dce2813",
+          "membership_revision": "synthetic.original.membership.r1",
+          "month": "2026-09",
+          "parent_membership_content_hash": "sha256:f29e58ac34f8b46e1ea859fd7b10c61b82fa9477e3c6d54f09bbf5b1796244f5",
+          "parent_membership_revision": "synthetic-membership",
+          "parent_response_digest": "sha256:1e70b5231d66bde704ffcbecc8ec36b7c798187921d4ae92b453f70c9ff4aa0e",
+          "product_version": "v3",
+          "proposal_content_hash": "sha256:9a85b7185bfd427da2d22445f57e54c55ebc280fd6e4e80f784256667d33fd57",
+          "publication_response_digest": "sha256:6692d591ff60a967fccb9fc21fa9d50f15b167b09dc5b1b305b4fd277aeedc4b",
+          "publication_sequence": 2,
+          "receipt_content_hash": "sha256:d040437ca4120fcb0385b9fe87d38400cf02cde18b89852c946708be5677bc21",
+          "receipt_response_digest": "sha256:ed427d030b536381e524f9aa1a04e96334c851c91813d33b87f959b429166837",
+          "source_cut_id": "synthetic-monthly-cut",
+          "universe_content_hash": "sha256:cfd510984700488be7ad0adbce54224317392b4fbe70328d4cba751a90849feb",
+          "universe_response_digest": "sha256:373ea71e1edfbe5f1defe8c561dc96b0720ee6821409547c09d12a26f571f313"
+        }
+      ],
+      "period_end": "2026-09-30",
+      "period_start": "2026-09-01",
+      "reporting_currency": "USD",
+      "selection_version": "v3",
+      "tenant_id": "synthetic-tenant"
+    },
+    "series_digest": "d7e5ee873914b09cc861c9907651cb697be659e18b456bfe070e45a6be533e56",
+    "source_revision_digest": "b8fc8a19b21b7585f0ac7e77ec8368e2f05680edbb5635e3cf97abb3efe0385e"
+  }
+}

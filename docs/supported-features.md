@@ -67,6 +67,12 @@ PostgreSQL and S3 adapters plus their mandatory configuration.
 Workbench-facing archive retrieval is supported only through the `lotus-workbench` BFF and
 `lotus-gateway`. Workbench must not call `lotus-archive` directly.
 
+Historical policy `composite_review.v7` adds strict selection v3 and ordinary-v3/
+correction-v4 custody through the same XLSX path. Exact Report identity and bytes
+retain configured-identity controlled provenance and `NOT_ATTESTED`, without policy,
+cryptographic or bank authority. Producer main and actual joined acceptance remain
+release conditions; see [historical policy custody](composite-historical-policy-custody.md).
+
 Monthly amendment `composite_review.v6` has strict selector/opaque identity admission
 through the same Composite XLSX path. Exact bounded lineage receipt pins and parent
 publication digest remain immutable with `CONTROLLED_MONTHLY_SOURCE_AMENDMENT_REPLAY`
